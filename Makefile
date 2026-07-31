@@ -17,12 +17,12 @@ endif
 AR := ar
 ARFLAGS := rcs
 
-# Directories
 LIB_DIR := libtpxl
 CLI_DIR := cli
 
-# Includes
-INCLUDES := -I$(LIB_DIR)/include
+INCLUDES := \
+    -I$(LIB_DIR)/include \
+    -Ithird_party
 
 LIB := $(BUILD_DIR)/libtpxl.a
 CLI := $(BUILD_DIR)/tpxl
