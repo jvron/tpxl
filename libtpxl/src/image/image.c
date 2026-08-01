@@ -61,3 +61,15 @@ void tpxl_free_image(TpxlImage* image) {
     image->pixels = NULL;
 }
 
+TpxlResult tpxl_print_image_info(TpxlImage* image) {
+    if (!image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    printf("Width: %d\n", image->width);
+    printf("Height: %d\n", image->height);
+    printf("Format: %s", tpxl_format_to_string(image->format));
+    printf("Channels: %d\n", tpxl_format_to_channels(image->format));
+
+    return TPXL_OK;
+}
