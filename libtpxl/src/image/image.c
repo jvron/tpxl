@@ -9,7 +9,7 @@
 TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
 
     if (!path || !image) {
-        return TPXL_ERROR;
+        return TPXL_INVALID_ARGUMENT;
     }
 
     int channels = 0;
@@ -21,7 +21,7 @@ TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
         image->format = TPXL_FORMAT_UNKNOWN;
         image->pixels = NULL;
 
-        return TPXL_ERROR;
+        return TPXL_IMAGE_LOAD_FAILED;
     }
 
     image->pixels = pixels;
@@ -42,7 +42,7 @@ TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
 
         default:
             tpxl_free_image(image);
-            return TPXL_ERROR;
+            return TPXL_UNSUPPORTED_FORMAT;
     }
 
     return TPXL_OK;
