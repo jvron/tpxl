@@ -21,9 +21,22 @@ typedef struct {
 } TpxlImage;
 
 typedef enum {
-    TPXL_OK,
+    TPXL_OK = 0,
+    TPXL_INVALID_ARGUMENT,
+    TPXL_INVALID_FORMAT,
+    TPXL_IMAGE_LOAD_FAILED,
+    TPXL_UNSUPPORTED_FORMAT,
+    TPXL_OUT_OF_MEMORY,
+    TPXL_ENCODING_FAILED,
+    TPXL_RENDER_FAILED,
+    TPXL_IO_ERROR,
     TPXL_ERROR,
 
+    TPXL_RESULT_COUNT,
+
 } TpxlResult;
+
+int tpxl_format_to_channels(TpxlFormat format);
+const char* tpxl_result_to_string(TpxlResult result);
 
 #endif
