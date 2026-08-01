@@ -1,7 +1,5 @@
-# Compiler
 CC := clang
 
-# Build type
 BUILD ?= debug
 
 CFLAGS := -std=c17 -Wall -Wextra -Wpedantic
@@ -20,14 +18,18 @@ ARFLAGS := rcs
 LIB_DIR := libtpxl
 CLI_DIR := cli
 
+LDLIBS := -lm -lavformat -lavcodec -lavutil
+
 INCLUDES := \
     -I$(LIB_DIR)/include \
+	-I$(LIB_DIR)/src \
     -Ithird_party
 
 LIB := $(BUILD_DIR)/libtpxl.a
 CLI := $(BUILD_DIR)/tpxl
 
-LIB_SRC := $(wildcard $(LIB_DIR)/src/*.c)
+LIB_SRC := $(shell find $(LIB_DIR)/src -name "*.c")
+
 CLI_SRC := $(wildcard $(CLI_DIR)/src/*.c)
 
 LIB_OBJ := $(patsubst $(LIB_DIR)/src/%.c,$(BUILD_DIR)/lib/%.o,$(LIB_SRC))
@@ -53,7 +55,7 @@ $(LIB): $(LIB_OBJ)
 
 $(CLI): $(CLI_OBJ) $(LIB)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ $(LDLIBS) -o $@
 
 $(BUILD_DIR)/lib/%.o: $(LIB_DIR)/src/%.c
 	@mkdir -p $(dir $@)
