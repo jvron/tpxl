@@ -10,6 +10,8 @@ typedef enum {
     TPXL_FORMAT_RGB,
     TPXL_FORMAT_RGBA,
 
+    TPXL_FORMAT_COUNT,
+
 } TpxlFormat;
 
 typedef struct {
@@ -37,6 +39,7 @@ typedef enum {
 } TpxlResult;
 
 int tpxl_format_to_channels(TpxlFormat format);
+const char* tpxl_format_to_string(TpxlFormat format);
 const char* tpxl_result_to_string(TpxlResult result);
 
 #endif
