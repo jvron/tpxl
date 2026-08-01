@@ -8,10 +8,6 @@
 
 TpxlResult tpxl_kitty_render(TpxlImage* image) {
 
-    if (!image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
     if (image->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
     }
