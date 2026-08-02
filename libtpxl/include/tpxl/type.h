@@ -2,6 +2,7 @@
 #define TPXL_TYPE_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 typedef enum {
     TPXL_FORMAT_UNKNOWN = 0,
@@ -37,6 +38,13 @@ typedef enum {
     TPXL_RESULT_COUNT,
 
 } TpxlResult;
+
+typedef struct {
+    TpxlImage* frames;
+    uint32_t* delays;
+    size_t count;
+    
+} TpxlAnimation;
 
 int tpxl_format_to_channels(TpxlFormat format);
 const char* tpxl_format_to_string(TpxlFormat format);
