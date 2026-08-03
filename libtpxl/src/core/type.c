@@ -4,9 +4,11 @@
 
 static const char* result_to_string[] = {
     [TPXL_OK] = "success",
+    [TPXL_INVALID_FILE] = "unsupported or invalid file format",
     [TPXL_INVALID_ARGUMENT] = "invalid argument",
     [TPXL_INVALID_FORMAT] = "invalid format",
     [TPXL_IMAGE_LOAD_FAILED] = "image loading failed",
+    [TPXL_GIF_LOAD_FAILED] = "gif loading failed",
     [TPXL_UNSUPPORTED_FORMAT] = "unsupported format",
     [TPXL_OUT_OF_MEMORY] = "out of memory",
     [TPXL_ENCODING_FAILED] = "encoding failed",
