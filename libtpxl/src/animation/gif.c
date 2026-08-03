@@ -250,3 +250,4 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
 
     return TPXL_OK;
 }
+
