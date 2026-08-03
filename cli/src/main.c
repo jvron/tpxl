@@ -1,67 +1,27 @@
+#define _POSIX_C_SOURCE 200809L
+
+#include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <time.h>
 
 #include "tpxl/type.h"
 #include "tpxl/image.h"
 #include "tpxl/renderer.h"
+#include "tpxl/animation.h"
+#include "tpxl/file.h"
 
-int main(int argc, char* argv[]) {
+uint64_t get_time_ms(void) {
+    struct timespec ts;
 
-    bool print_info = false;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
 
-    static struct option options[] = {
-        {"info", no_argument, NULL, 'i'},
-        {"help", no_argument, NULL, 'h'},
-        {NULL, 0, NULL, 0}
-    };
+    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
+}
 
-    int opt;
-    while ((opt = getopt_long(argc, argv, "ih", options, NULL)) != -1) {
-
-        switch (opt) {
-            case 'i':
-                print_info = true;
-                break;
-            case 'h':
-                printf(
-                    "TPXL - Display images in the terminal\n"
-                    "\n"
-                    "Usage:\n"
-                    "    tpxl [OPTIONS] <file>\n"
-                    "\n"
-                    "Options:\n"
-                    "    -i, --info       Print image information\n"
-                    "    -h, --help       Show this help message\n"
-                    "    -V, --version    Show version information\n"
-                    "\n"
-                    "Arguments:\n"
-                    "    <file>           Image file to display\n"
-                    "\n"
-                    "Examples:\n"
-                    "    tpxl image.png\n"
-                    "    tpxl --info image.png\n"
-                    "    tpxl -h\n"
-                );
-                return EXIT_SUCCESS;
-            
-            default:
-                printf("Error: invalid option\n");
-                return EXIT_FAILURE;
-        }
-    }
-
-    const char* file = NULL;
-
-    if (argc - optind == 1) {
-        file = argv[optind];
-    }
-    else {
-         printf("Usage: tpxl [OPTIONS] <file>\n");
-        return EXIT_FAILURE;
-    }
-    
+int render_image(const char* file, bool print_info) {
     TpxlResult result;
 
     TpxlImage image;
@@ -95,4 +55,136 @@ int main(int argc, char* argv[]) {
     tpxl_free_image(&image);
 
     return EXIT_SUCCESS;
+}
+
+int render_gif(const char* path) {
+
+    TpxlResult result;
+
+    TpxlAnimation animation; 
+    result = tpxl_load_gif(path, &animation);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_animation(&animation);
+        return EXIT_FAILURE;
+    }
+    
+    TpxlAnimator animator;
+    animator.animation = &animation;
+    animator.current_frame = 0;
+    animator.elapsed = 0;
+
+    bool running = true;
+
+    uint64_t previous = get_time_ms();
+
+    printf("\x1b[s");
+
+    while(running) {
+
+        uint64_t now = get_time_ms();
+        uint64_t delta = now - previous;
+        previous = now;
+
+        tpxl_update_animation(&animator, delta);
+
+        TpxlImage* frame = tpxl_get_animation_frame(&animator);
+
+        printf("\x1b[u"); 
+
+        result = tpxl_render(frame);
+        
+        if (result != TPXL_OK) {
+            printf("Error: %s\n", tpxl_result_to_string(result));
+            tpxl_free_animation(&animation);
+            return EXIT_FAILURE;
+        }
+
+        fflush(stdout);
+    }
+
+    tpxl_free_animation(&animation);
+
+    return EXIT_SUCCESS;
+}
+
+int main(int argc, char* argv[]) {
+
+    bool print_info = false;
+
+    static struct option options[] = {
+        {"info", no_argument, NULL, 'i'},
+        {"help", no_argument, NULL, 'h'},
+        {NULL, 0, NULL, 0}
+    };
+
+    int opt;
+    while ((opt = getopt_long(argc, argv, "ih", options, NULL)) != -1) {
+
+        switch (opt) {
+            case 'i':
+                print_info = true;
+                break;
+            case 'h':
+                printf(
+                    "Usage:\n"
+                    "    tpxl [OPTIONS] <file>\n"
+                    "\n"
+                    "Options:\n"
+                    "    -i, --info       Print image information\n"
+                    "    -h, --help       Show this help message\n"
+                    "    -V, --version    Show version information\n"
+                    "\n"
+                    "Arguments:\n"
+                    "    <file>           Image file to display\n"
+                    "\n"
+                    "Examples:\n"
+                    "    tpxl image.png\n"
+                    "    tpxl --info image.png\n"
+                    "    tpxl -h\n"
+                );
+                return EXIT_SUCCESS;
+            
+            default:
+                printf("Error: invalid option\n");
+                return EXIT_FAILURE;
+        }
+    }
+
+    const char* file = NULL;
+
+    if (argc - optind == 1) {
+        file = argv[optind];
+    }
+    else {
+        printf("Usage: tpxl [OPTIONS] <file>\n");
+        return EXIT_FAILURE;
+    }
+    
+    TpxlFileType file_type = tpxl_detect_file_type(file);
+
+    int exit_code = 0;
+
+    switch(file_type) {
+
+        case TPXL_FILE_UNKNOWN:
+            printf("Error: %s", tpxl_result_to_string(TPXL_INVALID_FILE));
+            return EXIT_FAILURE;
+
+        case TPXL_FILE_JPEG:
+        case TPXL_FILE_PNG:
+            exit_code = render_image(file, print_info);
+            break;
+
+        case TPXL_FILE_GIF:
+            exit_code = render_gif(file);
+            break;
+        
+        default:
+            printf("Error: unsupported file type\n");
+            return EXIT_FAILURE;
+    }
+
+    return exit_code;
 }
