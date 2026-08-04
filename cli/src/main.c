@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <unistd.h>
 #include <time.h>
 
 #include "tpxl/type.h"
@@ -19,6 +20,14 @@ uint64_t get_time_ms(void) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
+}
+
+void sleep_ms(uint32_t ms) {
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000L;
+
+    nanosleep(&ts, NULL);
 }
 
 int render_image(const char* file, bool print_info) {
@@ -87,21 +96,28 @@ int render_gif(const char* path) {
         uint64_t delta = now - previous;
         previous = now;
 
-        tpxl_update_animation(&animator, delta);
+        bool frame_changed = tpxl_update_animation(&animator, delta);
 
-        TpxlImage* frame = tpxl_get_animation_frame(&animator);
+        if (frame_changed) {
 
-        printf("\x1b[u"); 
+            TpxlImage* frame = tpxl_get_animation_frame(&animator);
+    
+            printf("\x1b[u"); 
+    
+            result = tpxl_render(frame);
 
-        result = tpxl_render(frame);
-        
-        if (result != TPXL_OK) {
-            printf("Error: %s\n", tpxl_result_to_string(result));
-            tpxl_free_animation(&animation);
-            return EXIT_FAILURE;
+            if (result != TPXL_OK) {
+                printf("Error: %s\n", tpxl_result_to_string(result));
+                tpxl_free_animation(&animation);
+                return EXIT_FAILURE;
+            }
+    
+            fflush(stdout);
         }
 
-        fflush(stdout);
+        uint32_t remaining = animator.animation->delays[animator.current_frame] - animator.elapsed;
+
+        sleep_ms(remaining);
     }
 
     tpxl_free_animation(&animation);
