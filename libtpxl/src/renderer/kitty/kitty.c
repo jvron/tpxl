@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +7,7 @@
 #include "tpxl/type.h"
 #include "util/base64.h"
 
-TpxlResult tpxl_kitty_render(TpxlImage* image) {
+TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image) {
 
     if (image->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
@@ -38,8 +39,18 @@ TpxlResult tpxl_kitty_render(TpxlImage* image) {
             kitty_format = 32;
             break;
         default:
+            free(data);
             return TPXL_UNSUPPORTED_FORMAT;
     }
+
+    uint32_t column = context->viewport.x / context->terminal.cell_width; 
+    uint32_t row = context->viewport.y / context->terminal.cell_height;
+
+    uint32_t columns = (context->viewport.width + context->terminal.cell_width - 1) / context->terminal.cell_width;
+    uint32_t rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
+
+    uint32_t offset_x = context->viewport.x % context->terminal.cell_width;
+    uint32_t offset_y = context->viewport.y % context->terminal.cell_height;
 
     const size_t output_length = strlen(data);
     const size_t CHUNK_SIZE = 4096;
@@ -54,13 +65,29 @@ TpxlResult tpxl_kitty_render(TpxlImage* image) {
 
         int more_chunks = remaining > CHUNK_SIZE ? 1 : 0;
 
-        fprintf(stdout, "\x1b_Ga=T,");
-        fprintf(stdout, "f=%d,s=%d,v=%d,m=%d;", kitty_format, image->width, image->height, more_chunks);
+        fprintf(stdout, 
+            "\x1b_Ga=T,"
+            "f=%d,"
+            "s=%d,"
+            "v=%d,"
+            "X=%u,"
+            "Y=%u,"
+            "c=%u,"
+            "r=%u,"
+            "m=%d;",
+            kitty_format,
+            image->width,
+            image->height,
+            offset_x,
+            offset_y, 
+            columns,
+            rows,
+            more_chunks
+        );
+
         fwrite(chunk, 1, chunk_length, stdout);
         fprintf(stdout, "\x1b\\");
     }
-
-    printf("\n");
 
     free(data);
 
