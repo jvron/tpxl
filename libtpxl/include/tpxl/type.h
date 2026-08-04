@@ -48,6 +48,12 @@ typedef struct {
     
 } TpxlAnimation;
 
+typedef enum {
+    TPXL_MEDIA_STILL,
+    TPXL_MEDIA_ANIMATED,
+    
+} TpxlMediaType;
+
 int tpxl_format_to_channels(TpxlFormat format);
 const char* tpxl_format_to_string(TpxlFormat format);
 const char* tpxl_result_to_string(TpxlResult result);
