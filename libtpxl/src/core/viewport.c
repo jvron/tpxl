@@ -2,6 +2,7 @@
 #include "tpxl/type.h"
 
 TpxlResult tpxl_init_viewport(TpxlViewport* viewport) {
+    
     if (!viewport) {
         return TPXL_INVALID_ARGUMENT;
     }
@@ -16,7 +17,7 @@ TpxlResult tpxl_init_viewport(TpxlViewport* viewport) {
 
 TpxlResult tpxl_viewport_fit(TpxlViewport* viewport, uint32_t area_width, uint32_t area_height, uint32_t content_width, uint32_t content_height) {
 
-    if (!viewport || !content_width || !content_height) {
+    if (!viewport || !area_width || !area_height || !content_width || !content_height) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -27,8 +28,8 @@ TpxlResult tpxl_viewport_fit(TpxlViewport* viewport, uint32_t area_width, uint32
     float scale = scale_x < scale_y ? scale_x : scale_y;
 
     // size to draw the image
-    viewport->width = content_width * scale;
-    viewport->height = content_height * scale;
+    viewport->width = (uint32_t)content_width * scale;
+    viewport->height = (uint32_t)content_height * scale;
 
     // where to place the image
     viewport->x = (area_width - viewport->width) / 2;
