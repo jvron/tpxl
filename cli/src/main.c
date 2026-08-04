@@ -13,6 +13,7 @@
 #include "tpxl/renderer.h"
 #include "tpxl/animation.h"
 #include "tpxl/file.h"
+#include "tpxl/context.h"
 
 uint64_t get_time_ms(void) {
     struct timespec ts;
@@ -30,7 +31,7 @@ void sleep_ms(uint32_t ms) {
     nanosleep(&ts, NULL);
 }
 
-int render_image(const char* file, bool print_info) {
+int render_image(const char* file, bool print_info, TpxlContext* context) {
     TpxlResult result;
 
     TpxlImage image;
@@ -53,7 +54,23 @@ int render_image(const char* file, bool print_info) {
         return EXIT_SUCCESS;
     }
 
-    result = tpxl_render(&image);
+    result = tpxl_update_context(context);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_image(&image);
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_update_viewport(context, image.width, image.height);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_image(&image);
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_render(context, &image, TPXL_MEDIA_STILL);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
@@ -66,7 +83,7 @@ int render_image(const char* file, bool print_info) {
     return EXIT_SUCCESS;
 }
 
-int render_gif(const char* path) {
+int render_gif(const char* path, TpxlContext* context) {
 
     TpxlResult result;
 
@@ -78,6 +95,22 @@ int render_gif(const char* path) {
         tpxl_free_animation(&animation);
         return EXIT_FAILURE;
     }
+
+    result = tpxl_update_context(context);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_animation(&animation);
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_update_viewport(context, animation.frames[0].width, animation.frames[0].height);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_animation(&animation);
+        return EXIT_FAILURE;
+    } 
     
     TpxlAnimator animator;
     result = tpxl_init_animator(&animator, &animation);
@@ -92,8 +125,6 @@ int render_gif(const char* path) {
 
     uint64_t previous = get_time_ms();
 
-    printf("\x1b[s");
-
     while(running) {
 
         uint64_t now = get_time_ms();
@@ -106,9 +137,7 @@ int render_gif(const char* path) {
 
             TpxlImage* frame = tpxl_get_animation_frame(&animator);
     
-            printf("\x1b[u"); 
-    
-            result = tpxl_render(frame);
+            result = tpxl_render(context, frame, TPXL_MEDIA_ANIMATED);
 
             if (result != TPXL_OK) {
                 printf("Error: %s\n", tpxl_result_to_string(result));
@@ -123,6 +152,13 @@ int render_gif(const char* path) {
 
         sleep_ms(remaining);
     }
+
+    uint32_t image_rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
+
+    for (uint32_t i = 0; i < image_rows; i++) {
+        printf("\n");
+    }
+    fflush(stdout);
 
     tpxl_free_animation(&animation);
 
@@ -182,6 +218,29 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     
+    TpxlContext context;
+
+    TpxlResult result = tpxl_init_context(&context);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
+    }
+    
+    result = tpxl_context_set_backend(&context, TPXL_BACKEND_KITTY);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_context_set_scale_mode(&context, TPXL_SCALE_FIT);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
+    }
+
     TpxlFileType file_type = tpxl_detect_file_type(file);
 
     int exit_code = 0;
@@ -194,11 +253,11 @@ int main(int argc, char* argv[]) {
 
         case TPXL_FILE_JPEG:
         case TPXL_FILE_PNG:
-            exit_code = render_image(file, print_info);
+            exit_code = render_image(file, print_info, &context);
             break;
 
         case TPXL_FILE_GIF:
-            exit_code = render_gif(file);
+            exit_code = render_gif(file, &context);
             break;
         
         default:
