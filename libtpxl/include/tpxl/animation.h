@@ -15,6 +15,7 @@ typedef struct {
 
 TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation);
 
+TpxlResult tpxl_init_animator(TpxlAnimator* animator, TpxlAnimation* animation);
 bool tpxl_update_animation(TpxlAnimator* animator, uint32_t delta);
 TpxlImage* tpxl_get_animation_frame(TpxlAnimator* animator);
 

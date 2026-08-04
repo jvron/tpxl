@@ -80,9 +80,13 @@ int render_gif(const char* path) {
     }
     
     TpxlAnimator animator;
-    animator.animation = &animation;
-    animator.current_frame = 0;
-    animator.elapsed = 0;
+    result = tpxl_init_animator(&animator, &animation);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_animation(&animation);
+        return EXIT_FAILURE;
+    }
 
     bool running = true;
 

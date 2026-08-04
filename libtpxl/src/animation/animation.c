@@ -6,6 +6,19 @@
 #include "tpxl/image.h"
 #include "tpxl/type.h"
 
+TpxlResult tpxl_init_animator(TpxlAnimator* animator, TpxlAnimation* animation) {
+    
+    if (!animator || !animation) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    animator->animation = animation;
+    animator->current_frame = 0;
+    animator->elapsed = 0;
+
+    return TPXL_OK;
+}
+
 bool tpxl_update_animation(TpxlAnimator* animator, uint32_t delta) {
 
     bool changed = false;
