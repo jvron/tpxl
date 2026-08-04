@@ -3,6 +3,7 @@
 
 #include "tpxl/type.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 typedef struct {
@@ -14,7 +15,7 @@ typedef struct {
 
 TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation);
 
-void tpxl_update_animation(TpxlAnimator* animator, uint32_t delta);
+bool tpxl_update_animation(TpxlAnimator* animator, uint32_t delta);
 TpxlImage* tpxl_get_animation_frame(TpxlAnimator* animator);
 
 void tpxl_free_animation(TpxlAnimation* animation);

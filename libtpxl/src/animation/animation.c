@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -5,22 +6,29 @@
 #include "tpxl/image.h"
 #include "tpxl/type.h"
 
-void tpxl_update_animation(TpxlAnimator* animator, uint32_t delta) {
+bool tpxl_update_animation(TpxlAnimator* animator, uint32_t delta) {
+
+    bool changed = false;
 
     animator->elapsed += delta;
 
     uint32_t delay = animator->animation->delays[animator->current_frame];
 
-    if (animator->elapsed >= delay) {
+    while (animator->elapsed >= delay) {
 
-        animator->elapsed = 0;
+        changed = true;
+
+        animator->elapsed -= delay;
 
         animator->current_frame++;
 
         if (animator->current_frame >= animator->animation->count) {
-            animator->current_frame = 0;
+            animator->current_frame = 0; // loop back
         }
+
+        delay = animator->animation->delays[animator->current_frame];
     }
+    return changed;
 }
 
 TpxlImage* tpxl_get_animation_frame(TpxlAnimator* animator) {
