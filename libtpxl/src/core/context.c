@@ -1,5 +1,6 @@
 #include "tpxl/context.h"
 #include "tpxl/terminal.h"
+#include "tpxl/type.h"
 #include "tpxl/viewport.h"
 
 TpxlResult tpxl_init_context(TpxlContext* context) {
@@ -22,6 +23,28 @@ TpxlResult tpxl_init_context(TpxlContext* context) {
     if (result != TPXL_OK) {
         return result;
     }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_context_set_scale_mode(TpxlContext* context, TpxlScaleMode scale_mode) {
+
+    if (!context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    context->scale_mode = scale_mode;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_context_set_backend(TpxlContext* context, TpxlBackend backend) {
+
+    if (!context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    context->backend = backend;
 
     return TPXL_OK;
 }
