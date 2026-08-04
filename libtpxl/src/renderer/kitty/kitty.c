@@ -7,7 +7,7 @@
 #include "tpxl/type.h"
 #include "util/base64.h"
 
-TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image) {
+TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image, TpxlMediaType media_type) {
 
     if (image->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
@@ -43,8 +43,16 @@ TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image) {
             return TPXL_UNSUPPORTED_FORMAT;
     }
 
-    uint32_t column = context->viewport.x / context->terminal.cell_width; 
-    uint32_t row = context->viewport.y / context->terminal.cell_height;
+    int cursor_policy = 0;
+
+    switch (media_type) {
+        case TPXL_MEDIA_STILL:
+            cursor_policy = 0;
+            break;
+        case TPXL_MEDIA_ANIMATED:
+            cursor_policy = 1;
+            break;
+    }
 
     uint32_t columns = (context->viewport.width + context->terminal.cell_width - 1) / context->terminal.cell_width;
     uint32_t rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
@@ -74,6 +82,7 @@ TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image) {
             "Y=%u,"
             "c=%u,"
             "r=%u,"
+            "C=%d,"
             "m=%d;",
             kitty_format,
             image->width,
@@ -82,6 +91,7 @@ TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image) {
             offset_y, 
             columns,
             rows,
+            cursor_policy,
             more_chunks
         );
 
