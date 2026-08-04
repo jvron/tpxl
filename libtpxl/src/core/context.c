@@ -75,8 +75,28 @@ TpxlResult tpxl_update_viewport(TpxlContext* context, uint32_t content_width, ui
         return TPXL_INVALID_ARGUMENT;
     }
 
-    uint32_t area_width =  context->terminal.pixel_width;
-    uint32_t area_height = context->terminal.pixel_height;
+    TpxlResult result = TPXL_OK;
 
-    return tpxl_viewport_fit(&context->viewport, area_width, area_height, content_width, content_height);
+    switch (context->scale_mode) {
+
+        case TPXL_SCALE_NONE:
+            context->viewport.x = 0;
+            context->viewport.y = 0;
+            context->viewport.width = content_width;
+            context->viewport.height = content_height;
+            break;
+
+        case TPXL_SCALE_FIT: 
+        {
+            uint32_t area_width =  context->terminal.pixel_width;
+            uint32_t area_height = context->terminal.pixel_height * context->terminal.cell_width / context->terminal.cell_height;
+            result = tpxl_viewport_fit(&context->viewport, area_width, area_height, content_width, content_height);
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return result;
 }
