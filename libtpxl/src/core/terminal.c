@@ -1,6 +1,8 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "tpxl/type.h"
@@ -12,12 +14,30 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
         return TPXL_INVALID_ARGUMENT;
     }
 
+    terminal->initialized = false;
     terminal->rows = 0;
     terminal->columns = 0;
     terminal->cell_width = 0;
     terminal->cell_height = 0;
     terminal->pixel_width = 0;
     terminal->pixel_height = 0;
+
+    // save current terminal settings
+    if (tcgetattr(STDIN_FILENO, &terminal->original_termios) == -1) {
+        return TPXL_IO_ERROR;
+    }
+
+    struct termios tpxl_termios = terminal->original_termios;
+
+    // disable canonical mode and echo
+    tpxl_termios.c_cflag &= ~(ICANON | ECHO);
+
+    // apply modified settings
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &tpxl_termios) == -1) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->initialized = true;
 
     return TPXL_OK;
 }
@@ -80,6 +100,32 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     if (result != TPXL_OK) {
         return result;
     }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
+
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (!terminal->initialized) {
+        return TPXL_OK;
+    }
+
+    // set back original settings
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &terminal->original_termios) == -1) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->initialized = false;
+    terminal->rows = 0;
+    terminal->columns = 0;
+    terminal->cell_width = 0;
+    terminal->cell_height = 0;
+    terminal->pixel_width = 0;
+    terminal->pixel_height = 0;
 
     return TPXL_OK;
 }

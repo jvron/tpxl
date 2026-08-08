@@ -2,10 +2,16 @@
 #define TPXL_TERMINAL_H
 
 #include <stdint.h>
+#include <termios.h>
+#include <stdbool.h>
 
 #include "type.h"
 
 typedef struct {
+
+    struct termios original_termios;
+    bool initialized;
+
     uint32_t rows;
     uint32_t columns;
 
@@ -23,5 +29,6 @@ typedef struct {
 TpxlResult tpxl_init_terminal(TpxlTerminal* terminal);
 TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column);
 TpxlResult tpxl_query_terminal(TpxlTerminal* terminal);
+TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal);
 
 #endif
