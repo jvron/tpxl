@@ -15,9 +15,13 @@ typedef struct {
     uint32_t pixel_width;
     uint32_t pixel_height;
 
+    uint32_t cursor_row;
+    uint32_t cursor_column;
+
 } TpxlTerminal;
 
 TpxlResult tpxl_init_terminal(TpxlTerminal* terminal);
+TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column);
 TpxlResult tpxl_query_terminal(TpxlTerminal* terminal);
 
 #endif
