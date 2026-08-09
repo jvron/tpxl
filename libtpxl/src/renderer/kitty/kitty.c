@@ -54,11 +54,23 @@ TpxlResult tpxl_kitty_render(TpxlContext* context, TpxlImage* image, TpxlMediaTy
             break;
     }
 
+    // convert viewport dimensions to terminal cells
     uint32_t columns = (context->viewport.width + context->terminal.cell_width - 1) / context->terminal.cell_width;
     uint32_t rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
 
+    // sub-cell offset
     uint32_t offset_x = context->viewport.x % context->terminal.cell_width;
     uint32_t offset_y = context->viewport.y % context->terminal.cell_height;
+
+    // convert viewport x and y to cells
+    uint32_t cell_x = context->viewport.x / context->terminal.cell_width;
+    uint32_t cell_y = context->viewport.y / context->terminal.cell_height;
+
+    uint32_t target_column = context->terminal.cursor_column + cell_x;
+    uint32_t target_row = context->terminal.cursor_row + cell_y;
+
+    // move cursor
+    fprintf(stdout,"\033[%u;%uH", target_row, target_column);
 
     const size_t output_length = strlen(data);
     const size_t CHUNK_SIZE = 4096;
