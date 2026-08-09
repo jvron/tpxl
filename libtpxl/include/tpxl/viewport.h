@@ -5,7 +5,7 @@
 
 #include "type.h"
 
-typedef struct{
+typedef struct {
     uint32_t x;
     uint32_t y;
     uint32_t width;

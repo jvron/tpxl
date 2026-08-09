@@ -31,9 +31,5 @@ TpxlResult tpxl_viewport_fit(TpxlViewport* viewport, uint32_t area_width, uint32
     viewport->width = (uint32_t)content_width * scale;
     viewport->height = (uint32_t)content_height * scale;
 
-    // where to place the image
-    viewport->x = (area_width - viewport->width) / 2;
-    viewport->y = (area_height - viewport->height) / 2;
-
     return TPXL_OK;
 }
