@@ -25,6 +25,15 @@ typedef enum {
 
 } TpxlScaleMode;
 
+typedef enum {
+    TPXL_ALIGN_START = 0,
+    TPXL_ALIGN_CENTER,
+    TPXL_ALIGN_END,
+
+    TPXL_ALIGN_COUNT,
+
+} TpxlAlignment;
+
 typedef struct {
     TpxlTerminal terminal;
     TpxlViewport viewport;
@@ -32,15 +41,19 @@ typedef struct {
     TpxlBackend backend;
     TpxlScaleMode scale_mode;
 
+    TpxlAlignment horizontal_alignment;
+    TpxlAlignment vertical_alignment;
+
 } TpxlContext;
 
 TpxlResult tpxl_init_context(TpxlContext* context);
 
 TpxlResult tpxl_context_set_scale_mode(TpxlContext* context, TpxlScaleMode scale_mode);
 TpxlResult tpxl_context_set_backend(TpxlContext* context, TpxlBackend backend);
+TpxlResult tpxl_context_set_alignment(TpxlContext* context, TpxlAlignment horizontal, TpxlAlignment vertical);
 
-TpxlResult tpxl_set_viewport(TpxlContext* context, const TpxlViewport* viewport);
+TpxlResult tpxl_set_context_viewport(TpxlContext* context, const TpxlViewport* viewport);
 TpxlResult tpxl_update_context(TpxlContext* context);
-TpxlResult tpxl_update_viewport(TpxlContext* context, uint32_t content_width, uint32_t content_height);
+TpxlResult tpxl_update_context_viewport(TpxlContext* context, uint32_t content_width, uint32_t content_height);
 
 #endif
