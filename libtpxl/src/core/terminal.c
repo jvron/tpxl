@@ -30,7 +30,7 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
     struct termios tpxl_termios = terminal->original_termios;
 
     // disable canonical mode and echo
-    tpxl_termios.c_cflag &= ~(ICANON | ECHO);
+    tpxl_termios.c_lflag &= ~(ICANON | ECHO);
 
     // apply modified settings
     if (tcsetattr(STDIN_FILENO, TCSANOW, &tpxl_termios) == -1) {
@@ -43,6 +43,10 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
 }
 
 TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
+
+    if (!row || !column) {
+        return TPXL_INVALID_ARGUMENT;
+    }
 
     char buffer[32];
     size_t i = 0;
@@ -66,9 +70,15 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
 
     buffer[i] = '\0';
 
-    if (sscanf(buffer, "\033[%d;%dR", row, column) != 2) {
+    int parsed_row;
+    int parsed_column;
+
+    if (sscanf(buffer, "\033[%d;%dR", &parsed_row, &parsed_column) != 2) {
         return TPXL_IO_ERROR;
     }
+
+    *row = (uint32_t)parsed_row;
+    *column = (uint32_t)parsed_column;
 
     return TPXL_OK;
 }
@@ -95,8 +105,8 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
         terminal->cell_height = terminal->pixel_height / terminal->rows;
     }
 
-    TpxlResult result = tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
-
+   TpxlResult result = tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+   
     if (result != TPXL_OK) {
         return result;
     }
