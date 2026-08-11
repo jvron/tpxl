@@ -14,6 +14,8 @@
 #include "tpxl/animation.h"
 #include "tpxl/file.h"
 #include "tpxl/context.h"
+#include "tpxl/terminal.h"
+#include "tpxl/event.h"
 
 uint64_t get_time_ms(void) {
     struct timespec ts;
@@ -62,7 +64,7 @@ int render_image(const char* file, bool print_info, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
-    result = tpxl_update_viewport(context, image.width, image.height);
+    result = tpxl_update_context_viewport(context, image.width, image.height);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
@@ -77,7 +79,6 @@ int render_image(const char* file, bool print_info, TpxlContext* context) {
         tpxl_free_image(&image);
         return EXIT_FAILURE;
     }
-
     tpxl_free_image(&image);
 
     return EXIT_SUCCESS;
@@ -104,13 +105,13 @@ int render_gif(const char* path, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
-    result = tpxl_update_viewport(context, animation.frames[0].width, animation.frames[0].height);
+    result = tpxl_update_context_viewport(context, animation.frames[0].width, animation.frames[0].height);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
         tpxl_free_animation(&animation);
         return EXIT_FAILURE;
-    } 
+    }
     
     TpxlAnimator animator;
     result = tpxl_init_animator(&animator, &animation);
@@ -121,11 +122,33 @@ int render_gif(const char* path, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
+    uint32_t image_rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
+
+    printf("\033[%uB", image_rows);
+    printf("\n[q] Quit");
+    printf("\033[%uA", image_rows);
+    fflush(stdout);
+
     bool running = true;
 
     uint64_t previous = get_time_ms();
 
     while(running) {
+
+        TpxlEvent event;
+        TpxlResult result = tpxl_poll_event(&event);
+
+        if (result != TPXL_OK) {
+            printf("Error: %s\n", tpxl_result_to_string(result));
+            tpxl_free_animation(&animation);
+            return EXIT_FAILURE;
+        }
+
+        if (event.type == TPXL_EVENT_KEY) {
+            if (event.key == TPXL_KEY_Q) {
+                running = false;
+            }
+        }
 
         uint64_t now = get_time_ms();
         uint64_t delta = now - previous;
@@ -153,11 +176,7 @@ int render_gif(const char* path, TpxlContext* context) {
         sleep_ms(remaining);
     }
 
-    uint32_t image_rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
-
-    for (uint32_t i = 0; i < image_rows; i++) {
-        printf("\n");
-    }
+    printf("\033[%uB", image_rows + 1);
     fflush(stdout);
 
     tpxl_free_animation(&animation);
@@ -241,6 +260,13 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    result = tpxl_context_set_alignment(&context, TPXL_ALIGN_START, TPXL_ALIGN_START);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
+    }
+
     TpxlFileType file_type = tpxl_detect_file_type(file);
 
     int exit_code = 0;
@@ -263,6 +289,13 @@ int main(int argc, char* argv[]) {
         default:
             printf("Error: unsupported file type\n");
             return EXIT_FAILURE;
+    }
+
+    result = tpxl_shutdown_terminal(&context.terminal);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
     }
 
     return exit_code;
