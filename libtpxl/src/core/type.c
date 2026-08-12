@@ -43,14 +43,14 @@ int tpxl_format_to_channels(TpxlFormat format) {
 }
 
 const char* tpxl_format_to_string(TpxlFormat format) {
-    if (format > TPXL_FORMAT_COUNT) {
+    if (format >= TPXL_FORMAT_COUNT) {
         return NULL;
     }
     return format_to_string[format];
 }  
 
 const char* tpxl_result_to_string(TpxlResult result) {
-    if (result > TPXL_RESULT_COUNT) {
+    if (result >= TPXL_RESULT_COUNT) {
         return NULL;
     }
     return result_to_string[result];
