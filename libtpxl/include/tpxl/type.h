@@ -16,8 +16,8 @@ typedef enum {
 } TpxlFormat;
 
 typedef struct {
-    int width;
-    int height;
+    uint32_t width;
+    uint32_t height;
     TpxlFormat format;
     uint8_t* pixels;
 
@@ -30,6 +30,8 @@ typedef enum {
     TPXL_INVALID_FORMAT,
     TPXL_IMAGE_LOAD_FAILED,
     TPXL_GIF_LOAD_FAILED,
+    TPXL_VIDEO_LOAD_FAILED,
+    TPXL_VIDEO_DECODE_FAILED,
     TPXL_UNSUPPORTED_FORMAT,
     TPXL_OUT_OF_MEMORY,
     TPXL_ENCODING_FAILED,
