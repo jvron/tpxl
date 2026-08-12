@@ -132,6 +132,53 @@ TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t
     return TPXL_OK;
 }
 
+static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, TpxlImage* frame) {
+    
+    int result = 0;
+
+    frame->width = av_frame->width;
+    frame->height = av_frame->height;
+
+    size_t size = frame->width * frame->height * 4;
+
+    uint8_t* pixels = malloc(size);
+    
+    if (!pixels) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    uint8_t* dst_data[4] = {0};
+    int dst_linesize[4] = {0};
+
+    result = av_image_fill_arrays(dst_data, dst_linesize, pixels, AV_PIX_FMT_RGBA, frame->width, frame->height, 1);
+
+    if (result < 0) {
+        free(pixels);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    // convert to RGBA
+    result = sws_scale(
+        sws_context, 
+        (const uint8_t* const*)av_frame->data, 
+        av_frame->linesize, 
+        0, 
+        av_frame->height, 
+        dst_data, 
+        dst_linesize
+    );
+
+    if (result != (int)frame->height) {
+        free(pixels);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    frame->format = TPXL_FORMAT_RGBA;
+    frame->pixels = pixels;
+
+    return TPXL_OK;
+}
+
 TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
 
     if (!video || !frame) {
@@ -183,68 +230,33 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             // got frame
             need_packet = false;
 
-            frame->width = video->av_frame->width;
-            frame->height = video->av_frame->height;
-
-            size_t size = frame->width * frame->height * 4;
-
-            uint8_t* pixels = malloc(size);
-            
-            if (!pixels) {
-                return TPXL_OUT_OF_MEMORY;
-            }
-
-            uint8_t* dst_data[4] = {0};
-            int dst_linesize[4] = {0};
-
-            result = av_image_fill_arrays(dst_data, dst_linesize, pixels, AV_PIX_FMT_RGBA, frame->width, frame->height, 1);
-
-            if (result < 0) {
-                free(pixels);
-                return TPXL_VIDEO_DECODE_FAILED;
-            }
-
             if (!video->sws_context) {
 
-                struct SwsContext* sws_context = sws_getContext(
-                    frame->width, 
-                    frame->height, 
+                struct SwsContext* sws_ctx = sws_getContext(
+                    video->av_frame->width, 
+                    video->av_frame->height, 
                     video->av_frame->format, 
-                    frame->width, 
-                    frame->height, 
+                    video->av_frame->width, 
+                    video->av_frame->height, 
                     AV_PIX_FMT_RGBA, 
                     SWS_BILINEAR, 
                     NULL, 
                     NULL, 
                     NULL
                 );
-    
-                if (!sws_context) {
-                    free(pixels);
+
+                if (!sws_ctx) {
                     return TPXL_VIDEO_DECODE_FAILED; 
                 }
-
-                video->sws_context = sws_context;
+                video->sws_context = sws_ctx;
             }
 
-            // convert to RGBA
-            result = sws_scale(
-                video->sws_context, 
-                (const uint8_t* const*)video->av_frame->data, 
-                video->av_frame->linesize, 
-                0, 
-                video->av_frame->height, 
-                dst_data, 
-                dst_linesize
-            );
+            TpxlResult tpxl_result;
+            tpxl_result = tpxl_convert_frame(video->sws_context, video->av_frame, frame);
 
-            if (result != (int)frame->height) {
-                free(pixels);;
-                return TPXL_VIDEO_DECODE_FAILED;
+            if (tpxl_result != TPXL_OK) {
+                return tpxl_result;
             }
-
-            frame->format = TPXL_FORMAT_RGBA;
-            frame->pixels = pixels;
         }
         else if (result == AVERROR(EAGAIN)) {
             // decoder needs another packet
