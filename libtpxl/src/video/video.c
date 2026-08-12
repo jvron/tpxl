@@ -113,6 +113,9 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     if (!av_packet || !av_frame) {
         av_packet_free(&av_packet);
         av_frame_free(&av_frame);
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*video);
         return TPXL_VIDEO_LOAD_FAILED;
     }
 
