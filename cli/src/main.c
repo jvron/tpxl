@@ -16,6 +16,7 @@
 #include "tpxl/context.h"
 #include "tpxl/terminal.h"
 #include "tpxl/event.h"
+#include "tpxl/video.h"
 
 uint64_t get_time_ms(void) {
     struct timespec ts;
@@ -72,14 +73,27 @@ int render_image(const char* file, bool print_info, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
-    result = tpxl_render(context, &image, TPXL_MEDIA_STILL);
+    TpxlRenderer* renderer = NULL;
+
+    result = tpxl_create_renderer(&renderer, context, &image, TPXL_MEDIA_STILL);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
         tpxl_free_image(&image);
         return EXIT_FAILURE;
     }
+
+    result = tpxl_render(renderer, &image);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_destroy_renderer(renderer);
+        tpxl_free_image(&image);
+        return EXIT_FAILURE;
+    }
     tpxl_free_image(&image);
+
+    tpxl_destroy_renderer(renderer);
 
     return EXIT_SUCCESS;
 }
@@ -122,6 +136,16 @@ int render_gif(const char* path, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
+    TpxlRenderer* renderer = NULL;
+
+    result = tpxl_create_renderer(&renderer, context, &animation.frames[0], TPXL_MEDIA_ANIMATED);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_free_animation(&animation);
+        return EXIT_FAILURE;
+    }
+
     uint32_t image_rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
 
     printf("\033[%uB", image_rows);
@@ -140,6 +164,7 @@ int render_gif(const char* path, TpxlContext* context) {
 
         if (result != TPXL_OK) {
             printf("Error: %s\n", tpxl_result_to_string(result));
+            tpxl_destroy_renderer(renderer);
             tpxl_free_animation(&animation);
             return EXIT_FAILURE;
         }
@@ -160,10 +185,11 @@ int render_gif(const char* path, TpxlContext* context) {
 
             TpxlImage* frame = tpxl_get_animation_frame(&animator);
     
-            result = tpxl_render(context, frame, TPXL_MEDIA_ANIMATED);
+            result = tpxl_render(renderer, frame);
 
             if (result != TPXL_OK) {
                 printf("Error: %s\n", tpxl_result_to_string(result));
+                tpxl_destroy_renderer(renderer);
                 tpxl_free_animation(&animation);
                 return EXIT_FAILURE;
             }
@@ -179,9 +205,104 @@ int render_gif(const char* path, TpxlContext* context) {
     printf("\033[%uB", image_rows + 1);
     fflush(stdout);
 
+    tpxl_destroy_renderer(renderer);
     tpxl_free_animation(&animation);
 
     return EXIT_SUCCESS;
+}
+
+int render_video(const char* path, TpxlContext* context) {
+
+    TpxlResult result = TPXL_OK;
+
+    TpxlVideo* video = NULL;
+    result = tpxl_open_video(path, &video);
+
+    if (result != TPXL_OK) {
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_update_context(context);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_close_video(video);
+        return EXIT_FAILURE;
+    }
+
+    uint32_t width, height;
+
+    result = tpxl_get_video_dimensions(video, &width, &height);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_close_video(video);
+        return EXIT_FAILURE;
+    }
+
+    result = tpxl_update_context_viewport(context, width, height);
+
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_close_video(video);
+        return EXIT_FAILURE;
+    }
+
+    TpxlVideoPlayer* player = NULL;
+    result = tpxl_create_video_player(&player, video);
+    
+    if (result != TPXL_OK) {
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        tpxl_close_video(video);
+        return EXIT_FAILURE;
+    }
+
+    TpxlRenderer* renderer = NULL;
+
+    while (tpxl_video_playing(player)) {
+
+        result = tpxl_update_video_player(player);
+
+        if (result != TPXL_OK) {
+            tpxl_destroy_renderer(renderer);
+            tpxl_close_video_player(player);
+            tpxl_close_video(video);
+            return EXIT_FAILURE;
+        }
+
+        TpxlImage* frame = tpxl_video_player_get_frame(player);
+
+        if (!renderer) {
+            result = tpxl_create_renderer(&renderer, context, frame, TPXL_MEDIA_ANIMATED);
+
+            if (result != TPXL_OK) {
+                printf("Error: %s\n", tpxl_result_to_string(result));
+                tpxl_close_video_player(player);
+                tpxl_close_video(video);
+                return EXIT_FAILURE;
+            }
+        }
+
+        result = tpxl_render(renderer, frame);
+
+        if (result != TPXL_OK) {
+            printf("Error: %s\n", tpxl_result_to_string(result));
+            tpxl_destroy_renderer(renderer);
+            tpxl_close_video_player(player);
+            tpxl_close_video(video);
+            return EXIT_FAILURE;
+        }
+    }
+
+    uint32_t video_rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
+    printf("\033[%uB", video_rows + 1);
+    fflush(stdout);
+
+    tpxl_destroy_renderer(renderer);
+    tpxl_close_video_player(player);
+    tpxl_close_video(video);
+
+    return TPXL_OK;
 }
 
 int main(int argc, char* argv[]) {
@@ -284,6 +405,9 @@ int main(int argc, char* argv[]) {
 
         case TPXL_FILE_GIF:
             exit_code = render_gif(file, &context);
+            break;
+        case TPXL_FILE_VIDEO:
+            exit_code = render_video(file, &context);
             break;
         
         default:
