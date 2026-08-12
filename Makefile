@@ -18,7 +18,7 @@ ARFLAGS := rcs
 LIB_DIR := libtpxl
 CLI_DIR := cli
 
-LDLIBS := -lm -lavformat -lavcodec -lavutil -lgif
+LDLIBS := -lm -lavformat -lavcodec -lavutil -lswscale -lgif
 
 INCLUDES := \
     -I$(LIB_DIR)/include \
