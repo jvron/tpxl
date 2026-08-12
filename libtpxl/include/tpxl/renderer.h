@@ -4,6 +4,10 @@
 #include "tpxl/context.h"
 #include "tpxl/type.h"
 
-TpxlResult tpxl_render(TpxlContext* context, TpxlImage* image, TpxlMediaType media_type);
+typedef struct TpxlRendererImp TpxlRenderer;
+
+TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, TpxlImage* image, TpxlMediaType media_type);
+TpxlResult tpxl_render(TpxlRenderer* renderer, TpxlImage* frame);
+void tpxl_destroy_renderer(TpxlRenderer* renderer);
 
 #endif
