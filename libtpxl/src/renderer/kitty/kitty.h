@@ -25,8 +25,8 @@ typedef struct {
 
 } TpxlKittyContext;
 
-TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* image, TpxlMediaType media_type); 
-TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* image);
+TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* frame, TpxlMediaType media_type); 
+TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame);
 void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context);
 
 #endif

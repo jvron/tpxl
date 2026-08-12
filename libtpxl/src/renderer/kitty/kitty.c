@@ -7,15 +7,15 @@
 #include "tpxl/type.h"
 #include "util/base64.h"
 
-TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* image, TpxlMediaType media_type) {
+TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* frame, TpxlMediaType media_type) {
 
-    if (!kitty_context || !context || !image) {
+    if (!kitty_context || !context || !frame ){
         return TPXL_INVALID_ARGUMENT;
     }
 
-    int channels = tpxl_format_to_channels(image->format);
+    int channels = tpxl_format_to_channels(frame->format);
 
-    kitty_context->buffer_size = image->width * image->height * channels;
+    kitty_context->buffer_size = frame->width * frame->height * channels;
 
     char* data = malloc(tpxl_base64_encoded_size(kitty_context->buffer_size));
 
@@ -25,7 +25,7 @@ TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext*
 
     kitty_context->data = data;
 
-    switch (image->format) {
+    switch (frame->format) {
 
         case TPXL_FORMAT_RGB:
             kitty_context->kitty_format = 24;
@@ -69,13 +69,13 @@ TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext*
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* image) {
+TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) {
 
-    if (image->format == TPXL_FORMAT_UNKNOWN) {
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
     }
 
-    if (tpxl_base64_encode(image->pixels, kitty_context->buffer_size, kitty_context->data) != TPXL_OK) {
+    if (tpxl_base64_encode(frame->pixels, kitty_context->buffer_size, kitty_context->data) != TPXL_OK) {
         return TPXL_ENCODING_FAILED;
     }
 
@@ -107,8 +107,8 @@ TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* image) 
             "C=%d,"
             "m=%d;",
             kitty_context->kitty_format,
-            image->width,
-            image->height,
+            frame->width,
+            frame->height,
             kitty_context->offset_x,
             kitty_context->offset_y, 
             kitty_context->columns,
