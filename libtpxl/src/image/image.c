@@ -1,3 +1,4 @@
+#include <stdint.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
@@ -13,7 +14,9 @@ TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
     }
 
     int channels = 0;
-    unsigned char* pixels = stbi_load(path, &image->width, &image->height, &channels, 0);
+    int width = 0;
+    int height = 0;
+    unsigned char* pixels = stbi_load(path, &width, &height, &channels, 0);
 
     if (!pixels) {
         image->width = 0;
@@ -24,6 +27,8 @@ TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
         return TPXL_IMAGE_LOAD_FAILED;
     }
 
+    image->width = (uint32_t)width;
+    image->height = (uint32_t)height;
     image->pixels = pixels;
 
     switch (channels) {
@@ -59,6 +64,20 @@ void tpxl_free_image(TpxlImage* image) {
     image->height = 0;
     image->format = TPXL_FORMAT_UNKNOWN;
     image->pixels = NULL;
+}
+
+void tpxl_free_frame(TpxlImage* frame) {
+
+    if (!frame) {
+        return;
+    }
+
+    free(frame->pixels);
+    
+    frame->width = 0;
+    frame->height = 0;
+    frame->format = TPXL_FORMAT_UNKNOWN;
+    frame->pixels = NULL;
 }
 
 TpxlResult tpxl_print_image_info(TpxlImage* image) {

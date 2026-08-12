@@ -55,7 +55,7 @@ void tpxl_free_animation(TpxlAnimation* animation) {
     }
 
     for (size_t i = 0; i < animation->count; i++) {
-        tpxl_free_image(&animation->frames[i]);
+        tpxl_free_frame(&animation->frames[i]);
     }
 
     free(animation->frames);
