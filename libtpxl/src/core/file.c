@@ -36,6 +36,21 @@ TpxlFileType tpxl_detect_file_type(const char* path) {
         }
     }
 
+    // MP4 / MOV
+    if (read >= 12 && memcmp(header + 4, "ftyp", 4) == 0) {
+        return TPXL_FILE_VIDEO;
+    }
+
+    // MKV / WebM
+    if (read >= 4 && memcmp(header, "\x1A\x45\xDF\xA3", 4) == 0) {
+        return TPXL_FILE_VIDEO;
+    }
+    
+    // AVI 
+    if (read >= 12 && memcmp(header, "RIFF", 4) == 0 && memcmp(header + 8, "AVI ", 4) == 0) {
+        return TPXL_FILE_VIDEO;
+    }
+
     return TPXL_FILE_UNKNOWN;
 }
 

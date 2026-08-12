@@ -6,6 +6,7 @@ typedef enum {
     TPXL_FILE_PNG,
     TPXL_FILE_JPEG,
     TPXL_FILE_GIF,
+    TPXL_FILE_VIDEO
 
 } TpxlFileType;
 
