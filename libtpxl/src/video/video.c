@@ -104,8 +104,29 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->video_stream_index = video_stream_index;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
-    (*video)->sws_context = NULL;
     (*video)->draining = false;
+
+    struct SwsContext* sws_ctx = sws_getContext(
+        video_stream->codecpar->width, 
+        video_stream->codecpar->height, 
+        video_stream->codecpar->format, 
+        video_stream->codecpar->width, 
+        video_stream->codecpar->height, 
+        AV_PIX_FMT_RGBA, 
+        SWS_BILINEAR, 
+        NULL, 
+        NULL, 
+        NULL
+    );
+
+    if (!sws_ctx) {
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*video);
+        return TPXL_VIDEO_LOAD_FAILED; 
+    }
+
+    (*video)->sws_context = sws_ctx;
 
     AVPacket* av_packet = av_packet_alloc();
     AVFrame* av_frame = av_frame_alloc();
@@ -184,6 +205,37 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
     return TPXL_OK;
 }
 
+static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecContext* codec_context, AVFrame* av_frame, TpxlImage* frame) {
+
+    int result = 0;
+    // process frame
+    result = avcodec_receive_frame(codec_context, av_frame);
+    
+    if (result == 0) {
+        // got frame
+        
+        TpxlResult tpxl_result;
+        tpxl_result = tpxl_convert_frame(sws_context, av_frame, frame);
+
+        if (tpxl_result != TPXL_OK) {
+            return tpxl_result;
+        }
+
+        return TPXL_OK;
+    }
+    if (result == AVERROR(EAGAIN)) {
+        // decoder needs another packet
+        return TPXL_VIDEO_NEED_PACKET;
+    }
+    if (result == AVERROR_EOF) {
+        // decoder has been fully drained; no more frames will be produced.
+        return TPXL_EOF;
+    }
+
+    // error
+    return TPXL_VIDEO_DECODE_FAILED;
+}
+
 TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
 
     if (!video || !frame) {
@@ -192,6 +244,15 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
 
     if (!video->format_context || !video->codec_context) {
         return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult frame_result = TPXL_OK;
+
+    // try to receive pending frames
+    frame_result = tpxl_receive_frame(video->sws_context, video->codec_context, video->av_frame, frame);
+
+    if (frame_result != TPXL_VIDEO_NEED_PACKET) {
+        return frame_result;
     }
 
     while (true) {
@@ -221,7 +282,7 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             if (video->av_packet->stream_index != video->video_stream_index) {
                 av_packet_unref(video->av_packet);
                 continue;
-            } 
+            }
     
             // send packet to the decoder
             result = avcodec_send_packet(video->codec_context, video->av_packet);
@@ -233,52 +294,11 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             av_packet_unref(video->av_packet);
         }
 
-        // process frame
-        result = avcodec_receive_frame(video->codec_context, video->av_frame);
-        
-        if (result == 0) {
-            // got frame
-            if (!video->sws_context) {
+        frame_result = tpxl_receive_frame(video->sws_context, video->codec_context, video->av_frame, frame);
 
-                struct SwsContext* sws_ctx = sws_getContext(
-                    video->av_frame->width, 
-                    video->av_frame->height, 
-                    video->av_frame->format, 
-                    video->av_frame->width, 
-                    video->av_frame->height, 
-                    AV_PIX_FMT_RGBA, 
-                    SWS_BILINEAR, 
-                    NULL, 
-                    NULL, 
-                    NULL
-                );
-
-                if (!sws_ctx) {
-                    return TPXL_VIDEO_DECODE_FAILED; 
-                }
-                video->sws_context = sws_ctx;
-            }
-
-            TpxlResult tpxl_result;
-            tpxl_result = tpxl_convert_frame(video->sws_context, video->av_frame, frame);
-
-            if (tpxl_result != TPXL_OK) {
-                return tpxl_result;
-            }
-
-            break;
+        if (frame_result != TPXL_VIDEO_NEED_PACKET) {
+            return frame_result;
         }
-        if (result == AVERROR(EAGAIN)) {
-            // decoder needs another packet
-            continue;
-        }
-        if (result == AVERROR_EOF && video->draining) {
-            // decoder reached end of the output
-            return TPXL_EOF;
-        }
-
-        // error
-        return TPXL_VIDEO_DECODE_FAILED;
     }
 
     return TPXL_OK;
