@@ -8,6 +8,7 @@
 typedef struct TpxlVideoImp TpxlVideo;
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video);
+TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame);
 void tpxl_close_video(TpxlVideo* video);
 
 #endif

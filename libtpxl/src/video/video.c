@@ -1,9 +1,17 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+#include <libavutil/pixfmt.h>
+#include <libswscale/swscale.h>
+#include <libavutil/imgutils.h>
 #include <libavcodec/codec.h>
+#include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/avutil.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <libavutil/error.h>
+#include <libavutil/frame.h>
 
 #include "tpxl/video.h"
 #include "tpxl/type.h"
@@ -13,9 +21,10 @@ struct TpxlVideoImp {
     uint32_t height;
     uint64_t duration;
 
-    uint32_t video_stream_index;
+    int video_stream_index;
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
+    struct SwsContext* sws_context;
 };
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
@@ -92,6 +101,167 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->video_stream_index = video_stream_index;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
+    (*video)->sws_context = NULL;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
+
+    if (!video || !frame) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (!video->format_context || !video->codec_context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    AVPacket* packet = av_packet_alloc();
+    AVFrame* av_frame = av_frame_alloc();
+
+    if (!packet || !av_frame) {
+        av_packet_free(&packet);
+        av_frame_free(&av_frame);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    bool need_packet = true; 
+
+    while (need_packet) {
+
+        int result = 0;
+
+        result = av_read_frame(video->format_context, packet);
+
+        if (result == AVERROR_EOF) {
+            // no more packets to read from file 
+            av_packet_unref(packet);
+            av_packet_free(&packet);
+            av_frame_free(&av_frame);
+            return TPXL_EOF;
+        }
+
+        if (result < 0) {
+            av_packet_unref(packet);
+            av_packet_free(&packet);
+            av_frame_free(&av_frame);
+            return TPXL_VIDEO_DECODE_FAILED;
+        }
+
+        if (packet->stream_index != video->video_stream_index) {
+            av_packet_unref(packet);
+            continue;
+        }
+
+        // send packet to the decoder
+        result = avcodec_send_packet(video->codec_context, packet);
+
+        if (result < 0) {
+            av_packet_unref(packet);
+            av_packet_free(&packet);
+            av_frame_free(&av_frame);
+            return TPXL_VIDEO_DECODE_FAILED;
+        }
+
+        av_packet_unref(packet);
+
+        result = avcodec_receive_frame(video->codec_context, av_frame);
+        
+        if (result == 0) {
+            // got frame
+            need_packet = false;
+
+            frame->width = av_frame->width;
+            frame->height = av_frame->height;
+
+            size_t size = frame->width * frame->height * 4;
+
+            uint8_t* pixels = malloc(size);
+            
+            if (!pixels) {
+                av_packet_free(&packet);
+                av_frame_free(&av_frame);
+                return TPXL_OUT_OF_MEMORY;
+            }
+
+            uint8_t* dst_data[4] = {0};
+            int dst_linesize[4] = {0};
+
+            result = av_image_fill_arrays(dst_data, dst_linesize, pixels, AV_PIX_FMT_RGBA, frame->width, frame->height, 1);
+
+            if (result < 0) {
+                free(pixels);
+                av_packet_free(&packet);
+                av_frame_free(&av_frame);
+                return TPXL_VIDEO_DECODE_FAILED;
+            }
+
+            if (!video->sws_context) {
+
+                struct SwsContext* sws_context = sws_getContext(
+                    frame->width, 
+                    frame->height, 
+                    av_frame->format, 
+                    frame->width, 
+                    frame->height, 
+                    AV_PIX_FMT_RGBA, 
+                    SWS_BILINEAR, 
+                    NULL, 
+                    NULL, 
+                    NULL
+                );
+    
+                if (!sws_context) {
+                    free(pixels);
+                    av_packet_free(&packet);
+                    av_frame_free(&av_frame);
+                    return TPXL_VIDEO_DECODE_FAILED; 
+                }
+
+                video->sws_context = sws_context;
+            }
+
+            // convert to RGBA
+            result = sws_scale(
+                video->sws_context, 
+                (const uint8_t* const*)av_frame->data, 
+                av_frame->linesize, 
+                0, 
+                av_frame->height, 
+                dst_data, 
+                dst_linesize
+            );
+
+            if (result != (int)frame->height) {
+                free(pixels);
+                av_packet_free(&packet);
+                av_frame_free(&av_frame);
+                return TPXL_VIDEO_DECODE_FAILED;
+            }
+
+            frame->format = TPXL_FORMAT_RGBA;
+            frame->pixels = pixels;
+        }
+        else if (result == AVERROR(EAGAIN)) {
+            // decoder needs another packet
+            need_packet = true;
+        }
+        else if (result == AVERROR_EOF) {
+            // decoder reached end of the output
+            av_packet_free(&packet);
+            av_frame_free(&av_frame);
+            return TPXL_EOF;
+        }
+        else {
+            // error
+            av_packet_free(&packet);
+            av_frame_free(&av_frame);
+            return TPXL_VIDEO_DECODE_FAILED;
+        }
+    }
+
+    av_packet_free(&packet);
+    av_frame_free(&av_frame);
 
     return TPXL_OK;
 }
@@ -104,6 +274,7 @@ void tpxl_close_video(TpxlVideo* video) {
 
     avcodec_free_context(&video->codec_context);
     avformat_close_input(&video->format_context);
+    sws_freeContext(video->sws_context);
 
     free(video);
 }
