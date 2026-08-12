@@ -24,6 +24,7 @@ struct TpxlVideoImp {
     int video_stream_index;
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
+    bool draining;
     AVPacket* av_packet;
     AVFrame* av_frame;
     struct SwsContext* sws_context;
@@ -104,6 +105,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
     (*video)->sws_context = NULL;
+    (*video)->draining = false;
 
     AVPacket* av_packet = av_packet_alloc();
     AVFrame* av_frame = av_frame_alloc();
@@ -189,47 +191,50 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    bool need_packet = true; 
-
-    while (need_packet) {
+    while (true) {
 
         int result = 0;
 
-        result = av_read_frame(video->format_context, video->av_packet);
+        if (!video->draining) {
 
-        if (result == AVERROR_EOF) {
-            // no more packets to read from file 
+            result = av_read_frame(video->format_context, video->av_packet);
+    
+            if (result == AVERROR_EOF) {
+                // no more packets to read from file 
+                // drain decoder
+                video->draining = true;
+                result = avcodec_send_packet(video->codec_context, NULL);
+
+                if (result < 0) {
+                    av_packet_unref(video->av_packet);
+                    return TPXL_VIDEO_DECODE_FAILED;
+                }
+                continue;
+            }
+            if (result < 0) {
+                av_packet_unref(video->av_packet);
+                return TPXL_VIDEO_DECODE_FAILED;
+            }
+            if (video->av_packet->stream_index != video->video_stream_index) {
+                av_packet_unref(video->av_packet);
+                continue;
+            } 
+    
+            // send packet to the decoder
+            result = avcodec_send_packet(video->codec_context, video->av_packet);
+    
+            if (result < 0) {
+                av_packet_unref(video->av_packet);
+                return TPXL_VIDEO_DECODE_FAILED;
+            }
             av_packet_unref(video->av_packet);
-            return TPXL_EOF;
         }
 
-        if (result < 0) {
-            av_packet_unref(video->av_packet);
-            return TPXL_VIDEO_DECODE_FAILED;
-        }
-
-        if (video->av_packet->stream_index != video->video_stream_index) {
-            av_packet_unref(video->av_packet);
-            continue;
-        }
-
-        // send packet to the decoder
-        result = avcodec_send_packet(video->codec_context, video->av_packet);
-
-        if (result < 0) {
-            av_packet_unref(video->av_packet);
-
-            return TPXL_VIDEO_DECODE_FAILED;
-        }
-
-        av_packet_unref(video->av_packet);
-
+        // process frame
         result = avcodec_receive_frame(video->codec_context, video->av_frame);
         
         if (result == 0) {
             // got frame
-            need_packet = false;
-
             if (!video->sws_context) {
 
                 struct SwsContext* sws_ctx = sws_getContext(
@@ -257,19 +262,20 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             if (tpxl_result != TPXL_OK) {
                 return tpxl_result;
             }
+
+            break;
         }
-        else if (result == AVERROR(EAGAIN)) {
+        if (result == AVERROR(EAGAIN)) {
             // decoder needs another packet
-            need_packet = true;
+            continue;
         }
-        else if (result == AVERROR_EOF) {
+        if (result == AVERROR_EOF && video->draining) {
             // decoder reached end of the output
             return TPXL_EOF;
         }
-        else {
-            // error
-            return TPXL_VIDEO_DECODE_FAILED;
-        }
+
+        // error
+        return TPXL_VIDEO_DECODE_FAILED;
     }
 
     return TPXL_OK;
