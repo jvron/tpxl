@@ -106,6 +106,18 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     return TPXL_OK;
 }
 
+TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
+
+    if (!video || !width || !height) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *width = video->width;
+    *height = video->height;
+
+    return TPXL_OK;
+}
+
 TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
 
     if (!video || !frame) {
