@@ -8,10 +8,10 @@
 struct TpxlVideoPlayerImp {
     TpxlVideo* video;
     TpxlImage frame;
-
+    bool playing;
 };
 
-TpxlResult tpxl_create_video_player(TpxlVideo* video, TpxlVideoPlayer** player) {
+TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlVideo* video) {
 
     if (!video || !player) {
         return TPXL_INVALID_ARGUMENT;
@@ -31,7 +31,43 @@ TpxlResult tpxl_create_video_player(TpxlVideo* video, TpxlVideoPlayer** player) 
         .pixels = NULL
     };
 
+    (*player)->playing = true;
+
     return TPXL_OK;
+}
+
+TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = tpxl_decode_video_frame(player->video, &player->frame);
+
+    if (result == TPXL_EOF) {
+        player->playing = false;
+        return TPXL_OK;
+    }
+
+    return result;
+}
+
+TpxlImage* tpxl_video_player_get_frame(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return NULL;
+    }
+
+    return &player->frame;
+}
+
+bool tpxl_video_playing(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return false;
+    }
+
+    return player->playing;
 }
 
 void tpxl_close_video_player(TpxlVideoPlayer* player) {
