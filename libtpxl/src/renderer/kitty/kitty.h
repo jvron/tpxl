@@ -8,7 +8,7 @@
 #include "tpxl/type.h"
 
 typedef struct {
-    size_t frame_length;
+    size_t frame_size;
 
     char* encoded_data;
     size_t encoded_length;

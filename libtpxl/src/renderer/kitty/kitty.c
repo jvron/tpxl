@@ -16,9 +16,9 @@ TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext*
     kitty_context->encoded_data = NULL;
 
     int channels = tpxl_format_to_channels(frame->format);
-    kitty_context->frame_length = frame->width * frame->height * channels;
+    kitty_context->frame_size = frame->width * frame->height * channels;
 
-    kitty_context->encoded_length = tpxl_base64_encoded_size(kitty_context->frame_length);
+    kitty_context->encoded_length = tpxl_base64_encoded_size(kitty_context->frame_size);
 
     char* data = malloc(kitty_context->encoded_length);
 
@@ -79,7 +79,7 @@ TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) 
 
     size_t output_length = 0;
 
-    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_length, kitty_context->encoded_data, &output_length) != TPXL_OK) {
+    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_size, kitty_context->encoded_data, &output_length) != TPXL_OK) {
         return TPXL_ENCODING_FAILED;
     }
 
@@ -136,7 +136,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_length, kitty_context->encoded_data, &output_length) != TPXL_OK) {
+    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_size, kitty_context->encoded_data, &output_length) != TPXL_OK) {
         return TPXL_ENCODING_FAILED;
     }
 
