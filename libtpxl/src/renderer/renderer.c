@@ -32,13 +32,31 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, T
     return TPXL_OK;
 }
 
-TpxlResult tpxl_render(TpxlRenderer* renderer, TpxlImage* frame) {
+TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame) {
 
     if (!renderer || !frame) {
         return TPXL_INVALID_ARGUMENT;
     }
 
     return tpxl_kitty_render(&renderer->kitty_context, frame);
+}
+
+TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id) {
+
+    if (!renderer || !frame) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_kitty_transmit(&renderer->kitty_context, frame, frame_id);
+}
+
+TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
+
+    if (!renderer) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_kitty_display(&renderer->kitty_context, frame_id);
 }
 
 void tpxl_destroy_renderer(TpxlRenderer* renderer) {
