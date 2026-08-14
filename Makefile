@@ -5,11 +5,11 @@ BUILD ?= debug
 CFLAGS := -std=c17 -Wall -Wextra -Wpedantic
 
 ifeq ($(BUILD),release)
-	CFLAGS += -O3 -DNDEBUG
-	BUILD_DIR := build/release
+    CFLAGS += -O3 -DNDEBUG
+    BUILD_DIR := build/release
 else
-	CFLAGS += -g3 -O0
-	BUILD_DIR := build/debug
+    CFLAGS += -g3 -O0
+    BUILD_DIR := build/debug
 endif
 
 AR := ar
@@ -17,19 +17,29 @@ ARFLAGS := rcs
 
 LIB_DIR := libtpxl
 CLI_DIR := cli
+BASE64_DIR := third_party/base64
+
+BASE64_CFLAGS := \
+    -mavx2 \
+    -mssse3 \
+    -msse4.1 \
+    -msse4.2 \
+    -mavx
 
 LDLIBS := -lm -lavformat -lavcodec -lavutil -lswscale -lgif
 
 INCLUDES := \
     -I$(LIB_DIR)/include \
-	-I$(LIB_DIR)/src \
+    -I$(LIB_DIR)/src \
+    -I$(BASE64_DIR)/include \
     -Ithird_party
-
+	
 LIB := $(BUILD_DIR)/libtpxl.a
 CLI := $(BUILD_DIR)/tpxl
 
-LIB_SRC := $(shell find $(LIB_DIR)/src -name "*.c")
+BASE64_OBJ := $(BASE64_DIR)/lib/libbase64.o
 
+LIB_SRC := $(shell find $(LIB_DIR)/src -name "*.c")
 CLI_SRC := $(wildcard $(CLI_DIR)/src/*.c)
 
 LIB_OBJ := $(patsubst $(LIB_DIR)/src/%.c,$(BUILD_DIR)/lib/%.o,$(LIB_SRC))
@@ -49,13 +59,23 @@ debug:
 release:
 	$(MAKE) BUILD=release
 
-$(LIB): $(LIB_OBJ)
+$(LIB): $(LIB_OBJ) $(BASE64_OBJ)
 	@mkdir -p $(dir $@)
 	$(AR) $(ARFLAGS) $@ $^
 
 $(CLI): $(CLI_OBJ) $(LIB)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $^ $(LDLIBS) -o $@
+
+$(BASE64_OBJ):
+	$(MAKE) -C $(BASE64_DIR) \
+		lib/libbase64.o \
+		CC=$(CC) \
+		AVX2_CFLAGS=-mavx2 \
+		SSSE3_CFLAGS=-mssse3 \
+		SSE41_CFLAGS=-msse4.1 \
+		SSE42_CFLAGS=-msse4.2 \
+		AVX_CFLAGS=-mavx
 
 $(BUILD_DIR)/lib/%.o: $(LIB_DIR)/src/%.c
 	@mkdir -p $(dir $@)
