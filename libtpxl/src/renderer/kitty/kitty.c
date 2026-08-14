@@ -189,12 +189,8 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id) {
+TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id) {
     
-    if (frame->format == TPXL_FORMAT_UNKNOWN) {
-        return TPXL_INVALID_FORMAT;
-    }
-
     fprintf(stdout,"\033[%u;%uH", kitty_context->target_row, kitty_context->target_column);
 
     fprintf(
