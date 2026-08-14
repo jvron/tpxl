@@ -8,8 +8,10 @@
 #include "tpxl/type.h"
 
 typedef struct {
-    char* data;
-    size_t buffer_size;
+    size_t frame_length;
+
+    char* encoded_data;
+    size_t encoded_length;
 
     int kitty_format;
     int cursor_policy;
@@ -27,6 +29,8 @@ typedef struct {
 
 TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* frame, TpxlMediaType media_type); 
 TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame);
+TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id);
+TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, TpxlImage* frame,  uint32_t frame_id);
 void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context);
 
 #endif
