@@ -20,14 +20,15 @@ struct TpxlVideoImp {
     uint32_t width;
     uint32_t height;
     uint64_t duration;
+    uint32_t frame_count;
 
     int video_stream_index;
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
-    bool draining;
     AVPacket* av_packet;
     AVFrame* av_frame;
     struct SwsContext* sws_context;
+    bool draining;
 };
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
@@ -101,6 +102,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->width = video_stream->codecpar->width;
     (*video)->height = video_stream->codecpar->height;
     (*video)->duration = video_stream->duration;
+    (*video)->frame_count = video_stream->nb_frames;
     (*video)->video_stream_index = video_stream_index;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
@@ -108,11 +110,11 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
     struct SwsContext* sws_ctx = sws_getContext(
         video_stream->codecpar->width, 
-        video_stream->codecpar->height, 
+        video_stream->codecpar->height,
         video_stream->codecpar->format, 
         video_stream->codecpar->width, 
         video_stream->codecpar->height, 
-        AV_PIX_FMT_RGBA, 
+        AV_PIX_FMT_RGB24, 
         SWS_BILINEAR, 
         NULL, 
         NULL, 
@@ -164,8 +166,9 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
 
     frame->width = av_frame->width;
     frame->height = av_frame->height;
+    frame->format = TPXL_FORMAT_RGB;
 
-    size_t size = frame->width * frame->height * 4;
+    size_t size = frame->width * frame->height * tpxl_format_to_channels(frame->format);
 
     uint8_t* pixels = malloc(size);
     
@@ -176,14 +179,14 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
     uint8_t* dst_data[4] = {0};
     int dst_linesize[4] = {0};
 
-    result = av_image_fill_arrays(dst_data, dst_linesize, pixels, AV_PIX_FMT_RGBA, frame->width, frame->height, 1);
+    result = av_image_fill_arrays(dst_data, dst_linesize, pixels, AV_PIX_FMT_RGB24, frame->width, frame->height, 1);
 
     if (result < 0) {
         free(pixels);
         return TPXL_VIDEO_DECODE_FAILED;
     }
 
-    // convert to RGBA
+    // convert to RGB
     result = sws_scale(
         sws_context, 
         (const uint8_t* const*)av_frame->data, 
@@ -199,7 +202,6 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
         return TPXL_VIDEO_DECODE_FAILED;
     }
 
-    frame->format = TPXL_FORMAT_RGBA;
     frame->pixels = pixels;
 
     return TPXL_OK;
