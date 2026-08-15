@@ -1,13 +1,15 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include "tpxl/image.h"
 #include "tpxl/type.h"
 #include "tpxl/video.h"
+#include "frame_queue.h"
 
 struct TpxlVideoPlayerImp {
     TpxlVideo* video;
-    TpxlImage frame;
+    TpxlFrameQueue queue;
+    uint32_t frame_id;
     bool playing;
 };
 
@@ -24,13 +26,8 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlVideo* video) 
     }
 
     (*player)->video = video;
-    (*player)->frame = (TpxlImage){
-        .width = 0,
-        .height = 0,
-        .format = TPXL_FORMAT_UNKNOWN,
-        .pixels = NULL
-    };
-
+    (*player)->queue = (TpxlFrameQueue){0};
+    (*player)->frame_id = 1;
     (*player)->playing = true;
 
     return TPXL_OK;
@@ -42,23 +39,35 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    TpxlResult result = tpxl_decode_video_frame(player->video, &player->frame);
+    TpxlImage frame = {0};
+    TpxlResult result = tpxl_decode_video_frame(player->video, &frame);
 
     if (result == TPXL_EOF) {
         player->playing = false;
         return TPXL_OK;
     }
-
-    return result;
-}
-
-TpxlImage* tpxl_video_player_get_frame(TpxlVideoPlayer* player) {
-
-    if (!player) {
-        return NULL;
+    if (result != TPXL_OK) {
+        return result;
     }
 
-    return &player->frame;
+    result = tpxl_frame_queue_push(&player->queue, &frame);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+    
+    player->frame_id++;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_video_player_pop_frame(TpxlVideoPlayer* player, TpxlImage* out_frame) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_frame_queue_pop(&player->queue, out_frame);
 }
 
 bool tpxl_video_playing(TpxlVideoPlayer* player) {
@@ -77,7 +86,6 @@ void tpxl_close_video_player(TpxlVideoPlayer* player) {
     }
 
     player->video = NULL;
-
-    tpxl_free_frame(&player->frame);
     free(player);
+    player = NULL;
 }
