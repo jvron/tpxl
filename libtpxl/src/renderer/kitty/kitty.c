@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,8 @@
 #include "kitty.h"
 #include "tpxl/type.h"
 #include "util/base64.h"
+
+const size_t CHUNK_SIZE = 4096;
 
 TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlImage* frame, TpxlMediaType media_type) {
 
@@ -86,8 +89,6 @@ TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) 
     // move cursor
     fprintf(stdout,"\033[%u;%uH", kitty_context->target_row, kitty_context->target_column);
 
-    const size_t CHUNK_SIZE = 4096;
-
     for (size_t i = 0; i < output_length; i += CHUNK_SIZE) {
 
         char* chunk = kitty_context->encoded_data + i;
@@ -98,28 +99,37 @@ TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) 
 
         int more_chunks = remaining > CHUNK_SIZE ? 1 : 0;
 
-        fprintf(
-            stdout,
-            "\x1b_Ga=T,"
-            "f=%d,"
-            "s=%d,"
-            "v=%d,"
-            "X=%u,"
-            "Y=%u,"
-            "c=%u,"
-            "r=%u,"
-            "C=%d,"
-            "m=%d;",
-            kitty_context->kitty_format,
-            frame->width,
-            frame->height,
-            kitty_context->offset_x,
-            kitty_context->offset_y, 
-            kitty_context->columns,
-            kitty_context->rows,
-            kitty_context->cursor_policy,
-            more_chunks
-        );
+        if (i == 0) {
+            fprintf(
+                stdout,
+                "\x1b_Ga=T,"
+                "f=%d,"
+                "s=%u,"
+                "v=%u,"
+                "X=%u,"
+                "Y=%u,"
+                "c=%u,"
+                "r=%u,"
+                "C=%d,"
+                "m=%d;",
+                kitty_context->kitty_format,
+                frame->width,
+                frame->height,
+                kitty_context->offset_x,
+                kitty_context->offset_y, 
+                kitty_context->columns,
+                kitty_context->rows,
+                kitty_context->cursor_policy,
+                more_chunks
+            );
+        }
+        else {
+            fprintf(
+                stdout,
+                "\x1b_Gm=%d;",
+                more_chunks
+            );
+        }
 
         fwrite(chunk, 1, chunk_length, stdout);
         fprintf(stdout, "\x1b\\");
@@ -143,8 +153,6 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     // move cursor
     fprintf(stdout,"\033[%u;%uH", kitty_context->target_row, kitty_context->target_column);
 
-    const size_t CHUNK_SIZE = 4096;
-
     for (size_t i = 0; i < output_length; i += CHUNK_SIZE) {
 
         char* chunk = kitty_context->encoded_data + i;
@@ -155,31 +163,40 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
 
         int more_chunks = remaining > CHUNK_SIZE ? 1 : 0;
 
-        fprintf(
-            stdout,
-            "\x1b_Ga=t,"
-            "i=%d,"
-            "f=%d,"
-            "s=%d,"
-            "v=%d,"
-            "X=%u,"
-            "Y=%u,"
-            "c=%u,"
-            "r=%u,"
-            "C=%d,"
-            "m=%d,"
-            "q=1;",
-            frame_id,
-            kitty_context->kitty_format,
-            frame->width,
-            frame->height,
-            kitty_context->offset_x,
-            kitty_context->offset_y, 
-            kitty_context->columns,
-            kitty_context->rows,
-            kitty_context->cursor_policy,
-            more_chunks
-        );
+        if (i == 0) {
+            fprintf(
+                stdout,
+                "\x1b_Ga=t,"
+                "i=%u,"
+                "f=%d,"
+                "s=%u,"
+                "v=%u,"
+                "X=%u,"
+                "Y=%u,"
+                "c=%u,"
+                "r=%u,"
+                "C=%d,"
+                "m=%d,"
+                "q=1;",
+                frame_id,
+                kitty_context->kitty_format,
+                frame->width,
+                frame->height,
+                kitty_context->offset_x,
+                kitty_context->offset_y, 
+                kitty_context->columns,
+                kitty_context->rows,
+                kitty_context->cursor_policy,
+                more_chunks
+            );
+        }
+        else {
+            fprintf(
+                stdout,
+                "\x1b_Gm=%d,q=1;",
+                more_chunks
+            );
+        }
 
         fwrite(chunk, 1, chunk_length, stdout);
         fprintf(stdout, "\x1b\\");
@@ -196,7 +213,7 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
     fprintf(
         stdout,
         "\x1b_Ga=p,"
-        "i=%d,"
+        "i=%u,"
         "X=%u,"
         "Y=%u,"
         "c=%u,"
