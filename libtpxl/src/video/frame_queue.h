@@ -3,13 +3,14 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "tpxl/type.h"
 
 #define MAX_SLOT_COUNT 8
 
 typedef struct {
-    TpxlImage slots[MAX_SLOT_COUNT];
+    uint32_t slots[MAX_SLOT_COUNT];
     size_t count;
 
     uint32_t write_idx;
@@ -17,8 +18,9 @@ typedef struct {
 
 } TpxlFrameQueue;
 
-TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame);
-TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* frame);
+bool tpxl_frame_queue_full(TpxlFrameQueue* queue);
+TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, uint32_t frame_id);
+TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, uint32_t* out_frame_id);
 
 
 #endif

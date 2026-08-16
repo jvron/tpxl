@@ -1,10 +1,20 @@
 #include "frame_queue.h"
-#include "tpxl/image.h"
 #include "tpxl/type.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame) {
+bool tpxl_frame_queue_full(TpxlFrameQueue* queue) {
 
-    if (!queue || !frame) {
+    if (!queue || queue->count < MAX_SLOT_COUNT) {
+        return false;
+    }
+
+    return true;
+}
+
+TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, uint32_t frame_id) {
+
+    if (!queue) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -12,16 +22,16 @@ TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame) {
         return TPXL_FRAME_QUEUE_FULL;
     }
 
-    queue->slots[queue->write_idx] = *frame;
+    queue->slots[queue->write_idx] = frame_id;
     queue->write_idx = (queue->write_idx + 1) % MAX_SLOT_COUNT;
     queue->count++;
 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* out_frame) {
+TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, uint32_t* out_frame_id) {
 
-    if (!queue || !out_frame) {
+    if (!queue || !out_frame_id) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -29,9 +39,9 @@ TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* out_frame) {
         return TPXL_FRAME_QUEUE_EMPTY;
     } 
 
-    *out_frame = queue->slots[queue->read_idx];
+    *out_frame_id = queue->slots[queue->read_idx];
 
-    queue->slots[queue->read_idx] = (TpxlImage){0};
+    queue->slots[queue->read_idx] = 0;
 
     queue->read_idx = (queue->read_idx + 1) % MAX_SLOT_COUNT;
     queue->count--;
