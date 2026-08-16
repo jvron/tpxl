@@ -11,6 +11,7 @@ typedef struct TpxlVideoPlayerImp TpxlVideoPlayer;
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video);
 TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height);
+TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format);
 TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame);
 void tpxl_close_video(TpxlVideo* video);
 

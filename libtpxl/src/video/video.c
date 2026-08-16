@@ -19,6 +19,7 @@
 struct TpxlVideoImp {
     uint32_t width;
     uint32_t height;
+    TpxlFormat format;
     uint64_t duration;
     uint32_t frame_count;
 
@@ -101,6 +102,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
     (*video)->width = video_stream->codecpar->width;
     (*video)->height = video_stream->codecpar->height;
+    (*video)->format = TPXL_FORMAT_RGB;
     (*video)->duration = video_stream->duration;
     (*video)->frame_count = video_stream->nb_frames;
     (*video)->video_stream_index = video_stream_index;
@@ -156,6 +158,17 @@ TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t
 
     *width = video->width;
     *height = video->height;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format) {
+
+    if (!video || !format) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *format = video->format;
 
     return TPXL_OK;
 }
@@ -320,4 +333,5 @@ void tpxl_close_video(TpxlVideo* video) {
     sws_freeContext(video->sws_context);
 
     free(video);
+    video = NULL;
 }
