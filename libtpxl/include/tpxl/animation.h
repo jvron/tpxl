@@ -7,6 +7,17 @@
 #include <stdio.h>
 
 typedef struct {
+    uint32_t width;
+    uint32_t height;
+    uint32_t format;
+    
+    TpxlImage* frames;
+    uint32_t* delays;
+    size_t count;
+    
+} TpxlAnimation;
+
+typedef struct {
     TpxlAnimation* animation;
     size_t current_frame;
     uint32_t elapsed; 

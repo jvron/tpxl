@@ -1,5 +1,6 @@
 #include <gif_lib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -14,8 +15,8 @@ typedef struct {
 
 static void tpxl_blit(TpxlImage* dst, const TpxlImage* src, uint32_t left, uint32_t top) {
 
-    for (int y = 0; y < src->height; y++) {
-        for (int x = 0; x < src->width; x++) {
+    for (uint32_t y = 0; y < src->height; y++) {
+        for (uint32_t x = 0; x < src->width; x++) {
 
             size_t src_pixel = (y * src->width + x) * 4;
 
@@ -119,6 +120,9 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
         return TPXL_GIF_LOAD_FAILED;
     }
 
+    animation->width = gif->SWidth;
+    animation->height = gif->SHeight;
+    animation->format = TPXL_FORMAT_RGBA;
     animation->count = gif->ImageCount;
     animation->frames = calloc(animation->count, sizeof(TpxlImage));
     animation->delays = calloc(animation->count, sizeof(uint32_t));
@@ -189,8 +193,8 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
             }
         }
 
-        for (int y = 0; y < image.height; y++) {
-            for (int x = 0; x < image.width; x++) {
+        for (uint32_t y = 0; y < image.height; y++) {
+            for (uint32_t x = 0; x < image.width; x++) {
 
                 uint8_t index = frame->RasterBits[y * image.width + x];
 
