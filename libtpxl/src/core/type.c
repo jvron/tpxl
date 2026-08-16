@@ -11,6 +11,8 @@ static const char* result_to_string[] = {
     [TPXL_GIF_LOAD_FAILED] = "gif loading failed",
     [TPXL_VIDEO_LOAD_FAILED] = "video loading failed",
     [TPXL_VIDEO_DECODE_FAILED] = "video decoding failed",
+    [TPXL_FRAME_QUEUE_FULL] = "video frame queue full",
+    [TPXL_FRAME_QUEUE_EMPTY] = "video frame queue empty",
     [TPXL_UNSUPPORTED_FORMAT] = "unsupported format",
     [TPXL_OUT_OF_MEMORY] = "out of memory",
     [TPXL_ENCODING_FAILED] = "encoding failed",
@@ -28,6 +30,7 @@ static const char* format_to_string[] = {
 };
 
 int tpxl_format_to_channels(TpxlFormat format) {
+    
     switch (format) {
         case TPXL_FORMAT_R:
             return 1;
@@ -43,6 +46,7 @@ int tpxl_format_to_channels(TpxlFormat format) {
 }
 
 const char* tpxl_format_to_string(TpxlFormat format) {
+
     if (format >= TPXL_FORMAT_COUNT) {
         return NULL;
     }
@@ -50,6 +54,7 @@ const char* tpxl_format_to_string(TpxlFormat format) {
 }  
 
 const char* tpxl_result_to_string(TpxlResult result) {
+
     if (result >= TPXL_RESULT_COUNT) {
         return NULL;
     }

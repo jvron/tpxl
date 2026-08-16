@@ -34,6 +34,8 @@ typedef enum {
     TPXL_EOF,
     TPXL_VIDEO_NEED_PACKET,
     TPXL_VIDEO_DECODE_FAILED,
+    TPXL_FRAME_QUEUE_FULL,
+    TPXL_FRAME_QUEUE_EMPTY,
     TPXL_UNSUPPORTED_FORMAT,
     TPXL_OUT_OF_MEMORY,
     TPXL_ENCODING_FAILED,
@@ -53,8 +55,10 @@ typedef struct {
 } TpxlAnimation;
 
 typedef enum {
-    TPXL_MEDIA_STILL,
+    TPXL_MEDIA_STILL = 0,
     TPXL_MEDIA_ANIMATED,
+
+    TPXL_MEDIA_TYPE_COUNT
     
 } TpxlMediaType;
 
