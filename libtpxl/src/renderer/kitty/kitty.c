@@ -10,21 +10,10 @@
 
 const size_t CHUNK_SIZE = 4096;
 
-TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context, TpxlMediaType media_type) {
+TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context) {
 
     if (!kitty_context || !context){
         return TPXL_INVALID_ARGUMENT;
-    }
-
-    switch (media_type) {
-        case TPXL_MEDIA_STILL:
-            kitty_context->cursor_policy = 0;
-            break;
-        case TPXL_MEDIA_ANIMATED:
-            kitty_context->cursor_policy = 1;
-            break;
-        default:
-            return TPXL_INVALID_ARGUMENT;
     }
 
     // convert viewport dimensions to terminal cells
@@ -80,6 +69,26 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
     kitty_context->frame_size = frame_size;
     kitty_context->encoded_length = encoded_length;
     kitty_context->encoded_data = data;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_set_kitty_cursor_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type) {
+
+    if (!kitty_context){
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    switch (media_type) {
+        case TPXL_MEDIA_STILL:
+            kitty_context->cursor_policy = 0;
+            break;
+        case TPXL_MEDIA_ANIMATED:
+            kitty_context->cursor_policy = 1;
+            break;
+        default:
+            return TPXL_INVALID_ARGUMENT;
+    }
 
     return TPXL_OK;
 }
