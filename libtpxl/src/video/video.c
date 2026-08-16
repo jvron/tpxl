@@ -173,6 +173,17 @@ TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format) {
     return TPXL_OK;
 }
 
+TpxlResult tpxl_get_video_frame_count(TpxlVideo* video, uint32_t* frame_count) {
+
+    if (!video || !frame_count) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *frame_count = video->frame_count;
+
+    return TPXL_OK;
+}
+
 static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, TpxlImage* frame) {
     
     int result = 0;
