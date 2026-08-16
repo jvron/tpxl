@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "tpxl/image.h"
+#include "tpxl/renderer.h"
 #include "tpxl/type.h"
 #include "tpxl/video.h"
 #include "frame_queue.h"
@@ -33,10 +35,14 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlVideo* video) 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
+TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* renderer) {
 
-    if (!player) {
+    if (!player || !renderer) {
         return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (tpxl_frame_queue_full(&player->queue)) {
+        return TPXL_FRAME_QUEUE_FULL;
     }
 
     TpxlImage frame = {0};
@@ -50,8 +56,15 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         return result;
     }
 
-    result = tpxl_frame_queue_push(&player->queue, &frame);
+    result = tpxl_renderer_upload(renderer, &frame, player->frame_id);
 
+    tpxl_free_frame(&frame);
+
+    if (result != TPXL_OK) {
+        return result;
+    }    
+
+    result = tpxl_frame_queue_push(&player->queue, player->frame_id);
     if (result != TPXL_OK) {
         return result;
     }
@@ -61,13 +74,13 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_video_player_pop_frame(TpxlVideoPlayer* player, TpxlImage* out_frame) {
+TpxlResult tpxl_video_player_pop_frame(TpxlVideoPlayer* player, uint32_t* out_frame_id) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    return tpxl_frame_queue_pop(&player->queue, out_frame);
+    return tpxl_frame_queue_pop(&player->queue, out_frame_id);
 }
 
 bool tpxl_video_playing(TpxlVideoPlayer* player) {
