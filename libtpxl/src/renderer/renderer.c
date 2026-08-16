@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "kitty/kitty.h"
@@ -9,9 +10,9 @@ struct TpxlRendererImp {
     TpxlKittyContext kitty_context;
 };
 
-TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, TpxlImage* frame, TpxlMediaType media_type) {
+TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, uint32_t width, uint32_t height, TpxlFormat format, TpxlMediaType media_type) {
 
-    if (!renderer || !context || !frame) {
+    if (!renderer || !context) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -21,7 +22,25 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, T
         return TPXL_OUT_OF_MEMORY;
     }
 
-    TpxlResult result = tpxl_init_kitty_context(&(*renderer)->kitty_context, context, frame, media_type);
+    (*renderer)->kitty_context = (TpxlKittyContext){0};
+
+    TpxlResult result = tpxl_set_kitty_context(&(*renderer)->kitty_context, context);
+
+    if (result != TPXL_OK) {
+        free(*renderer);
+        *renderer = NULL;
+        return result;
+    }
+
+    result = tpxl_set_kitty_cursor_policy(&(*renderer)->kitty_context, media_type);
+
+    if (result != TPXL_OK) {
+        free(*renderer);
+        *renderer = NULL;
+        return result;
+    }
+
+    result = tpxl_set_kitty_frame(&(*renderer)->kitty_context, width, height, format);
 
     if (result != TPXL_OK) {
         free(*renderer);
@@ -30,6 +49,33 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, T
     }
 
     return TPXL_OK;
+}
+
+TpxlResult tpxl_update_renderer_context(TpxlRenderer* renderer, TpxlContext* context) {
+
+    if (!renderer || !context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_set_kitty_context(&renderer->kitty_context, context);
+}
+
+TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format) {
+
+    if (!renderer) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_set_kitty_frame(&renderer->kitty_context, width, height, format);
+}
+
+TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type) {
+
+    if (!renderer) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_set_kitty_cursor_policy(&renderer->kitty_context, media_type);
 }
 
 TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame) {
@@ -67,4 +113,5 @@ void tpxl_destroy_renderer(TpxlRenderer* renderer) {
 
     tpxl_destroy_kitty_context(&renderer->kitty_context);
     free(renderer);
+    renderer = NULL;
 }
