@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <bits/pthreadtypes.h>
 
 #include "tpxl/type.h"
 
@@ -11,19 +12,23 @@
 
 typedef struct {
     TpxlImage slots[MAX_SLOT_COUNT];
-    size_t count;
 
+    size_t count;
     uint32_t write_idx;
     uint32_t read_idx;
+
+    pthread_mutex_t mutex;
 
 } TpxlFrameQueue;
 
 typedef struct {
     uint32_t slots[MAX_SLOT_COUNT];
-    size_t count;
 
+    size_t count;
     uint32_t write_idx;
     uint32_t read_idx;
+
+    pthread_mutex_t mutex;
 
 } TpxlFrameIDQueue;
 
