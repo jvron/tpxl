@@ -31,7 +31,7 @@ TpxlResult tpxl_init_context(TpxlContext* context) {
 
 TpxlResult tpxl_context_set_scale_mode(TpxlContext* context, TpxlScaleMode scale_mode) {
 
-    if (!context) {
+    if (!context || scale_mode >= TPXL_SCALE_COUNT) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -42,7 +42,7 @@ TpxlResult tpxl_context_set_scale_mode(TpxlContext* context, TpxlScaleMode scale
 
 TpxlResult tpxl_context_set_backend(TpxlContext* context, TpxlBackend backend) {
 
-    if (!context) {
+    if (!context || backend >= TPXL_BACKEND_COUNT) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -53,7 +53,7 @@ TpxlResult tpxl_context_set_backend(TpxlContext* context, TpxlBackend backend) {
 
 TpxlResult tpxl_context_set_alignment(TpxlContext* context, TpxlAlignment horizontal, TpxlAlignment vertical) {
 
-    if (!context || horizontal > TPXL_ALIGN_COUNT || vertical >= TPXL_ALIGN_COUNT) {
+    if (!context || horizontal >= TPXL_ALIGN_COUNT || vertical >= TPXL_ALIGN_COUNT) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -74,7 +74,7 @@ TpxlResult tpxl_set_context_viewport(TpxlContext* context, const TpxlViewport* v
     return TPXL_OK;
 }
 
-TpxlResult tpxl_update_context(TpxlContext* context) {
+TpxlResult tpxl_update_context_terminal(TpxlContext* context) {
 
     if (!context) {
         return TPXL_INVALID_ARGUMENT;
@@ -102,12 +102,11 @@ TpxlResult tpxl_update_context_viewport(TpxlContext* context, uint32_t content_w
             break;
 
         case TPXL_SCALE_FIT: 
-        {
             result = tpxl_viewport_fit(&context->viewport, area_width, area_height, content_width, content_height);
             break;
-        }
 
         default:
+            result = TPXL_INVALID_ARGUMENT;
             break;
     }
 
