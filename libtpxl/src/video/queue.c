@@ -2,7 +2,6 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <threads.h>
 
 #include "queue.h"
 #include "tpxl/type.h"
@@ -36,6 +35,25 @@ TpxlResult tpxl_init_frame_queue(TpxlFrameQueue* queue) {
         return TPXL_ERROR;
     }
 
+    queue->closed = false;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_frame_queue_close(TpxlFrameQueue* queue) {
+
+    if (!queue) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+
+    queue->closed = true;
+    pthread_cond_broadcast(&queue->not_empty);
+    pthread_cond_broadcast(&queue->not_full);
+
+    pthread_mutex_unlock(&queue->mutex);
+
     return TPXL_OK;
 }
 
@@ -60,8 +78,13 @@ TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame, atomic
     
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count >= MAX_SLOT_COUNT && !atomic_load(shutdown)) {
+    while (queue->count >= MAX_SLOT_COUNT && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_full, &queue->mutex);
+    }
+
+    if (queue->closed) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_CLOSED;
     }
 
     if (atomic_load(shutdown)) {
@@ -87,13 +110,18 @@ TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* out_frame, ato
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count == 0 && !atomic_load(shutdown)) {
+    while (queue->count == 0 && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_empty, &queue->mutex);
     }
 
     if (atomic_load(shutdown)) {
         pthread_mutex_unlock(&queue->mutex);
         return TPXL_SHUTDOWN;
+    }
+
+    if (queue->count == 0 && queue->closed) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_CLOSED;
     }
     
     *out_frame = queue->slots[queue->read_idx];
@@ -149,6 +177,25 @@ TpxlResult tpxl_init_frame_id_queue(TpxlFrameIDQueue* queue) {
         return TPXL_ERROR;
     }
 
+    queue->closed = false;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue) {
+
+    if (!queue) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+
+    queue->closed = true;
+    pthread_cond_broadcast(&queue->not_empty);
+    pthread_cond_broadcast(&queue->not_full);
+    
+    pthread_mutex_unlock(&queue->mutex);
+
     return TPXL_OK;
 }
 
@@ -173,8 +220,13 @@ TpxlResult tpxl_frame_id_queue_push(TpxlFrameIDQueue* queue, uint32_t frame_id, 
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count >= MAX_SLOT_COUNT && !atomic_load(shutdown)) {
+    while (queue->count >= MAX_SLOT_COUNT && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_full, &queue->mutex);
+    }
+
+    if (queue->closed) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_CLOSED;
     }
 
     if (atomic_load(shutdown)) {
@@ -200,13 +252,18 @@ TpxlResult tpxl_frame_id_queue_pop(TpxlFrameIDQueue* queue, uint32_t* out_frame_
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count == 0 && !atomic_load(shutdown)) {
+    while (queue->count == 0 && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_empty, &queue->mutex);
     }
 
     if (atomic_load(shutdown)) {
         pthread_mutex_unlock(&queue->mutex);
         return TPXL_SHUTDOWN;
+    }
+
+    if (queue->count == 0 && queue->closed) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_CLOSED;
     }
 
     *out_frame_id = queue->slots[queue->read_idx];
