@@ -19,11 +19,14 @@
 struct TpxlVideoImp {
     uint32_t width;
     uint32_t height;
+    uint32_t output_width;
+    uint32_t output_height;
     TpxlFormat format;
     uint64_t duration;
     uint32_t frame_count;
 
     int video_stream_index;
+    int video_stream_format;
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
     AVPacket* av_packet;
@@ -102,7 +105,10 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
     (*video)->width = video_stream->codecpar->width;
     (*video)->height = video_stream->codecpar->height;
+    (*video)->output_width = video_stream->codecpar->width;
+    (*video)->output_height = video_stream->codecpar->height;
     (*video)->format = TPXL_FORMAT_RGB;
+    (*video)->video_stream_format = video_stream->codecpar->format;
     (*video)->duration = video_stream->duration;
     (*video)->frame_count = video_stream->nb_frames;
     (*video)->video_stream_index = video_stream_index;
@@ -117,7 +123,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         video_stream->codecpar->width, 
         video_stream->codecpar->height, 
         AV_PIX_FMT_RGB24, 
-        SWS_BILINEAR, 
+        SWS_BILINEAR,
         NULL, 
         NULL, 
         NULL
@@ -130,12 +136,11 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         return TPXL_VIDEO_LOAD_FAILED; 
     }
 
-    (*video)->sws_context = sws_ctx;
-
     AVPacket* av_packet = av_packet_alloc();
     AVFrame* av_frame = av_frame_alloc();
 
     if (!av_packet || !av_frame) {
+        sws_freeContext(sws_ctx);
         av_packet_free(&av_packet);
         av_frame_free(&av_frame);
         avcodec_free_context(&codec_context);
@@ -144,13 +149,49 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         return TPXL_VIDEO_LOAD_FAILED;
     }
 
+    (*video)->sws_context = sws_ctx;
     (*video)->av_packet = av_packet;
     (*video)->av_frame = av_frame;
 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
+TpxlResult tpxl_video_set_output_size(TpxlVideo* video, uint32_t width, uint32_t height) {
+
+    if (!video || !width || !height) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (video->output_width == width && video->output_height == height) {
+        return TPXL_OK;
+    }
+    
+    struct SwsContext* sws_ctx = sws_getContext(
+        video->width, 
+        video->height,
+        video->video_stream_format, 
+        width,
+        height, 
+        AV_PIX_FMT_RGB24, 
+        SWS_BILINEAR,
+        NULL, 
+        NULL, 
+        NULL
+    );
+
+    if (!sws_ctx) {
+        return TPXL_ERROR;
+    }
+
+    sws_freeContext(video->sws_context);
+    video->output_width = width;
+    video->output_height = height;
+    video->sws_context = sws_ctx;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_get_video_source_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
 
     if (!video || !width || !height) {
         return TPXL_INVALID_ARGUMENT;
@@ -158,6 +199,18 @@ TpxlResult tpxl_get_video_dimensions(TpxlVideo* video, uint32_t* width, uint32_t
 
     *width = video->width;
     *height = video->height;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
+
+    if (!video || !width || !height) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *width = video->output_width;
+    *height = video->output_height;
 
     return TPXL_OK;
 }
@@ -184,12 +237,12 @@ TpxlResult tpxl_get_video_frame_count(TpxlVideo* video, uint32_t* frame_count) {
     return TPXL_OK;
 }
 
-static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, TpxlImage* frame) {
+static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {
     
     int result = 0;
 
-    frame->width = av_frame->width;
-    frame->height = av_frame->height;
+    frame->width = output_width;
+    frame->height = output_height;
     frame->format = TPXL_FORMAT_RGB;
 
     size_t size = frame->width * frame->height * tpxl_format_to_channels(frame->format);
@@ -221,7 +274,7 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
         dst_linesize
     );
 
-    if (result != (int)frame->height) {
+    if (result != (int)output_height) {
         free(pixels);
         return TPXL_VIDEO_DECODE_FAILED;
     }
@@ -231,7 +284,7 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
     return TPXL_OK;
 }
 
-static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecContext* codec_context, AVFrame* av_frame, TpxlImage* frame) {
+static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecContext* codec_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {
 
     int result = 0;
     // process frame
@@ -241,7 +294,7 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
         // got frame
         
         TpxlResult tpxl_result;
-        tpxl_result = tpxl_convert_frame(sws_context, av_frame, frame);
+        tpxl_result = tpxl_convert_frame(sws_context, av_frame, output_width, output_height, frame);
 
         if (tpxl_result != TPXL_OK) {
             return tpxl_result;
@@ -275,7 +328,13 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
     TpxlResult frame_result = TPXL_OK;
 
     // try to receive pending frames
-    frame_result = tpxl_receive_frame(video->sws_context, video->codec_context, video->av_frame, frame);
+    frame_result = tpxl_receive_frame(
+        video->sws_context, 
+        video->codec_context, 
+        video->av_frame, 
+        video->output_width, 
+        video->output_height, frame
+    );
 
     if (frame_result != TPXL_VIDEO_NEED_PACKET) {
         return frame_result;
@@ -320,7 +379,14 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             av_packet_unref(video->av_packet);
         }
 
-        frame_result = tpxl_receive_frame(video->sws_context, video->codec_context, video->av_frame, frame);
+        frame_result = tpxl_receive_frame(
+            video->sws_context,
+            video->codec_context,
+            video->av_frame,
+            video->output_width,
+            video->output_height,
+            frame
+        );
 
         if (frame_result != TPXL_VIDEO_NEED_PACKET) {
             return frame_result;
@@ -344,5 +410,4 @@ void tpxl_close_video(TpxlVideo* video) {
     sws_freeContext(video->sws_context);
 
     free(video);
-    video = NULL;
 }
