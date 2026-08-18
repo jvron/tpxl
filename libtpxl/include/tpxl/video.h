@@ -21,7 +21,6 @@ void tpxl_close_video(TpxlVideo* video);
 
 TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* renderer, TpxlVideo* video);
 TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* renderer);
-TpxlResult tpxl_video_player_pop_frame(TpxlVideoPlayer* player, uint32_t* out_frame_id);
 bool tpxl_video_playing(TpxlVideoPlayer* player);
 void tpxl_close_video_player(TpxlVideoPlayer* player);
 

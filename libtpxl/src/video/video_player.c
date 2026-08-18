@@ -208,20 +208,31 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* rende
         return TPXL_INVALID_ARGUMENT;
     }
 
-    if (player->frame_id == player->frame_count) {
+    uint32_t frame_id = 0;
+    TpxlResult result = tpxl_frame_id_queue_pop(&player->id_queue, &frame_id, &player->shutdown);
+
+    if (result == TPXL_QUEUE_CLOSED && player->upload_status == THREAD_ERROR) {
+        player->playing = false;
+        return TPXL_VIDEO_PLAYING_FAILED;
+    }
+
+    if (result != TPXL_OK) {
+        player->playing = false;
+        return result;
+    }
+
+    result = tpxl_renderer_display(renderer, frame_id);
+
+    if (result != TPXL_OK) {
+        player->playing = false;
+        return result;
+    }
+
+    if (frame_id == player->frame_count) {
         player->playing = false;
     }
 
     return TPXL_OK;
-}
-
-TpxlResult tpxl_video_player_pop_frame(TpxlVideoPlayer* player, uint32_t* out_frame_id) {
-
-    if (!player) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    return tpxl_frame_id_queue_pop(&player->id_queue, out_frame_id, &player->shutdown);
 }
 
 bool tpxl_video_playing(TpxlVideoPlayer* player) {
