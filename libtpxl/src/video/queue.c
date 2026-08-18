@@ -2,6 +2,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "queue.h"
 #include "tpxl/type.h"
@@ -40,10 +41,10 @@ TpxlResult tpxl_init_frame_queue(TpxlFrameQueue* queue) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_frame_queue_close(TpxlFrameQueue* queue) {
+void tpxl_frame_queue_close(TpxlFrameQueue* queue) {
 
     if (!queue) {
-        return TPXL_INVALID_ARGUMENT;
+        return;
     }
 
     pthread_mutex_lock(&queue->mutex);
@@ -53,8 +54,6 @@ TpxlResult tpxl_frame_queue_close(TpxlFrameQueue* queue) {
     pthread_cond_broadcast(&queue->not_full);
 
     pthread_mutex_unlock(&queue->mutex);
-
-    return TPXL_OK;
 }
 
 bool tpxl_frame_queue_full(TpxlFrameQueue* queue) {
@@ -182,10 +181,10 @@ TpxlResult tpxl_init_frame_id_queue(TpxlFrameIDQueue* queue) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue) {
+void tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue) {
 
     if (!queue) {
-        return TPXL_INVALID_ARGUMENT;
+        return;
     }
 
     pthread_mutex_lock(&queue->mutex);
@@ -195,8 +194,6 @@ TpxlResult tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue) {
     pthread_cond_broadcast(&queue->not_full);
     
     pthread_mutex_unlock(&queue->mutex);
-
-    return TPXL_OK;
 }
 
 bool tpxl_frame_id_queue_full(TpxlFrameIDQueue* queue) {
