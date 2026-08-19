@@ -15,7 +15,6 @@ TpxlFileType tpxl_detect_file_type(const char* path) {
     uint8_t header[16];
 
     size_t read = fread(header, 1, sizeof(header), file);
-
     fclose(file);
 
     if (read >= 6) {
@@ -49,6 +48,32 @@ TpxlFileType tpxl_detect_file_type(const char* path) {
     // AVI 
     if (read >= 12 && memcmp(header, "RIFF", 4) == 0 && memcmp(header + 8, "AVI ", 4) == 0) {
         return TPXL_FILE_VIDEO;
+    }
+
+    // MP3
+    if (read >= 3) {
+        if (memcmp(header, "ID3", 3) == 0) {
+            return TPXL_FILE_AUDIO;
+        }
+
+        if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0) {
+            return TPXL_FILE_AUDIO;        
+        }
+    }
+
+    // FLAC
+    if (read >= 4 && memcmp(header, "fLaC", 4) == 0) {
+        return TPXL_FILE_AUDIO; 
+    }
+
+    // WAV
+    if (read >= 12 && memcmp(header, "RIFF", 4) == 0 && memcmp(header + 8, "WAVE", 4) == 0) {
+        return TPXL_FILE_AUDIO; 
+    }
+
+    // OGG
+    if (read >= 4 && memcmp(header, "OggS", 4) == 0) {
+        return TPXL_FILE_AUDIO;
     }
 
     return TPXL_FILE_UNKNOWN;

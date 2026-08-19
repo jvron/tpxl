@@ -6,8 +6,8 @@ typedef enum {
     TPXL_FILE_PNG,
     TPXL_FILE_JPEG,
     TPXL_FILE_GIF,
-    TPXL_FILE_VIDEO
-
+    TPXL_FILE_VIDEO,
+    TPXL_FILE_AUDIO,
 } TpxlFileType;
 
 TpxlFileType tpxl_detect_file_type(const char* path);
