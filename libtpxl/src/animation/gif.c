@@ -43,28 +43,27 @@ static void tpxl_parse_graphics_control(const SavedImage* frame, GifGraphicsCont
 
     for (int i = 0; i < frame->ExtensionBlockCount; i++) {
 
-        ExtensionBlock* extention = &frame->ExtensionBlocks[i];
+        ExtensionBlock* extension = &frame->ExtensionBlocks[i];
 
-        if (extention->Function != GRAPHICS_EXT_FUNC_CODE) {
+        if (extension->Function != GRAPHICS_EXT_FUNC_CODE) {
             continue;
         }
 
-        if (extention->ByteCount < 4) {
+        if (extension->ByteCount < 4) {
             continue;
         }
 
-        uint8_t packed = extention->Bytes[0];
+        uint8_t packed = extension->Bytes[0];
 
         gce->disposal = (packed >> 2) & 0x07;
 
         bool has_transparency = packed & 0x01;
 
         if (has_transparency) {
-            gce->transparent_index = extention->Bytes[3];
+            gce->transparent_index = extension->Bytes[3];
         }
 
-        uint16_t delay = extention->Bytes[1] | (extention->Bytes[2] << 8);
-
+        uint16_t delay = extension->Bytes[1] | (extension->Bytes[2] << 8);
         gce->delay = delay * 10;
 
         return;
@@ -74,12 +73,10 @@ static void tpxl_parse_graphics_control(const SavedImage* frame, GifGraphicsCont
 static void tpxl_apply_disposal(TpxlImage* canvas, const SavedImage* frame, GifGraphicsControl gce, const uint8_t* previous_canvas) {
 
     switch (gce.disposal) {
-
         case 0:
         case 1:
             // do not dispose
             break;
-        
         case 2:
             for (int y = 0; y < frame->ImageDesc.Height; y++) {
                 for (int x = 0; x < frame->ImageDesc.Width; x++) {
@@ -93,7 +90,6 @@ static void tpxl_apply_disposal(TpxlImage* canvas, const SavedImage* frame, GifG
                 }
             }
             break;
-
         case 3:
             if (previous_canvas) {
                 memcpy(canvas->pixels, previous_canvas, canvas->width * canvas->height * 4);
@@ -168,7 +164,6 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
         TpxlImage image;
         image.width = frame->ImageDesc.Width;
         image.height = frame->ImageDesc.Height;
-
         image.format = TPXL_FORMAT_RGBA;
         image.pixels = malloc(image.width * image.height * 4);
 
@@ -208,8 +203,7 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
 
                 if (index == gce.transparent_index && gce.transparent_index >= 0) {
                     image.pixels[pixel + 3] = 0;
-                }
-                else {                
+                } else {                
                     image.pixels[pixel + 3] = 255;
                 }
             }
@@ -240,8 +234,7 @@ TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation) {
 
         if (gce.disposal == 3) {
             tpxl_apply_disposal(&canvas, frame, gce, previous_canvas);
-        }
-        else {
+        } else {
             tpxl_apply_disposal(&canvas, frame, gce, NULL);
         }
 

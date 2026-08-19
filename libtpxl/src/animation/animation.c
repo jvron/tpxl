@@ -33,7 +33,7 @@ TpxlResult tpxl_init_animator(TpxlAnimator* animator, TpxlAnimation* animation) 
     return TPXL_OK;
 }
 
-bool tpxl_update_animatimator(TpxlAnimator* animator, uint32_t delta) {
+bool tpxl_update_animator(TpxlAnimator* animator, uint32_t delta) {
 
     bool changed = false;
 
@@ -42,7 +42,7 @@ bool tpxl_update_animatimator(TpxlAnimator* animator, uint32_t delta) {
     uint32_t delay = animator->animation->delays[animator->current_frame];
 
     while (animator->elapsed >= delay) {
-
+        
         changed = true;
 
         animator->elapsed -= delay;
@@ -78,5 +78,4 @@ void tpxl_free_animation(TpxlAnimation* animation) {
     animation->count = 0;
     animation->frames = NULL;
     animation->delays = NULL;
-    animation = NULL;
 }

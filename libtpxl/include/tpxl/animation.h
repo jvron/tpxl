@@ -1,10 +1,11 @@
 #ifndef TPXL_ANIMATION_H
 #define TPXL_ANIMATION_H
 
-#include "tpxl/type.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+
+#include "tpxl/type.h"
 
 typedef struct {
     uint32_t width;
@@ -14,14 +15,12 @@ typedef struct {
     TpxlImage* frames;
     uint32_t* delays;
     size_t count;
-    
 } TpxlAnimation;
 
 typedef struct {
     TpxlAnimation* animation;
     size_t current_frame;
     uint32_t elapsed; 
-
 } TpxlAnimator;
 
 TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation);
