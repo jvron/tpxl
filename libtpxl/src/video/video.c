@@ -15,25 +15,8 @@
 
 #include "tpxl/video.h"
 #include "tpxl/type.h"
+#include "internal/video_internal.h"
 
-struct TpxlVideoImp {
-    uint32_t width;
-    uint32_t height;
-    uint32_t output_width;
-    uint32_t output_height;
-    TpxlFormat format;
-    uint64_t duration;
-    uint32_t frame_count;
-
-    int video_stream_index;
-    int video_stream_format;
-    AVFormatContext* format_context;
-    AVCodecContext* codec_context;
-    AVPacket* av_packet;
-    AVFrame* av_frame;
-    struct SwsContext* sws_context;
-    bool draining;
-};
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
@@ -53,7 +36,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     }
 
     AVStream* video_stream = NULL;
-    int video_stream_index;
+    int video_stream_index = -1;
 
     for (size_t i = 0; i < format_context->nb_streams; i++) {
 
@@ -171,7 +154,7 @@ TpxlResult tpxl_video_set_output_size(TpxlVideo* video, uint32_t width, uint32_t
         video->height,
         video->video_stream_format, 
         width,
-        height, 
+        height,
         AV_PIX_FMT_RGB24, 
         SWS_BILINEAR,
         NULL, 
@@ -315,9 +298,9 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
     return TPXL_VIDEO_DECODE_FAILED;
 }
 
-TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
+TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* out_frame) {
 
-    if (!video || !frame) {
+    if (!video || !out_frame) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -333,7 +316,8 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
         video->codec_context, 
         video->av_frame, 
         video->output_width, 
-        video->output_height, frame
+        video->output_height,
+        out_frame
     );
 
     if (frame_result != TPXL_VIDEO_NEED_PACKET) {
@@ -385,7 +369,7 @@ TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame) {
             video->av_frame,
             video->output_width,
             video->output_height,
-            frame
+            out_frame
         );
 
         if (frame_result != TPXL_VIDEO_NEED_PACKET) {
