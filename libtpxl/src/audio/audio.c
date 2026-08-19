@@ -12,21 +12,7 @@
 
 #include "tpxl/audio.h"
 #include "tpxl/type.h"
-
-struct TpxlAudioImp {
-    uint64_t duration;
-
-    int audio_stream_index;
-    int sample_rate;
-    AVRational time_base;
-    AVChannelLayout channel_layout;
-    AVFormatContext* format_context;
-    AVCodecContext* codec_context;
-    AVPacket* av_packet;
-    AVFrame* av_frame;
-
-    bool draining;
-};
+#include "internal/audio_internal.h"
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
 
