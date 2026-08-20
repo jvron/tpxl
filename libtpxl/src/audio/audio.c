@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <libavutil/mathematics.h>
+#include <libswresample/swresample.h>
 #include <libavcodec/avcodec.h>
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
@@ -42,11 +44,6 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
             audio_stream = format_context->streams[i];
             break;
         } 
-    }
-
-    if (audio_stream_index == -1) {
-        avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED; 
     }
 
     if (!audio_stream) {
@@ -92,6 +89,37 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         return TPXL_OUT_OF_MEMORY;
     }
 
+    (*audio)->output_sample_rate = 48000;
+    (*audio)->output_format = AV_SAMPLE_FMT_FLT;
+    av_channel_layout_default(&(*audio)->output_channel_layout, 2);
+
+    int result = swr_alloc_set_opts2(
+        &(*audio)->swr_context,
+        &(*audio)->output_channel_layout,
+        (*audio)->output_format,
+        (*audio)->output_sample_rate,
+        &codec_context->ch_layout,
+        codec_context->sample_fmt,
+        codec_context->sample_rate,
+        0,
+        NULL
+    );
+
+    if (result < 0) {
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*audio);
+        return TPXL_AUDIO_LOAD_FAILED;;
+    }
+
+    if (swr_init((*audio)->swr_context) < 0) {
+        swr_free(&(*audio)->swr_context);
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*audio);
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
     (*audio)->audio_stream_index = audio_stream_index;
     (*audio)->time_base = audio_stream->time_base;
     (*audio)->sample_rate = codec_context->sample_rate;
@@ -133,19 +161,37 @@ static const TpxlAudioFormat tpxl_audio_format_map[] = {
     [AV_SAMPLE_FMT_DBLP] = TPXL_AUDIO_FORMAT_DBLP,
 };
 
-static TpxlResult tpxl_receive_audio_frame(AVCodecContext* codec_context, AVFrame* av_frame, TpxlAudioFrame* frame) {
+static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* frame) {
+
+    if (!audio || !frame) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    AVCodecContext* codec_context = audio->codec_context;
+    AVFrame* av_frame = audio->av_frame;
 
     int result = 0;
     result = avcodec_receive_frame(codec_context, av_frame);
     
     if (result == 0) {
         // got frame
+        
+        int64_t delay = swr_get_delay(audio->swr_context, codec_context->sample_rate) + av_frame->nb_samples;
+
+        int output_sample_count = av_rescale_rnd(
+            delay,
+            audio->output_sample_rate,
+            codec_context->sample_rate,
+            AV_ROUND_UP
+        );
+
+        int output_channels = audio->output_channel_layout.nb_channels;
 
         int size = av_samples_get_buffer_size(
             NULL, 
-            av_frame->ch_layout.nb_channels,
-            av_frame->nb_samples,
-            av_frame->format,
+            output_channels,
+            output_sample_count,
+            audio->output_format,
             1
         );
 
@@ -159,14 +205,15 @@ static TpxlResult tpxl_receive_audio_frame(AVCodecContext* codec_context, AVFram
             return TPXL_OUT_OF_MEMORY;
         }
 
-        uint8_t* dst_data[AV_NUM_DATA_POINTERS] = {0};
+        uint8_t* output_data[AV_NUM_DATA_POINTERS] = {0};
 
-        result = av_samples_fill_arrays(dst_data,
+        result = av_samples_fill_arrays(
+            output_data,
             NULL,
             samples, 
-            av_frame->ch_layout.nb_channels,
-            av_frame->nb_samples,
-            av_frame->format, 
+            output_channels,
+            output_sample_count,
+            audio->output_format, 
             1
         );
 
@@ -175,25 +222,23 @@ static TpxlResult tpxl_receive_audio_frame(AVCodecContext* codec_context, AVFram
             return TPXL_AUDIO_DECODE_FAILED;
         }
 
-        result = av_samples_copy(
-            dst_data,
-            av_frame->data,
-            0,
-            0,
-            av_frame->nb_samples,
-            av_frame->ch_layout.nb_channels,
-            av_frame->format
+        int converted_samples = swr_convert(
+            audio->swr_context,
+            output_data,
+            output_sample_count,
+            (const uint8_t**)av_frame->data, 
+            av_frame->nb_samples
         );
 
-        if (result < 0) {
+        if (converted_samples < 0) {
             free(samples);
             return TPXL_AUDIO_DECODE_FAILED;
         }
 
         frame->samples = samples;
-        frame->format = tpxl_audio_format_map[av_frame->format];
+        frame->format = tpxl_audio_format_map[audio->output_format];
+        frame->sample_count = converted_samples;
         frame->pts = av_frame->pts;
-        frame->sample_count = av_frame->nb_samples;
 
         return TPXL_OK;
     }
@@ -224,8 +269,7 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
 
     // try to receive pending frames
     frame_result = tpxl_receive_audio_frame(
-        audio->codec_context, 
-        audio->av_frame,
+        audio,
         out_audio_frame
     );
 
@@ -273,8 +317,7 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
         }
 
         frame_result = tpxl_receive_audio_frame(
-            audio->codec_context, 
-            audio->av_frame,
+            audio,
             out_audio_frame
         );
 
@@ -295,7 +338,13 @@ void tpxl_close_audio(TpxlAudio* audio) {
     av_packet_free(&audio->av_packet);
     av_frame_free(&audio->av_frame);
 
+    swr_free(&audio->swr_context);
+    
     avcodec_free_context(&audio->codec_context);
+
+    av_channel_layout_uninit(&audio->channel_layout);
+    av_channel_layout_uninit(&audio->output_channel_layout);
+
     avformat_close_input(&audio->format_context);
 
     free(audio);
