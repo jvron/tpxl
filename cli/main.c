@@ -10,7 +10,7 @@
 #include "cli.h"
 
 int main(int argc, char* argv[]) {
-
+    
     bool print_info = false;
 
     static struct option options[] = {
@@ -32,15 +32,17 @@ int main(int argc, char* argv[]) {
                     "    tpxl [OPTIONS] <file>\n"
                     "\n"
                     "Options:\n"
-                    "    -i, --info       Print image information\n"
+                    "    -i, --info       Print media information\n"
                     "    -h, --help       Show this help message\n"
                     "    -V, --version    Show version information\n"
                     "\n"
                     "Arguments:\n"
-                    "    <file>           Image file to display\n"
+                    "    <file>           Media file to open\n"
                     "\n"
                     "Examples:\n"
                     "    tpxl image.png\n"
+                    "    tpxl animation.gif\n"
+                    "    tpxl video.mp4\n"
                     "    tpxl --info image.png\n"
                     "    tpxl -h\n"
                 );
@@ -61,9 +63,15 @@ int main(int argc, char* argv[]) {
         printf("Usage: tpxl [OPTIONS] <file>\n");
         return EXIT_FAILURE;
     }
+
+    TpxlFileType file_type = tpxl_detect_file_type(file);
+
+    if (file_type == TPXL_FILE_UNKNOWN) {
+        printf("Error: %s", tpxl_result_to_string(TPXL_INVALID_FILE));
+        return EXIT_FAILURE;
+    }
     
     TpxlContext context;
-
     TpxlResult result = tpxl_init_context(&context);
 
     if (result != TPXL_OK) {
@@ -92,16 +100,9 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    TpxlFileType file_type = tpxl_detect_file_type(file);
-
     int exit_code = 0;
 
     switch(file_type) {
-
-        case TPXL_FILE_UNKNOWN:
-            printf("Error: %s", tpxl_result_to_string(TPXL_INVALID_FILE));
-            return EXIT_FAILURE;
-
         case TPXL_FILE_JPEG:
         case TPXL_FILE_PNG:
             exit_code = display_image(file, print_info, &context);
