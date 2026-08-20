@@ -3,11 +3,12 @@
 #include <stdlib.h>
 
 #include "tpxl/renderer.h"
+#include "tpxl/type.h"
 #include "tpxl/video.h"
 
 #include "cli.h"
 
-int display_video(const char* path, TpxlContext* context) {
+int play_video(const char* path, TpxlContext* context) {
 
     TpxlResult result = TPXL_OK;
 
@@ -83,6 +84,10 @@ int display_video(const char* path, TpxlContext* context) {
 
         result = tpxl_update_video_player(player, renderer);
 
+        if (result == TPXL_EOF) {
+            break;
+        }
+
         if (result != TPXL_OK) {
             printf("\033[%uB", video_rows);
             printf("Error: %s\n", tpxl_result_to_string(result));
@@ -96,8 +101,6 @@ int display_video(const char* path, TpxlContext* context) {
     printf("\033[%uB", video_rows + 1);
     fflush(stdout);
 
-    uint32_t frame_count = 0;
-    tpxl_get_video_frame_count(video, &frame_count);
     tpxl_close_video_player(player);
     tpxl_destroy_renderer(renderer);
     tpxl_close_video(video);

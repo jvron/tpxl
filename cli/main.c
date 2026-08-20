@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
             exit_code = display_gif(file, &context, print_info);
             break;
         case TPXL_FILE_VIDEO:
-            exit_code = display_video(file, &context);
+            exit_code = play_video(file, &context);
             break;
         
         default:
