@@ -9,6 +9,12 @@
 #include <libavutil/channel_layout.h>
 #include <libavutil/rational.h>
 #include <libswresample/swresample.h>
+#include <miniaudio/miniaudio.h>
+
+#include "tpxl/audio.h"
+#include "queue/queue.h"
+
+#include "thread.h"
 
 struct TpxlAudioImp {
     uint64_t duration;
@@ -29,6 +35,19 @@ struct TpxlAudioImp {
     SwrContext* swr_context;
 
     bool draining;
+};
+
+struct TpxlAudioPlayerImp {
+    TpxlAudio* audio;
+
+    ma_device device;
+    bool playing;
+
+    TpxlAudioFrameQueue frame_queue;
+
+    atomic_bool shutdown;
+    pthread_t decode_thread;
+    TpxlThreadStatus decode_status;
 };
 
 #endif

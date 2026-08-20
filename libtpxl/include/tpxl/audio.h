@@ -45,6 +45,7 @@ void tpxl_close_audio(TpxlAudio* audio);
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
 TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);
+bool tpxl_audio_playing(TpxlAudioPlayer* player);
 void tpxl_close_audio_player(TpxlAudioPlayer* player);
 
 #endif
