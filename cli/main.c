@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
             break;
 
         case TPXL_FILE_GIF:
-            exit_code = display_gif(file, &context);
+            exit_code = display_gif(file, &context, print_info);
             break;
         case TPXL_FILE_VIDEO:
             exit_code = display_video(file, &context);

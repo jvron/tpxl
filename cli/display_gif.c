@@ -26,7 +26,7 @@ static void sleep_ms(uint32_t ms) {
     nanosleep(&ts, NULL);
 }
 
-int display_gif(const char* path, TpxlContext* context) {
+int display_gif(const char* path, TpxlContext* context, bool print_info) {
 
     TpxlResult result;
 
@@ -37,6 +37,12 @@ int display_gif(const char* path, TpxlContext* context) {
         printf("Error: %s\n", tpxl_result_to_string(result));
         tpxl_free_animation(&animation);
         return EXIT_FAILURE;
+    }
+
+    if (print_info) {
+        tpxl_print_animation_info(&animation);
+        tpxl_free_animation(&animation);
+        return EXIT_SUCCESS;
     }
 
     result = tpxl_update_context_terminal(context);
