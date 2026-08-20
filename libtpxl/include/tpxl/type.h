@@ -5,13 +5,12 @@
 
 typedef enum {
     TPXL_FORMAT_UNKNOWN = 0,
-    TPXL_FORMAT_R, 
+    TPXL_FORMAT_R,
     TPXL_FORMAT_RG,
     TPXL_FORMAT_RGB,
     TPXL_FORMAT_RGBA,
 
     TPXL_FORMAT_COUNT,
-
 } TpxlFormat;
 
 typedef struct {
@@ -19,7 +18,6 @@ typedef struct {
     uint32_t height;
     TpxlFormat format;
     uint8_t* pixels;
-
 } TpxlImage;
 
 typedef enum {
@@ -30,11 +28,19 @@ typedef enum {
     TPXL_IMAGE_LOAD_FAILED,
     TPXL_GIF_LOAD_FAILED,
     TPXL_VIDEO_LOAD_FAILED,
+    TPXL_AUDIO_LOAD_FAILED,
     TPXL_EOF,
     TPXL_VIDEO_NEED_PACKET,
+    TPXL_VIDEO_PLAYER_CREATION_FAILED,
+    TPXL_VIDEO_PLAYING_FAILED,
     TPXL_VIDEO_DECODE_FAILED,
-    TPXL_FRAME_QUEUE_FULL,
-    TPXL_FRAME_QUEUE_EMPTY,
+    TPXL_AUDIO_NEED_PACKET,
+    TPXL_AUDIO_DECODE_FAILED,
+    TPXL_AUDIO_PLAYER_CREATION_FAILED,
+    TPXL_AUDIO_PLAYING_FAILED,
+    TPXL_SHUTDOWN,
+    TPXL_QUEUE_CLOSED,
+    TPXL_THREAD_CREATION_ERROR,
     TPXL_UNSUPPORTED_FORMAT,
     TPXL_OUT_OF_MEMORY,
     TPXL_ENCODING_FAILED,
@@ -43,7 +49,6 @@ typedef enum {
     TPXL_ERROR,
 
     TPXL_RESULT_COUNT,
-
 } TpxlResult;
 
 typedef enum {
@@ -51,7 +56,6 @@ typedef enum {
     TPXL_MEDIA_ANIMATED,
 
     TPXL_MEDIA_TYPE_COUNT
-    
 } TpxlMediaType;
 
 int tpxl_format_to_channels(TpxlFormat format);
