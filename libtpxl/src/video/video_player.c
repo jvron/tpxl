@@ -13,35 +13,7 @@
 #include "tpxl/video.h"
 #include "queue/queue.h"
 
-typedef enum {
-    THREAD_RUNNING = 0,
-    THREAD_WAITING,
-    THREAD_ERROR,
-    THREAD_FINISHED,
-    
-} TpxlThreadStatus;
-
-struct TpxlVideoPlayerImp {
-    TpxlRenderer* renderer;
-
-    TpxlVideo* video;
-    uint32_t frame_count;
-
-    atomic_uint frame_id;
-    bool playing;
-
-    TpxlFrameIDQueue id_queue;
-    TpxlFrameQueue frame_queue;
-
-    atomic_bool shutdown;
-    TpxlThreadStatus decode_status;
-    TpxlThreadStatus upload_status1;
-    TpxlThreadStatus upload_status2;
-
-    pthread_t decode_thread;
-    pthread_t upload_thread1;
-    pthread_t upload_thread2;
-};
+#include "internal/video_internal.h"
 
 void* tpxl_decode_worker(void* arg) {
 

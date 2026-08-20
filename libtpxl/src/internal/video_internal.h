@@ -1,6 +1,7 @@
 #ifndef TPXL_VIDEO_INTERNAL_H
 #define TPXL_VIDEO_INTERNAL_H
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -9,8 +10,13 @@
 #include <libavutil/channel_layout.h>
 #include <libavutil/rational.h>
 
+#include "tpxl/renderer.h"
 #include "tpxl/type.h"
 #include "tpxl/audio.h"
+#include "tpxl/video.h"
+#include "queue/queue.h"
+
+#include "thread.h"
 
 struct TpxlVideoImp {
     uint32_t width;
@@ -31,6 +37,28 @@ struct TpxlVideoImp {
     bool draining;
 
     TpxlAudio* audio;
+};
+
+struct TpxlVideoPlayerImp {
+    TpxlRenderer* renderer;
+
+    TpxlVideo* video;
+    uint32_t frame_count;
+
+    atomic_uint frame_id;
+    bool playing;
+
+    TpxlFrameIDQueue id_queue;
+    TpxlFrameQueue frame_queue;
+
+    atomic_bool shutdown;
+    TpxlThreadStatus decode_status;
+    TpxlThreadStatus upload_status1;
+    TpxlThreadStatus upload_status2;
+
+    pthread_t decode_thread;
+    pthread_t upload_thread1;
+    pthread_t upload_thread2;
 };
 
 #endif
