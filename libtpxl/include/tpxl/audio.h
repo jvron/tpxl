@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 typedef struct TpxlAudioImp TpxlAudio;
+typedef struct TpxlAudioPlayerImp TpxlAudioPlayer;
 
 typedef enum {
     TPXL_AUDIO_FORMAT_UNKNOWN = 0,
@@ -32,11 +33,15 @@ typedef struct {
     size_t sample_count;
 
     TpxlAudioFormat format;
-    uint64_t pts;
+    int64_t pts;
 } TpxlAudioFrame;
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
 TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
 void tpxl_close_audio(TpxlAudio* audio);
+
+TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
+TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);
+void tpxl_close_audio_player(TpxlAudioPlayer* player);
 
 #endif
