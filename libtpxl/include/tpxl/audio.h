@@ -1,9 +1,11 @@
 #ifndef TPXL_AUDIO_H
 #define TPXL_AUDIO_H
 
-#include "tpxl/type.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#include "tpxl/type.h"
 
 typedef struct TpxlAudioImp TpxlAudio;
 typedef struct TpxlAudioPlayerImp TpxlAudioPlayer;
@@ -38,6 +40,7 @@ typedef struct {
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
 TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
+void tpxl_free_audio_frame(TpxlAudioFrame* frame);
 void tpxl_close_audio(TpxlAudio* audio);
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);

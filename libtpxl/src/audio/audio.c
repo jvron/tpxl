@@ -14,6 +14,7 @@
 
 #include "tpxl/audio.h"
 #include "tpxl/type.h"
+
 #include "internal/audio_internal.h"
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
@@ -328,6 +329,16 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
     }
 
     return TPXL_OK;
+}
+
+void tpxl_free_audio_frame(TpxlAudioFrame* frame) {
+    
+    if (!frame) {
+        return;
+    }
+
+    free(frame->samples);
+    *frame = (TpxlAudioFrame){0};
 }
 
 void tpxl_close_audio(TpxlAudio* audio) {
