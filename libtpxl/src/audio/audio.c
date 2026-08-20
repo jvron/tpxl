@@ -89,6 +89,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         return TPXL_OUT_OF_MEMORY;
     }
 
+    (*audio)->swr_context = NULL;
     (*audio)->output_sample_rate = 48000;
     (*audio)->output_format = AV_SAMPLE_FMT_FLT;
     av_channel_layout_default(&(*audio)->output_channel_layout, 2);
@@ -339,7 +340,7 @@ void tpxl_close_audio(TpxlAudio* audio) {
     av_frame_free(&audio->av_frame);
 
     swr_free(&audio->swr_context);
-    
+
     avcodec_free_context(&audio->codec_context);
 
     av_channel_layout_uninit(&audio->channel_layout);
