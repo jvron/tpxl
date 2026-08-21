@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+#include "tpxl/audio.h"
 #include "tpxl/type.h"
 #include "tpxl/file.h"
 #include "tpxl/context.h"
@@ -69,6 +70,10 @@ int main(int argc, char* argv[]) {
     if (file_type == TPXL_FILE_UNKNOWN) {
         printf("Error: %s", tpxl_result_to_string(TPXL_INVALID_FILE));
         return EXIT_FAILURE;
+    }
+
+    if (file_type == TPXL_FILE_AUDIO) {
+        return play_audio(file);
     }
     
     TpxlContext context;
