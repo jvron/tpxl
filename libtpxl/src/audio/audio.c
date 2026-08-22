@@ -122,10 +122,17 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         return TPXL_AUDIO_LOAD_FAILED;
     }
 
+    if (av_channel_layout_copy(&(*audio)->channel_layout, &codec_context->ch_layout) < 0) {
+        swr_free(&(*audio)->swr_context);
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*audio);
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
     (*audio)->audio_stream_index = audio_stream_index;
     (*audio)->time_base = audio_stream->time_base;
     (*audio)->sample_rate = codec_context->sample_rate;
-    (*audio)->channel_layout = codec_context->ch_layout;
     (*audio)->format_context = format_context;
     (*audio)->codec_context = codec_context;
 
