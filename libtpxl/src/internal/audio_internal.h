@@ -43,6 +43,9 @@ struct TpxlAudioPlayerImp {
     ma_device device;
     bool playing;
 
+    TpxlAudioFrame current_frame;
+    size_t current_frame_position;
+
     TpxlAudioFrameQueue frame_queue;
 
     atomic_bool shutdown;

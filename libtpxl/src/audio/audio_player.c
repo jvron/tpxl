@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
+#include <unistd.h>
 
 #include <miniaudio/miniaudio.h>
 
@@ -12,7 +14,7 @@
 #define AUDIO_SAMPLE_RATE 48000
 #define AUDIO_CHANNELS 2
 
-void* tpxl_decode_worker(void* arg) {
+static void* tpxl_decode_worker(void* arg) {
 
     TpxlAudioPlayer* player = (TpxlAudioPlayer*)arg; 
 
@@ -58,23 +60,50 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
     (void)input;
 
     TpxlAudioPlayer* player = (TpxlAudioPlayer*)device->pUserData;
-    (void)player;
 
-    float* samples = output;
+    float* out = (float*)output;
 
-    static float phase = 0.0f;
+    ma_uint32 frames_written = 0;
 
-    for (ma_uint32 i = 0; i < frame_count; i++) {
+    while (frames_written < frame_count) {
 
-        float sample = 0.2f * sinf(phase);
+        if (player->current_frame.samples == NULL || player->current_frame_position >= player->current_frame.sample_count) {
+             
+            // Needs a decoded frame.
 
-        samples[i * 2 + 0] = sample; // left
-        samples[i * 2 + 1] = sample; // right
+            TpxlResult result = tpxl_audio_frame_queue_pop(&player->frame_queue, &player->current_frame, &player->shutdown);
 
-        phase += 2.0f * M_PI * 440.0f / AUDIO_SAMPLE_RATE;
+            if (result != TPXL_OK) {
 
-        if (phase >= 2.0f * M_PI) {
-            phase -= 2.0f * M_PI;
+                // No more audio. Fill the rest with silence.
+
+                memset(out + frames_written * AUDIO_CHANNELS, 0, (frame_count - frames_written) * AUDIO_CHANNELS * sizeof(float));
+
+                break;
+            }
+
+            player->current_frame_position = 0;
+        }
+        
+        ma_uint32 available = player->current_frame.sample_count - player->current_frame_position;
+
+        ma_uint32 needed = frame_count - frames_written;
+
+        ma_uint32 count = available < needed ? available : needed;
+
+        float* src = (float*)player->current_frame.samples + player->current_frame_position * AUDIO_CHANNELS;
+
+        memcpy(out + frames_written * AUDIO_CHANNELS, src,  count * AUDIO_CHANNELS * sizeof(float));
+
+        player->current_frame_position += count;
+        frames_written += count;
+
+        if (player->current_frame_position >= player->current_frame.sample_count) {
+
+            // The frame is completely consumed.
+
+            tpxl_free_audio_frame(&player->current_frame);
+            player->current_frame_position = 0;
         }
     }
 }
@@ -85,7 +114,7 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
         return TPXL_INVALID_ARGUMENT;
     }
 
-    *player = malloc(sizeof(TpxlAudioPlayer));
+    *player = calloc(1, sizeof(TpxlAudioPlayer));
 
     if (!*player) {
         return TPXL_OUT_OF_MEMORY;
