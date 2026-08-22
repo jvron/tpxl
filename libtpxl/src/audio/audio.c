@@ -82,7 +82,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         return TPXL_AUDIO_LOAD_FAILED;
     }
 
-    *audio = malloc(sizeof(TpxlAudio));
+    *audio = calloc(1, sizeof(TpxlAudio));
     
     if (!*audio) {
         avcodec_free_context(&codec_context);
@@ -135,6 +135,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
     (*audio)->sample_rate = codec_context->sample_rate;
     (*audio)->format_context = format_context;
     (*audio)->codec_context = codec_context;
+    (*audio)->draining = false;
 
     AVPacket* av_packet = av_packet_alloc();
     AVFrame* av_frame = av_frame_alloc();
