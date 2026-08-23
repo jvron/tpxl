@@ -74,21 +74,18 @@ typedef struct {
 
 TpxlResult tpxl_init_frame_queue(TpxlFrameQueue* queue);
 void tpxl_frame_queue_close(TpxlFrameQueue* queue);
-bool tpxl_frame_queue_full(TpxlFrameQueue* queue);
 TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame, atomic_bool* shutdown);
 TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* out_frame, atomic_bool* shutdown);
 void tpxl_destroy_frame_queue(TpxlFrameQueue* queue);
 
 TpxlResult tpxl_init_frame_id_queue(TpxlFrameIDQueue* queue);
 void tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue);
-bool tpxl_frame_id_queue_full(TpxlFrameIDQueue* queue);
 TpxlResult tpxl_frame_id_queue_push(TpxlFrameIDQueue* queue, uint32_t frame_id, atomic_bool* shutdown);
 TpxlResult tpxl_frame_id_queue_pop(TpxlFrameIDQueue* queue, uint32_t* out_frame_id, atomic_bool* shutdown);
 void tpxl_destroy_frame_id_queue(TpxlFrameIDQueue* queue);
 
 TpxlResult tpxl_init_audio_frame_queue(TpxlAudioFrameQueue* queue);
 void tpxl_audio_frame_queue_close(TpxlAudioFrameQueue* queue);
-bool tpxl_audio_frame_queue_full(TpxlAudioFrameQueue* queue);
 TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFrame* frame, atomic_bool* shutdown);
 TpxlResult tpxl_audio_frame_queue_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame* out_frame, atomic_bool* shutdown);
 void tpxl_destroy_audio_frame_queue(TpxlAudioFrameQueue* queue);

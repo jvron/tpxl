@@ -57,20 +57,6 @@ void tpxl_frame_queue_close(TpxlFrameQueue* queue) {
     pthread_mutex_unlock(&queue->mutex);
 }
 
-bool tpxl_frame_queue_full(TpxlFrameQueue* queue) {
-
-    if (!queue) {
-        return false;
-    }
-    pthread_mutex_lock(&queue->mutex);
-
-    bool full = queue->count >= MAX_SLOT_COUNT;
-
-    pthread_mutex_unlock(&queue->mutex);
-    
-    return full;
-}
-
 TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame, atomic_bool* shutdown) {
 
     if (!queue || !frame || !shutdown) {
@@ -200,20 +186,6 @@ void tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue) {
     pthread_mutex_unlock(&queue->mutex);
 }
 
-bool tpxl_frame_id_queue_full(TpxlFrameIDQueue* queue) {
-
-    if (!queue) {
-        return false;
-    }
-    pthread_mutex_lock(&queue->mutex);
-
-    bool full = queue->count >= MAX_SLOT_COUNT;
-
-    pthread_mutex_unlock(&queue->mutex);
-
-    return full;
-}
-
 TpxlResult tpxl_frame_id_queue_push(TpxlFrameIDQueue* queue, uint32_t frame_id, atomic_bool* shutdown) {
 
     if (!queue || !shutdown) {
@@ -340,21 +312,6 @@ void tpxl_audio_frame_queue_close(TpxlAudioFrameQueue* queue) {
     pthread_cond_broadcast(&queue->not_full);
 
     pthread_mutex_unlock(&queue->mutex);
-}
-
-bool tpxl_audio_frame_queue_full(TpxlAudioFrameQueue* queue) {
-
-    if (!queue) {
-        return false;
-    }
-
-    pthread_mutex_lock(&queue->mutex);
-
-    bool full = queue->count >= MAX_SLOT_COUNT;
-
-    pthread_mutex_unlock(&queue->mutex);
-
-    return full;
 }
 
 TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFrame* frame, atomic_bool* shutdown) {
