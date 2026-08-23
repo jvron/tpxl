@@ -14,7 +14,10 @@
 #include <libavutil/frame.h>
 
 #include "tpxl/video.h"
+#include "tpxl/audio.h"
 #include "tpxl/type.h"
+
+#include "internal/audio_internal.h"
 #include "internal/video_internal.h"
 
 
@@ -23,6 +26,8 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     if (!path || !video) {
         return TPXL_INVALID_ARGUMENT;
     }
+
+    *video = NULL;
 
     AVFormatContext* format_context = NULL;
 
@@ -116,6 +121,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*video);
+        *video = NULL;
         return TPXL_VIDEO_LOAD_FAILED; 
     }
 
@@ -129,12 +135,29 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*video);
+        *video = NULL;
         return TPXL_VIDEO_LOAD_FAILED;
     }
 
     (*video)->sws_context = sws_ctx;
     (*video)->av_packet = av_packet;
     (*video)->av_frame = av_frame;
+
+    TpxlAudio* audio = NULL;
+    TpxlResult result = tpxl_init_video_audio(&audio, format_context);
+
+    if (result != TPXL_OK) {
+        sws_freeContext(sws_ctx);
+        av_packet_free(&av_packet);
+        av_frame_free(&av_frame);
+        avcodec_free_context(&codec_context);
+        avformat_close_input(&format_context);
+        free(*video);
+        *video = NULL;
+        return result;
+    }
+
+    (*video)->audio = audio;
 
     return TPXL_OK;
 }
@@ -385,6 +408,8 @@ void tpxl_close_video(TpxlVideo* video) {
     if (!video) {
         return;
     }
+
+    tpxl_close_video_audio(video->audio);
 
     av_frame_free(&video->av_frame);
     av_packet_free(&video->av_packet);
