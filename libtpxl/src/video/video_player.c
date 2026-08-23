@@ -7,6 +7,7 @@
 #include <threads.h>
 #include <unistd.h>
 
+#include "tpxl/audio.h"
 #include "tpxl/image.h"
 #include "tpxl/renderer.h"
 #include "tpxl/type.h"
@@ -59,7 +60,7 @@ void* tpxl_upload_worker1(void* arg) {
 
     TpxlVideoPlayer* player = (TpxlVideoPlayer*)arg;
 
-    player->upload_status1 = THREAD_RUNNING;
+    player->upload1_status = THREAD_RUNNING;
 
     while (!atomic_load(&player->shutdown)) {
 
@@ -70,18 +71,18 @@ void* tpxl_upload_worker1(void* arg) {
 
         if (result == TPXL_QUEUE_CLOSED) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status1 = THREAD_FINISHED;
+            player->upload1_status = THREAD_FINISHED;
             break;
         }
 
         if (result == TPXL_SHUTDOWN) {
-            player->upload_status1 = THREAD_FINISHED;
+            player->upload1_status = THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_free_frame(&frame);
-            player->upload_status1 = THREAD_ERROR;
+            player->upload1_status = THREAD_ERROR;
             break;
         }
 
@@ -92,20 +93,20 @@ void* tpxl_upload_worker1(void* arg) {
 
         if (result != TPXL_OK) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status1 = THREAD_ERROR;
+            player->upload1_status = THREAD_ERROR;
             break;
         }    
 
         result = tpxl_frame_id_queue_push(&player->id_queue, frame_id, &player->shutdown);
 
         if (result == TPXL_SHUTDOWN) {
-            player->upload_status1 = THREAD_FINISHED;
+            player->upload1_status = THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status1 = THREAD_ERROR;
+            player->upload1_status = THREAD_ERROR;
             break;
         }
     }
@@ -117,7 +118,7 @@ void* tpxl_upload_worker2(void* arg) {
 
     TpxlVideoPlayer* player = (TpxlVideoPlayer*)arg;
 
-    player->upload_status2 = THREAD_RUNNING;
+    player->upload2_status = THREAD_RUNNING;
 
     while (!atomic_load(&player->shutdown)) {
 
@@ -128,18 +129,18 @@ void* tpxl_upload_worker2(void* arg) {
 
         if (result == TPXL_QUEUE_CLOSED) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status2 = THREAD_FINISHED;
+            player->upload2_status = THREAD_FINISHED;
             break;
         }
 
         if (result == TPXL_SHUTDOWN) {
-            player->upload_status2 = THREAD_FINISHED;
+            player->upload2_status = THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_free_frame(&frame);
-            player->upload_status2 = THREAD_ERROR;
+            player->upload2_status = THREAD_ERROR;
             break;
         }
 
@@ -150,25 +151,56 @@ void* tpxl_upload_worker2(void* arg) {
 
         if (result != TPXL_OK) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status2 = THREAD_ERROR;
+            player->upload2_status = THREAD_ERROR;
             break;
         }
 
         result = tpxl_frame_id_queue_push(&player->id_queue, frame_id, &player->shutdown);
 
         if (result == TPXL_SHUTDOWN) {
-            player->upload_status2 = THREAD_FINISHED;
+            player->upload2_status = THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_frame_id_queue_close(&player->id_queue);
-            player->upload_status2 = THREAD_ERROR;
+            player->upload2_status = THREAD_ERROR;
             break;
         }        
     }
 
     return NULL;
+}
+
+static void tpxl_abort_video_player_creation(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return;
+    }
+
+    atomic_store(&player->shutdown, true);
+
+    tpxl_frame_queue_close(&player->frame_queue);
+    tpxl_frame_id_queue_close(&player->id_queue);
+
+    tpxl_close_audio_player(player->audio_player);
+
+    if (player->decode_thread_created) {
+        pthread_join(player->decode_thread, NULL);
+    }
+
+    if (player->upload1_thread_created) {
+        pthread_join(player->upload_thread1, NULL);
+    }
+
+    if (player->upload2_thread_created) {
+        pthread_join(player->upload_thread2, NULL);
+    }
+    
+    tpxl_destroy_frame_queue(&player->frame_queue);
+    tpxl_destroy_frame_id_queue(&player->id_queue);
+
+    free(player);
 }
 
 TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* renderer, TpxlVideo* video) {
@@ -177,7 +209,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
         return TPXL_INVALID_ARGUMENT;
     }
 
-    *player = malloc(sizeof(TpxlVideoPlayer));
+    *player = calloc(1, sizeof(TpxlVideoPlayer));
 
     if (!*player) {
         return TPXL_OUT_OF_MEMORY;
@@ -209,39 +241,48 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
         return TPXL_VIDEO_PLAYER_CREATION_FAILED;
     }
 
+    TpxlAudioPlayer* audio_player = NULL;
+
+    if (tpxl_create_audio_player(&audio_player, video->audio) != TPXL_OK) {
+        tpxl_destroy_frame_queue(&(*player)->frame_queue);
+        tpxl_destroy_frame_id_queue(&(*player)->id_queue);
+        free(*player);
+        *player = NULL;
+        return TPXL_VIDEO_PLAYER_CREATION_FAILED;
+    }
+
+    (*player)->audio_player = audio_player;
+
     int result = 0;
     result = pthread_create(&(*player)->decode_thread, NULL, tpxl_decode_worker, *player);
 
     if (result != 0) {
-        tpxl_destroy_frame_queue(&(*player)->frame_queue);
-        tpxl_destroy_frame_id_queue(&(*player)->id_queue);
-        free(*player);
+        tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
     }
+
+    (*player)->decode_thread_created = true;
 
     result = pthread_create(&(*player)->upload_thread1, NULL, tpxl_upload_worker1, *player);
 
     if (result != 0) {
-        pthread_join((*player)->decode_thread, NULL);
-        tpxl_destroy_frame_queue(&(*player)->frame_queue);
-        tpxl_destroy_frame_id_queue(&(*player)->id_queue);
-        free(*player);
+        tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
     }
+
+    (*player)->upload1_thread_created = true;
 
     result = pthread_create(&(*player)->upload_thread2, NULL, tpxl_upload_worker2, *player);
 
     if (result != 0) {
-        pthread_join((*player)->decode_thread, NULL);
-        pthread_join((*player)->upload_thread1, NULL);
-        tpxl_destroy_frame_queue(&(*player)->frame_queue);
-        tpxl_destroy_frame_id_queue(&(*player)->id_queue);
-        free(*player);
+        tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
     }
+
+    (*player)->upload2_thread_created = true;
 
     return TPXL_OK;
 }
@@ -255,7 +296,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* rende
     uint32_t frame_id = 0;
     TpxlResult result = tpxl_frame_id_queue_pop(&player->id_queue, &frame_id, &player->shutdown);
 
-    if (result == TPXL_QUEUE_CLOSED && (player->upload_status1 == THREAD_ERROR || player->upload_status2 == THREAD_ERROR)) {
+    if (result == TPXL_QUEUE_CLOSED && (player->upload1_status == THREAD_ERROR || player->upload2_status == THREAD_ERROR)) {
         player->playing = false;
         return TPXL_VIDEO_PLAYING_FAILED;
     }
@@ -303,6 +344,8 @@ void tpxl_close_video_player(TpxlVideoPlayer* player) {
 
     tpxl_frame_queue_close(&player->frame_queue);
     tpxl_frame_id_queue_close(&player->id_queue);
+
+    tpxl_close_audio_player(player->audio_player);
 
     pthread_join(player->decode_thread, NULL);
     pthread_join(player->upload_thread1, NULL);

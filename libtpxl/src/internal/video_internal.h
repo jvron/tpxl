@@ -53,12 +53,18 @@ struct TpxlVideoPlayerImp {
 
     atomic_bool shutdown;
     TpxlThreadStatus decode_status;
-    TpxlThreadStatus upload_status1;
-    TpxlThreadStatus upload_status2;
+    TpxlThreadStatus upload1_status;
+    TpxlThreadStatus upload2_status;
 
     pthread_t decode_thread;
     pthread_t upload_thread1;
     pthread_t upload_thread2;
+
+    bool decode_thread_created;
+    bool upload1_thread_created;
+    bool upload2_thread_created;
+
+    TpxlAudioPlayer* audio_player;
 };
 
 #endif

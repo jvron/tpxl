@@ -2,11 +2,11 @@
 #define TPXL_INTERNAL_THREAD_H
 
 typedef enum {
-    THREAD_RUNNING = 0,
+    THREAD_STATUS_UNKNOWN = 0,
+    THREAD_RUNNING,
     THREAD_WAITING,
-    THREAD_ERROR,
     THREAD_FINISHED,
-    
+    THREAD_ERROR
 } TpxlThreadStatus;
 
 #endif
