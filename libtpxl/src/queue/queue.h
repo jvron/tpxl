@@ -6,10 +6,13 @@
 #include <stdbool.h>
 #include <bits/pthreadtypes.h>
 
+#include <libavcodec/packet.h>
+
 #include "tpxl/audio.h"
 #include "tpxl/type.h"
 
 #define MAX_SLOT_COUNT 32
+#define MAX_PACKET_SLOT_COUNT 64
 
 typedef struct {
     TpxlImage slots[MAX_SLOT_COUNT];
@@ -53,6 +56,21 @@ typedef struct {
 
 } TpxlAudioFrameQueue;
 
+typedef struct {
+    AVPacket* packets[MAX_PACKET_SLOT_COUNT];
+
+    size_t count;
+    bool closed;
+
+    size_t read_idx;
+    size_t write_idx;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t not_empty;
+    pthread_cond_t not_full;
+    
+} TpxlPacketQueue;
+
 
 TpxlResult tpxl_init_frame_queue(TpxlFrameQueue* queue);
 void tpxl_frame_queue_close(TpxlFrameQueue* queue);
@@ -74,5 +92,11 @@ bool tpxl_audio_frame_queue_full(TpxlAudioFrameQueue* queue);
 TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFrame* frame, atomic_bool* shutdown);
 TpxlResult tpxl_audio_frame_queue_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame* out_frame, atomic_bool* shutdown);
 void tpxl_destroy_audio_frame_queue(TpxlAudioFrameQueue* queue);
+
+TpxlResult tpxl_init_packet_queue(TpxlPacketQueue* queue);
+void tpxl_packet_queue_close(TpxlPacketQueue* queue);
+TpxlResult tpxl_packet_queue_push(TpxlPacketQueue* queue, AVPacket* packet, atomic_bool* shutdown);
+TpxlResult tpxl_packet_queue_pop(TpxlPacketQueue* queue, AVPacket** out_packet, atomic_bool* shutdown);
+void tpxl_destroy_packet_queue(TpxlPacketQueue* queue);
 
 #endif
