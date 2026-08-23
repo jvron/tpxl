@@ -14,13 +14,7 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    terminal->initialized = false;
-    terminal->rows = 0;
-    terminal->columns = 0;
-    terminal->cell_width = 0;
-    terminal->cell_height = 0;
-    terminal->pixel_width = 0;
-    terminal->pixel_height = 0;
+    *terminal = (TpxlTerminal){0};
 
     // save current terminal settings
     if (tcgetattr(STDIN_FILENO, &terminal->original_termios) == -1) {
@@ -129,13 +123,7 @@ TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
         return TPXL_IO_ERROR;
     }
 
-    terminal->initialized = false;
-    terminal->rows = 0;
-    terminal->columns = 0;
-    terminal->cell_width = 0;
-    terminal->cell_height = 0;
-    terminal->pixel_width = 0;
-    terminal->pixel_height = 0;
+    *terminal = (TpxlTerminal){0};
 
     return TPXL_OK;
 }
