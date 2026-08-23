@@ -42,6 +42,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
 TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
 void tpxl_free_audio_frame(TpxlAudioFrame* frame);
 void tpxl_close_audio(TpxlAudio* audio);
+void tpxl_close_video_audio(TpxlAudio* audio);
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
 TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);

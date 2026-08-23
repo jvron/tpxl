@@ -17,11 +17,15 @@
 
 #include "internal/audio_internal.h"
 
+#define AUDIO_SAMPLE_RATE 48000
+
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
 
     if (!path || !audio) {
         return TPXL_INVALID_ARGUMENT;
     }
+
+    *audio = NULL;
 
     AVFormatContext* format_context = NULL;
 
@@ -91,7 +95,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
     }
 
     (*audio)->swr_context = NULL;
-    (*audio)->output_sample_rate = 48000;
+    (*audio)->output_sample_rate = AUDIO_SAMPLE_RATE;
     (*audio)->output_format = AV_SAMPLE_FMT_FLT;
     av_channel_layout_default(&(*audio)->output_channel_layout, 2);
 
@@ -111,6 +115,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*audio);
+        *audio = NULL;
         return TPXL_AUDIO_LOAD_FAILED;;
     }
 
@@ -119,6 +124,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*audio);
+        *audio = NULL;
         return TPXL_AUDIO_LOAD_FAILED;
     }
 
@@ -127,6 +133,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*audio);
+        *audio = NULL;
         return TPXL_AUDIO_LOAD_FAILED;
     }
 
@@ -146,6 +153,130 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
         free(*audio);
+        *audio = NULL;
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    (*audio)->av_packet = av_packet;
+    (*audio)->av_frame = av_frame;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context) {
+
+    if (!audio || !format_context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *audio = NULL;
+
+    AVStream* audio_stream = NULL;
+    int audio_stream_index = -1;
+
+    for (size_t i = 0; i < format_context->nb_streams; i++) {
+
+        if (format_context->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            audio_stream_index = i;
+            audio_stream = format_context->streams[i];
+            break;
+        } 
+    }
+
+    if (!audio_stream) {
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    // Find the decoder for the audio stream.
+    const AVCodec* codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
+
+    if (!codec) {
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    // Create and configure the decoder context.
+    AVCodecContext* codec_context = avcodec_alloc_context3(codec);
+
+    if (!codec_context) {
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    // Copy the stream's codec parameters into the decoder context
+    if (avcodec_parameters_to_context(codec_context, audio_stream->codecpar) < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    // Open the decoder.
+    if (avcodec_open2(codec_context, codec, NULL) < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    *audio = calloc(1, sizeof(TpxlAudio));
+    
+    if (!*audio) {
+        avcodec_free_context(&codec_context);
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    (*audio)->swr_context = NULL;
+    (*audio)->output_sample_rate = AUDIO_SAMPLE_RATE;
+    (*audio)->output_format = AV_SAMPLE_FMT_FLT;
+    av_channel_layout_default(&(*audio)->output_channel_layout, 2);
+
+    int result = swr_alloc_set_opts2(
+        &(*audio)->swr_context,
+        &(*audio)->output_channel_layout,
+        (*audio)->output_format,
+        (*audio)->output_sample_rate,
+        &codec_context->ch_layout,
+        codec_context->sample_fmt,
+        codec_context->sample_rate,
+        0,
+        NULL
+    );
+
+    if (result < 0) {
+        avcodec_free_context(&codec_context);
+        free(*audio);
+        *audio = NULL;
+        return TPXL_AUDIO_LOAD_FAILED;;
+    }
+
+    if (swr_init((*audio)->swr_context) < 0) {
+        swr_free(&(*audio)->swr_context);
+        avcodec_free_context(&codec_context);
+        free(*audio);
+        *audio = NULL;
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    if (av_channel_layout_copy(&(*audio)->channel_layout, &codec_context->ch_layout) < 0) {
+        swr_free(&(*audio)->swr_context);
+        avcodec_free_context(&codec_context);
+        free(*audio);
+        *audio = NULL;
+        return TPXL_AUDIO_LOAD_FAILED;
+    }
+
+    (*audio)->audio_stream_index = audio_stream_index;
+    (*audio)->time_base = audio_stream->time_base;
+    (*audio)->sample_rate = codec_context->sample_rate;
+    (*audio)->format_context = format_context;
+    (*audio)->codec_context = codec_context;
+    (*audio)->draining = false;
+
+    AVPacket* av_packet = av_packet_alloc();
+    AVFrame* av_frame = av_frame_alloc();
+
+    if (!av_packet || !av_frame) {
+        swr_free(&(*audio)->swr_context);
+        av_packet_free(&av_packet);
+        av_frame_free(&av_frame);
+        avcodec_free_context(&codec_context);
+        free(*audio);
+        *audio = NULL;
         return TPXL_OUT_OF_MEMORY;
     }
 
@@ -349,7 +480,7 @@ void tpxl_free_audio_frame(TpxlAudioFrame* frame) {
     *frame = (TpxlAudioFrame){0};
 }
 
-void tpxl_close_audio(TpxlAudio* audio) {
+static void tpxl_destroy_audio_resources(TpxlAudio* audio) {
 
     if (!audio) {
         return;
@@ -364,8 +495,28 @@ void tpxl_close_audio(TpxlAudio* audio) {
 
     av_channel_layout_uninit(&audio->channel_layout);
     av_channel_layout_uninit(&audio->output_channel_layout);
+}
+
+void tpxl_close_audio(TpxlAudio* audio) {
+
+    if (!audio) {
+        return;
+    }
+
+    tpxl_destroy_audio_resources(audio);
 
     avformat_close_input(&audio->format_context);
+
+    free(audio);
+}
+
+void tpxl_close_video_audio(TpxlAudio* audio) {
+
+    if (!audio) {
+        return;
+    }
+
+    tpxl_destroy_audio_resources(audio);
 
     free(audio);
 }

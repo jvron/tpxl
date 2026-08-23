@@ -53,4 +53,6 @@ struct TpxlAudioPlayerImp {
     TpxlThreadStatus decode_status;
 };
 
+TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context);
+
 #endif
