@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -41,7 +42,7 @@ struct TpxlAudioPlayerImp {
     TpxlAudio* audio;
 
     ma_device device;
-    bool playing;
+    atomic_bool playing;
 
     TpxlAudioFrame current_frame;
     size_t current_frame_position;

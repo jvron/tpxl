@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdatomic.h>
 
 #include <miniaudio/miniaudio.h>
 
@@ -73,12 +74,17 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
 
             TpxlResult result = tpxl_audio_frame_queue_pop(&player->frame_queue, &player->current_frame, &player->shutdown);
 
-            if (result != TPXL_OK) {
+            if (result == TPXL_QUEUE_CLOSED) {
 
                 // No more audio. Fill the rest with silence.
-
                 memset(out + frames_written * AUDIO_CHANNELS, 0, (frame_count - frames_written) * AUDIO_CHANNELS * sizeof(float));
 
+                atomic_store(&player->playing, false);
+                break;
+            }
+
+            if (result != TPXL_OK) {
+                memset(out + frames_written * AUDIO_CHANNELS, 0, (frame_count - frames_written) * AUDIO_CHANNELS * sizeof(float));
                 break;
             }
 
@@ -136,8 +142,8 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
     }
 
     (*player)->audio = audio;
-    (*player)->playing = false;
 
+    atomic_init(&(*player)->playing, false);
     atomic_init(&(*player)->shutdown, false);
 
     if (tpxl_init_audio_frame_queue(&(*player)->frame_queue) != TPXL_OK) {
@@ -173,7 +179,7 @@ TpxlResult tpxl_play_audio(TpxlAudioPlayer* player) {
         return TPXL_AUDIO_PLAYING_FAILED;
     }
 
-    player->playing = true;
+    atomic_store(&player->playing, true);
 
     return TPXL_OK;
 }
@@ -184,7 +190,7 @@ bool tpxl_audio_playing(TpxlAudioPlayer* player) {
         return false;
     }
 
-    return player->playing;
+    return atomic_load(&player->playing);
 }
 
 void tpxl_close_audio_player(TpxlAudioPlayer* player) {
@@ -194,6 +200,7 @@ void tpxl_close_audio_player(TpxlAudioPlayer* player) {
     }
 
     atomic_store(&player->shutdown, true);
+    atomic_store(&player->playing, false);
 
     tpxl_audio_frame_queue_close(&player->frame_queue);
 
