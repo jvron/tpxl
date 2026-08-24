@@ -102,7 +102,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->video_stream_index = video_stream_index;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
-    (*video)->draining = false;
+    (*video)->drain_sent = false;
 
     struct SwsContext* sws_ctx = sws_getContext(
         video_stream->codecpar->width, 
@@ -290,11 +290,11 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
 
     int result = 0;
 
-    // process frame
+    // Process frame.
     result = avcodec_receive_frame(codec_context, av_frame);
     
     if (result == 0) {
-        // got frame
+        // Got frame.
         TpxlResult tpxl_result;
         tpxl_result = tpxl_convert_frame(sws_context, av_frame, output_width, output_height, frame);
 
@@ -305,15 +305,14 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
         return TPXL_OK;
     }
     if (result == AVERROR(EAGAIN)) {
-        // decoder needs another packet
+        // Decoder needs another packet
         return TPXL_VIDEO_NEED_PACKET;
     }
     if (result == AVERROR_EOF) {
-        // decoder has been fully drained; no more frames will be produced.
+        // Decoder has been fully drained, no more frames will be produced.
         return TPXL_EOF;
     }
 
-    // error
     return TPXL_VIDEO_DECODE_FAILED;
 }
 
@@ -350,15 +349,36 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlImag
     if (result != TPXL_VIDEO_NEED_PACKET) {
         return result;
     }
+
+    int ret = 0;
     
-    // Send the packet supplied by the demuxer.
-    // packet == NULL tells FFmpeg to drain the decoder.
-    int ret = avcodec_send_packet(video->codec_context, packet);
+    if (packet) {
+
+        // Send the packet supplied by the demuxer.
+        // packet == NULL tells FFmpeg to drain the decoder.
+        ret = avcodec_send_packet(video->codec_context, packet);
+    }
+    else if (!packet && !video->drain_sent) {
+
+        // Start draining the decoder.
+        ret = avcodec_send_packet(video->codec_context, NULL);
+
+        if (ret < 0) {
+
+            if (ret == AVERROR_EOF) {
+                return TPXL_EOF;
+            }
+
+            return TPXL_VIDEO_DECODE_FAILED;
+        }
+
+        video->drain_sent = true;
+    }
 
     if (ret == AVERROR_EOF) {
         return TPXL_EOF;
     }
-
+    
     if (ret < 0) {
         return TPXL_VIDEO_DECODE_FAILED;
     }

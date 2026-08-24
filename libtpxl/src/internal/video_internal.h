@@ -35,6 +35,8 @@ struct TpxlVideoImp {
     struct SwsContext* sws_context;
     AVFrame* av_frame;
 
+    bool drain_sent;
+
     TpxlAudio* audio;
 };
 
