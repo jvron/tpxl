@@ -36,6 +36,7 @@ struct TpxlAudioImp {
     SwrContext* swr_context;
 
     bool draining;
+    bool drain_sent;
 };
 
 struct TpxlAudioPlayerImp {
@@ -55,5 +56,6 @@ struct TpxlAudioPlayerImp {
 };
 
 TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context);
+TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudioFrame* out_audio_frame);
 
 #endif

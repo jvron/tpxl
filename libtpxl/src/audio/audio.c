@@ -143,6 +143,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
     (*audio)->format_context = format_context;
     (*audio)->codec_context = codec_context;
     (*audio)->draining = false;
+    (*audio)->drain_sent = false;
 
     AVPacket* av_packet = av_packet_alloc();
     AVFrame* av_frame = av_frame_alloc();
@@ -263,16 +264,16 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
     (*audio)->audio_stream_index = audio_stream_index;
     (*audio)->time_base = audio_stream->time_base;
     (*audio)->sample_rate = codec_context->sample_rate;
-    (*audio)->format_context = format_context;
     (*audio)->codec_context = codec_context;
     (*audio)->draining = false;
-
-    AVPacket* av_packet = av_packet_alloc();
+    (*audio)->format_context = NULL;
+    (*audio)->av_packet = NULL;
+    (*audio)->drain_sent = false;
+    
     AVFrame* av_frame = av_frame_alloc();
 
-    if (!av_packet || !av_frame) {
+    if (!av_frame) {
         swr_free(&(*audio)->swr_context);
-        av_packet_free(&av_packet);
         av_frame_free(&av_frame);
         avcodec_free_context(&codec_context);
         free(*audio);
@@ -280,7 +281,6 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
         return TPXL_OUT_OF_MEMORY;
     }
 
-    (*audio)->av_packet = av_packet;
     (*audio)->av_frame = av_frame;
 
     return TPXL_OK;
@@ -468,6 +468,78 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
     }
 
     return TPXL_OK;
+}
+
+TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudioFrame* out_audio_frame) {
+
+    if (!audio || !out_audio_frame) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (!audio->codec_context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = TPXL_OK;
+
+    // Try to receive pending frames in the decoder.
+    result = tpxl_receive_audio_frame(
+        audio, 
+        out_audio_frame
+    );
+
+    if (result == TPXL_OK) {
+        return TPXL_OK;
+    }
+
+    if (result == TPXL_EOF) {
+        return TPXL_EOF;
+    }
+
+    if (result != TPXL_AUDIO_NEED_PACKET) {
+        return result;
+    }
+    
+    int ret = 0;
+
+    if (packet) {
+
+        // Send the packet supplied by the demuxer.
+        // packet == NULL tells FFmpeg to drain the decoder.
+        ret = avcodec_send_packet(audio->codec_context, packet);
+    }
+    else if (!packet && !audio->drain_sent) {
+
+        // Start draining the decoder.
+        ret = avcodec_send_packet(audio->codec_context, NULL);
+
+        if (ret < 0) {
+
+            if (ret == AVERROR_EOF) {
+                return TPXL_EOF;
+            }
+
+            return TPXL_AUDIO_DECODE_FAILED;
+        }
+
+        audio->drain_sent = true;
+    }
+
+    if (ret == AVERROR_EOF) {
+        return TPXL_EOF;
+    }
+
+    if (ret < 0) {
+        return TPXL_AUDIO_DECODE_FAILED;
+    }
+
+    // Try to receive the frame produced by that packet.
+    result = tpxl_receive_audio_frame(
+        audio, 
+        out_audio_frame
+    );
+
+    return result;
 }
 
 void tpxl_free_audio_frame(TpxlAudioFrame* frame) {
