@@ -16,7 +16,6 @@ TpxlResult tpxl_get_video_source_dimensions(TpxlVideo* video, uint32_t* width, u
 TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height);
 TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format);
 TpxlResult tpxl_get_video_frame_count(TpxlVideo* video, uint32_t* frame_count);
-TpxlResult tpxl_decode_video_frame(TpxlVideo* video, TpxlImage* frame);
 void tpxl_close_video(TpxlVideo* video);
 
 TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* renderer, TpxlVideo* video);
