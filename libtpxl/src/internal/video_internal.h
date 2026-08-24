@@ -57,7 +57,7 @@ struct TpxlVideoPlayerImp {
     TpxlFrameQueue frame_queue;
 
     atomic_bool shutdown;
-    TpxlThreadStatus demux_status;
+    _Atomic TpxlThreadStatus demux_status;
     TpxlThreadStatus decode_status;
     TpxlThreadStatus upload1_status;
     TpxlThreadStatus upload2_status;
