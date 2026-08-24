@@ -29,13 +29,15 @@ struct TpxlVideoImp {
 
     int video_stream_index;
     int video_stream_format;
+
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
-    AVFrame* av_frame;
     struct SwsContext* sws_context;
+    AVFrame* av_frame;
 
     TpxlAudio* audio;
 };
+
 
 struct TpxlVideoPlayerImp {
     TpxlRenderer* renderer;
@@ -46,18 +48,24 @@ struct TpxlVideoPlayerImp {
     atomic_uint frame_id;
     bool playing;
 
+    TpxlPacketQueue video_packet_queue;
+    TpxlPacketQueue audio_packet_queue;
+
     TpxlFrameIDQueue id_queue;
     TpxlFrameQueue frame_queue;
 
     atomic_bool shutdown;
+    TpxlThreadStatus demux_status;
     TpxlThreadStatus decode_status;
     TpxlThreadStatus upload1_status;
     TpxlThreadStatus upload2_status;
 
+    pthread_t demux_thread;
     pthread_t decode_thread;
     pthread_t upload_thread1;
     pthread_t upload_thread2;
 
+    bool demux_thread_created;
     bool decode_thread_created;
     bool upload1_thread_created;
     bool upload2_thread_created;

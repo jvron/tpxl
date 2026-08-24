@@ -7,6 +7,10 @@
 #include <threads.h>
 #include <unistd.h>
 
+#include <libavcodec/packet.h>
+#include <libavformat/avformat.h>
+
+#include "internal/thread.h"
 #include "tpxl/audio.h"
 #include "tpxl/image.h"
 #include "tpxl/renderer.h"
@@ -15,23 +19,127 @@
 #include "queue/queue.h"
 
 #include "internal/video_internal.h"
+#include "internal/audio_internal.h"
 
-void* tpxl_decode_worker(void* arg) {
+static void* tpxl_demux_worker(void* args) {
+
+    TpxlVideoPlayer* player = args;
+
+    player->demux_status = THREAD_RUNNING;
+
+    TpxlVideo* video = player->video;
+    TpxlAudio* audio = player->video->audio;
+
+    while (!atomic_load(&player->shutdown)) {
+
+        AVPacket* packet = av_packet_alloc();
+
+        if (!packet) {
+            player->demux_status = THREAD_ERROR;
+            break;
+        }
+
+        int ret = av_read_frame(video->format_context, packet);
+        
+        if (ret == AVERROR_EOF) {
+            av_packet_free(&packet);
+            tpxl_packet_queue_close(&player->video_packet_queue);
+            tpxl_packet_queue_close(&player->audio_packet_queue);
+            player->demux_status = THREAD_FINISHED;
+            break;
+        }
+
+        if (ret < 0) {
+            av_packet_free(&packet);
+            tpxl_packet_queue_close(&player->video_packet_queue);
+            tpxl_packet_queue_close(&player->audio_packet_queue);
+            player->demux_status = THREAD_ERROR;
+            break;
+        }
+
+        if (packet->stream_index == video->video_stream_index) {
+
+            TpxlResult result = tpxl_packet_queue_push(&player->video_packet_queue, packet, &player->shutdown);
+
+            if (result != TPXL_OK) {
+                av_packet_free(&packet);
+                player->demux_status = THREAD_ERROR;
+                break;
+            }
+        }
+        else if (packet->stream_index == audio->audio_stream_index) {
+
+            TpxlResult result = tpxl_packet_queue_push(&player->audio_packet_queue, packet, &player->shutdown);
+
+            if (result != TPXL_OK) {
+                av_packet_free(&packet);
+                player->demux_status = THREAD_ERROR;
+                break;
+            }
+        }
+        else {
+            av_packet_free(&packet);
+        }
+    }
+
+    return NULL;
+}
+
+static void* tpxl_video_decode_worker(void* arg) {
 
     TpxlVideoPlayer* player = (TpxlVideoPlayer*)arg; 
 
     player->decode_status = THREAD_RUNNING;
 
+    bool draining = false;
+
     while (!atomic_load(&player->shutdown)) {
 
+        AVPacket* packet = NULL;
+
+        TpxlResult result = TPXL_OK;
+
+        if (!draining) {
+            result = tpxl_packet_queue_pop(&player->video_packet_queue, &packet, &player->shutdown);
+
+            if (result == TPXL_SHUTDOWN) {
+                player->decode_status = THREAD_FINISHED;
+                break;
+            }
+            if (result == TPXL_QUEUE_CLOSED) {
+
+                if (player->demux_status == THREAD_FINISHED) {
+                    draining = true;
+                    packet = NULL;
+                } 
+                else {
+                    tpxl_frame_queue_close(&player->frame_queue);
+                    player->decode_status = THREAD_ERROR;
+                    break;
+                }
+            } 
+            else if (result != TPXL_OK) {
+                tpxl_frame_queue_close(&player->frame_queue);
+                player->decode_status = THREAD_ERROR;
+                break;
+            }
+        }
+
         TpxlImage frame = {0};
-        TpxlResult result = tpxl_decode_video_frame(player->video, &frame);
+        result = tpxl_decode_video_packet(player->video, packet, &frame);
+
+        av_packet_free(&packet);
 
         if (result == TPXL_EOF) {
             tpxl_frame_queue_close(&player->frame_queue);
             player->decode_status = THREAD_FINISHED;
             break;
         }
+
+        if (result == TPXL_VIDEO_NEED_PACKET) {
+            continue;
+        }
+
         if (result != TPXL_OK) {
             tpxl_frame_queue_close(&player->frame_queue);
             player->decode_status = THREAD_ERROR;
@@ -41,6 +149,7 @@ void* tpxl_decode_worker(void* arg) {
         result = tpxl_frame_queue_push(&player->frame_queue, &frame, &player->shutdown);
 
         if (result == TPXL_SHUTDOWN) {
+            tpxl_free_frame(&frame);
             player->decode_status = THREAD_FINISHED;
             break;
         }
@@ -56,7 +165,7 @@ void* tpxl_decode_worker(void* arg) {
     return NULL;
 }
 
-void* tpxl_upload_worker1(void* arg) {
+static void* tpxl_upload_worker1(void* arg) {
 
     TpxlVideoPlayer* player = (TpxlVideoPlayer*)arg;
 
@@ -114,7 +223,7 @@ void* tpxl_upload_worker1(void* arg) {
     return NULL;
 }
 
-void* tpxl_upload_worker2(void* arg) {
+static void* tpxl_upload_worker2(void* arg) {
 
     TpxlVideoPlayer* player = (TpxlVideoPlayer*)arg;
 
@@ -185,6 +294,10 @@ static void tpxl_abort_video_player_creation(TpxlVideoPlayer* player) {
 
     tpxl_close_audio_player(player->audio_player);
 
+    if (player->demux_thread_created) {
+        pthread_join(player->demux_thread, NULL);
+    }
+
     if (player->decode_thread_created) {
         pthread_join(player->decode_thread, NULL);
     }
@@ -254,7 +367,17 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->audio_player = audio_player;
 
     int result = 0;
-    result = pthread_create(&(*player)->decode_thread, NULL, tpxl_decode_worker, *player);
+    result = pthread_create(&(*player)->demux_thread, NULL, tpxl_demux_worker, *player);
+
+    if (result != 0) {
+        tpxl_abort_video_player_creation(*player);
+        *player = NULL;
+        return TPXL_THREAD_CREATION_ERROR;
+    }
+
+    (*player)->demux_thread_created = true;
+
+    result = pthread_create(&(*player)->decode_thread, NULL, tpxl_video_decode_worker, *player);
 
     if (result != 0) {
         tpxl_abort_video_player_creation(*player);
@@ -347,6 +470,7 @@ void tpxl_close_video_player(TpxlVideoPlayer* player) {
 
     tpxl_close_audio_player(player->audio_player);
 
+    pthread_join(player->demux_thread, NULL);
     pthread_join(player->decode_thread, NULL);
     pthread_join(player->upload_thread1, NULL);
     pthread_join(player->upload_thread2, NULL);
