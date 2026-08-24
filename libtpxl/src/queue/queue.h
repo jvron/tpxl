@@ -12,7 +12,7 @@
 #include "tpxl/type.h"
 
 #define MAX_SLOT_COUNT 32
-#define MAX_PACKET_SLOT_COUNT 64
+#define MAX_PACKET_COUNT 64
 
 typedef struct {
     TpxlImage slots[MAX_SLOT_COUNT];
@@ -57,7 +57,7 @@ typedef struct {
 } TpxlAudioFrameQueue;
 
 typedef struct {
-    AVPacket* packets[MAX_PACKET_SLOT_COUNT];
+    AVPacket* packets[MAX_PACKET_COUNT];
 
     size_t count;
     bool closed;

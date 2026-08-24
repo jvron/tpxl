@@ -451,7 +451,7 @@ TpxlResult tpxl_packet_queue_push(TpxlPacketQueue* queue, AVPacket* packet, atom
     
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count >= MAX_SLOT_COUNT && !queue->closed && !atomic_load(shutdown)) {
+    while (queue->count >= MAX_PACKET_COUNT && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_full, &queue->mutex);
     }
 
@@ -466,7 +466,7 @@ TpxlResult tpxl_packet_queue_push(TpxlPacketQueue* queue, AVPacket* packet, atom
     }
 
     queue->packets[queue->write_idx] = packet;
-    queue->write_idx = (queue->write_idx + 1) % MAX_SLOT_COUNT;
+    queue->write_idx = (queue->write_idx + 1) % MAX_PACKET_COUNT;
     queue->count++;
 
     pthread_cond_signal(&queue->not_empty);
@@ -501,7 +501,7 @@ TpxlResult tpxl_packet_queue_pop(TpxlPacketQueue* queue, AVPacket** out_packet, 
     *out_packet = queue->packets[queue->read_idx];
 
     queue->packets[queue->read_idx] = NULL;
-    queue->read_idx = (queue->read_idx + 1) % MAX_SLOT_COUNT;
+    queue->read_idx = (queue->read_idx + 1) % MAX_PACKET_COUNT;
     queue->count--;
 
     pthread_cond_signal(&queue->not_full);
