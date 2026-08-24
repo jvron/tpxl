@@ -30,6 +30,8 @@ struct TpxlVideoImp {
     int video_stream_index;
     int video_stream_format;
 
+    AVRational time_base;
+
     AVFormatContext* format_context;
     AVCodecContext* codec_context;
     struct SwsContext* sws_context;
@@ -75,6 +77,6 @@ struct TpxlVideoPlayerImp {
     TpxlAudioPlayer* audio_player;
 };
 
-TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlImage* out_frame);
+TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVideoFrame* out_frame);
 
 #endif

@@ -15,6 +15,7 @@
 
 #include "tpxl/video.h"
 #include "tpxl/audio.h"
+#include "tpxl/image.h"
 #include "tpxl/type.h"
 
 #include "internal/audio_internal.h"
@@ -100,6 +101,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->duration = video_stream->duration;
     (*video)->frame_count = video_stream->nb_frames;
     (*video)->video_stream_index = video_stream_index;
+    (*video)->time_base = video_stream->time_base;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
     (*video)->drain_sent = false;
@@ -286,7 +288,7 @@ static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av
     return TPXL_OK;
 }
 
-static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecContext* codec_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {
+static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecContext* codec_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlVideoFrame* video_frame) {
 
     int result = 0;
 
@@ -296,11 +298,13 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
     if (result == 0) {
         // Got frame.
         TpxlResult tpxl_result;
-        tpxl_result = tpxl_convert_frame(sws_context, av_frame, output_width, output_height, frame);
+        tpxl_result = tpxl_convert_frame(sws_context, av_frame, output_width, output_height, &video_frame->frame);
 
         if (tpxl_result != TPXL_OK) {
             return tpxl_result;
         }
+        
+        video_frame->pts = av_frame->pts;
 
         return TPXL_OK;
     }
@@ -316,7 +320,7 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
     return TPXL_VIDEO_DECODE_FAILED;
 }
 
-TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlImage* out_frame) {
+TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVideoFrame* out_frame) {
 
     if (!video || !out_frame) {
         return TPXL_INVALID_ARGUMENT;
@@ -395,6 +399,16 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlImag
     );
 
     return result;
+}
+
+void tpxl_free_video_frame(TpxlVideoFrame* video_frame) {
+
+    if (!video_frame) {
+        return;
+    }
+
+    tpxl_free_frame(&video_frame->frame);
+    *video_frame = (TpxlVideoFrame){0};
 }
 
 void tpxl_close_video(TpxlVideo* video) {
