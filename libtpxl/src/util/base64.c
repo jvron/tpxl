@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <libbase64.h>
@@ -11,9 +12,7 @@ size_t tpxl_base64_encoded_size(size_t length) {
 
 TpxlResult tpxl_base64_encode(const uint8_t* src, size_t srclen, char* output, size_t* output_length) {
 
-    if (!src || !output) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(src && output && output_length);
 
     base64_encode((const char*)src, srclen, output, output_length, 0);
 
