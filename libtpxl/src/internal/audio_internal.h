@@ -16,6 +16,7 @@
 #include "queue/queue.h"
 
 #include "thread.h"
+#include "video_internal.h"
 
 struct TpxlAudioImp {
     uint64_t duration;
@@ -57,5 +58,6 @@ struct TpxlAudioPlayerImp {
 
 TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context);
 TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudioFrame* out_audio_frame);
+TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio* audio);
 
 #endif
