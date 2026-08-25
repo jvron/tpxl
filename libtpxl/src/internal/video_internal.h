@@ -55,8 +55,8 @@ struct TpxlVideoPlayerImp {
     TpxlPacketQueue video_packet_queue;
     TpxlPacketQueue audio_packet_queue;
 
-    TpxlFrameIDQueue id_queue;
-    TpxlFrameQueue frame_queue;
+    TpxlVideoFrameQueue upload_queue;
+    TpxlVideoFrameQueue display_queue;
 
     atomic_bool shutdown;
     _Atomic TpxlThreadStatus demux_status;

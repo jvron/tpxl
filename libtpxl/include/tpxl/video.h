@@ -12,6 +12,7 @@ typedef struct TpxlVideoPlayerImp TpxlVideoPlayer;
 
 typedef struct {
     TpxlImage frame;
+    uint32_t id;
     int64_t pts;
 } TpxlVideoFrame;
 
