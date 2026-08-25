@@ -33,9 +33,8 @@ typedef enum {
 typedef struct {
     uint8_t* samples;
     size_t sample_count;
-
-    TpxlAudioFormat format;
     int64_t pts;
+    TpxlAudioFormat format;
 } TpxlAudioFrame;
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
@@ -46,6 +45,7 @@ void tpxl_close_video_audio(TpxlAudio* audio);
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
 TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);
+double tpxl_get_audio_clock(TpxlAudioPlayer* player);
 bool tpxl_audio_playing(TpxlAudioPlayer* player);
 void tpxl_close_audio_player(TpxlAudioPlayer* player);
 

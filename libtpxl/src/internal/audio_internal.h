@@ -49,6 +49,8 @@ struct TpxlAudioPlayerImp {
     TpxlAudioFrame current_frame;
     size_t current_frame_position;
 
+    atomic_uint_fast64_t frames_played;
+
     TpxlAudioFrameQueue frame_queue;
 
     atomic_bool shutdown;
