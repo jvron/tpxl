@@ -1,4 +1,3 @@
-#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +5,7 @@
 #include <pthread.h>
 #include <threads.h>
 #include <unistd.h>
+#include <stdatomic.h>
 
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
@@ -15,10 +15,13 @@
 #include "tpxl/renderer.h"
 #include "tpxl/type.h"
 #include "tpxl/video.h"
-#include "queue/queue.h"
+#include "tpxl/util.h"
 
+#include "queue/queue.h"
 #include "internal/video_internal.h"
 #include "internal/audio_internal.h"
+
+#define VIDEO_SYNC_THRESHOLD 0.02
 
 static void* tpxl_demux_worker(void* args) {
 
@@ -352,7 +355,9 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->audio_packet_queue = (TpxlPacketQueue){0};
     (*player)->upload_queue = (TpxlVideoFrameQueue){0};
     (*player)->display_queue = (TpxlVideoFrameQueue){0};
-    (*player)->playing = true;
+    (*player)->current_frame = (TpxlVideoFrame){0};
+    (*player)->has_current_frame = false;
+    (*player)->playing = false;
     
     uint32_t count = 0;
     tpxl_get_video_frame_count(video, &count);
@@ -449,31 +454,91 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* rende
         return TPXL_INVALID_ARGUMENT;
     }
 
-    TpxlVideoFrame video_frame = {0};
-    TpxlResult result = tpxl_video_frame_queue_pop(&player->display_queue, &video_frame, &player->shutdown);
+    TpxlResult result = TPXL_OK;
 
-    if (result == TPXL_QUEUE_CLOSED && (player->upload1_status == THREAD_ERROR || player->upload2_status == THREAD_ERROR)) {
-        player->playing = false;
+    if (!player->has_current_frame) {
+
+        TpxlVideoFrame video_frame = {0};
+        result = tpxl_video_frame_queue_pop(&player->display_queue, &video_frame, &player->shutdown);
+
+        if (result == TPXL_QUEUE_CLOSED && (player->upload1_status == THREAD_ERROR || player->upload2_status == THREAD_ERROR)) {
+            player->playing = false;
+            return TPXL_VIDEO_PLAYING_FAILED;
+        }
+
+        if (result == TPXL_QUEUE_CLOSED) {
+            player->playing = false;
+            return TPXL_EOF;
+        }
+
+        if (result != TPXL_OK) {
+            player->playing = false;
+            return result;
+        }
+
+        player->current_frame = video_frame;
+        player->has_current_frame = true;
+    }
+
+    double audio_clock = tpxl_get_audio_clock(player->audio_player);
+    double video_time = av_q2d(player->video->time_base) * player->current_frame.pts;
+    double diff = video_time - audio_clock;
+
+    if (diff > VIDEO_SYNC_THRESHOLD) {
+
+        // Video is ahead
+        // Wait for audio clock to catch up.
+        tpxl_sleep_ms(1);
+
+        return TPXL_OK;
+    }
+    else if (diff < -VIDEO_SYNC_THRESHOLD) {
+
+        // Video is behind. 
+        // Drop this frame.
+        tpxl_free_video_frame(&player->current_frame);
+        player->has_current_frame = false;
+    }
+    else {
+        result = tpxl_renderer_display(renderer, player->current_frame.id);
+
+        tpxl_free_video_frame(&player->current_frame);
+        player->has_current_frame = false;
+
+        if (result != TPXL_OK) {
+            player->playing = false;
+            return result;
+        }
+    }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_play_video(TpxlVideoPlayer* player, TpxlRenderer* renderer) {
+
+    if (!player || !renderer) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = tpxl_play_audio(player->audio_player);
+
+    if (result != TPXL_OK) {
         return TPXL_VIDEO_PLAYING_FAILED;
     }
 
-    if (result == TPXL_QUEUE_CLOSED) {
-        player->playing = false;
-        return TPXL_EOF;
-    }
+    player->playing = true;
 
-    if (result != TPXL_OK) {
-        player->playing = false;
-        return result;
-    }
+    while (player->playing) {
 
-    result = tpxl_renderer_display(renderer, video_frame.id);
+        result = tpxl_update_video_player(player, renderer);
 
-    tpxl_free_video_frame(&video_frame);
+        if (result == TPXL_EOF) {
+            break;
+        }
 
-    if (result != TPXL_OK) {
-        player->playing = false;
-        return result;
+        if (result != TPXL_OK) {
+            return result;
+        }
     }
 
     return TPXL_OK;

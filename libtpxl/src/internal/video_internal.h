@@ -42,7 +42,6 @@ struct TpxlVideoImp {
     TpxlAudio* audio;
 };
 
-
 struct TpxlVideoPlayerImp {
     TpxlRenderer* renderer;
 
@@ -51,6 +50,9 @@ struct TpxlVideoPlayerImp {
 
     atomic_uint frame_id;
     bool playing;
+
+    TpxlVideoFrame current_frame;
+    bool has_current_frame;
 
     TpxlPacketQueue video_packet_queue;
     TpxlPacketQueue audio_packet_queue;

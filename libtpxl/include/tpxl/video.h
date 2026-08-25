@@ -14,6 +14,7 @@ typedef struct {
     TpxlImage frame;
     uint32_t id;
     int64_t pts;
+    
 } TpxlVideoFrame;
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video);
@@ -27,6 +28,7 @@ void tpxl_close_video(TpxlVideo* video);
 
 TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* renderer, TpxlVideo* video);
 TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* renderer);
+TpxlResult tpxl_play_video(TpxlVideoPlayer* player, TpxlRenderer* renderer);
 bool tpxl_video_playing(TpxlVideoPlayer* player);
 void tpxl_close_video_player(TpxlVideoPlayer* player);
 
