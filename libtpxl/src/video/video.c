@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include <libavutil/pixfmt.h>
 #include <libswscale/swscale.h>
@@ -20,7 +21,6 @@
 
 #include "internal/audio_internal.h"
 #include "internal/video_internal.h"
-
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
@@ -230,15 +230,11 @@ TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_video_frame_count(TpxlVideo* video, uint32_t* frame_count) {
+uint32_t tpxl_get_video_frame_count(TpxlVideo* video) {
 
-    if (!video || !frame_count) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(video);
 
-    *frame_count = video->frame_count;
-
-    return TPXL_OK;
+    return video->frame_count;
 }
 
 static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {

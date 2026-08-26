@@ -14,7 +14,7 @@ typedef struct {
     TpxlImage frame;
     uint32_t id;
     int64_t pts;
-    
+
 } TpxlVideoFrame;
 
 TpxlResult tpxl_open_video(const char* path, TpxlVideo** video);
@@ -22,7 +22,7 @@ TpxlResult tpxl_video_set_output_size(TpxlVideo* video, uint32_t width, uint32_t
 TpxlResult tpxl_get_video_source_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height);
 TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height);
 TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format);
-TpxlResult tpxl_get_video_frame_count(TpxlVideo* video, uint32_t* frame_count);
+uint32_t tpxl_get_video_frame_count(TpxlVideo* video);
 void tpxl_free_video_frame(TpxlVideoFrame* video_frame);
 void tpxl_close_video(TpxlVideo* video);
 
