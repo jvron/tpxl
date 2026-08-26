@@ -322,7 +322,7 @@ TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFram
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count >= MAX_SLOT_COUNT && !queue->closed && !atomic_load(shutdown)) {
+    while (queue->count >= MAX_AUDIO_FRAME_COUNT && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_full, &queue->mutex);
     }
 
@@ -337,7 +337,7 @@ TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFram
     }
 
     queue->slots[queue->write_idx] = *frame;
-    queue->write_idx = (queue->write_idx + 1) % MAX_SLOT_COUNT;
+    queue->write_idx = (queue->write_idx + 1) % MAX_AUDIO_FRAME_COUNT;
     queue->count++;
 
     pthread_cond_signal(&queue->not_empty);
@@ -372,7 +372,7 @@ TpxlResult tpxl_audio_frame_queue_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame
     *out_frame = queue->slots[queue->read_idx];
 
     queue->slots[queue->read_idx] = (TpxlAudioFrame){0};
-    queue->read_idx = (queue->read_idx + 1) % MAX_SLOT_COUNT;
+    queue->read_idx = (queue->read_idx + 1) % MAX_AUDIO_FRAME_COUNT;
     queue->count--;
 
     pthread_cond_signal(&queue->not_full);
@@ -450,7 +450,7 @@ TpxlResult tpxl_video_frame_queue_push(TpxlVideoFrameQueue* queue, TpxlVideoFram
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count >= MAX_SLOT_COUNT && !queue->closed && !atomic_load(shutdown)) {
+    while (queue->count >= MAX_VIDEO_FRAME_COUNT && !queue->closed && !atomic_load(shutdown)) {
         pthread_cond_wait(&queue->not_full, &queue->mutex);
     }
 
@@ -465,7 +465,7 @@ TpxlResult tpxl_video_frame_queue_push(TpxlVideoFrameQueue* queue, TpxlVideoFram
     }
 
     queue->slots[queue->write_idx] = *frame;
-    queue->write_idx = (queue->write_idx + 1) % MAX_SLOT_COUNT;
+    queue->write_idx = (queue->write_idx + 1) % MAX_VIDEO_FRAME_COUNT;
     queue->count++;
 
     pthread_cond_signal(&queue->not_empty);
@@ -500,7 +500,7 @@ TpxlResult tpxl_video_frame_queue_pop(TpxlVideoFrameQueue* queue, TpxlVideoFrame
     *out_frame = queue->slots[queue->read_idx];
 
     queue->slots[queue->read_idx] = (TpxlVideoFrame){0};
-    queue->read_idx = (queue->read_idx + 1) % MAX_SLOT_COUNT;
+    queue->read_idx = (queue->read_idx + 1) % MAX_VIDEO_FRAME_COUNT;
     queue->count--;
 
     pthread_cond_signal(&queue->not_full);

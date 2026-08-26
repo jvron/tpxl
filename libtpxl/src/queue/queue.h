@@ -13,6 +13,8 @@
 #include "tpxl/type.h"
 
 #define MAX_SLOT_COUNT 32
+#define MAX_VIDEO_FRAME_COUNT 16
+#define MAX_AUDIO_FRAME_COUNT 32
 #define MAX_PACKET_COUNT 64
 
 typedef struct {
@@ -44,7 +46,7 @@ typedef struct {
 } TpxlFrameIDQueue;
 
 typedef struct {
-    TpxlAudioFrame slots[MAX_SLOT_COUNT];
+    TpxlAudioFrame slots[MAX_AUDIO_FRAME_COUNT];
 
     size_t count;
     uint32_t write_idx;
@@ -58,7 +60,7 @@ typedef struct {
 } TpxlAudioFrameQueue;
 
 typedef struct {
-    TpxlVideoFrame slots[MAX_SLOT_COUNT];
+    TpxlVideoFrame slots[MAX_VIDEO_FRAME_COUNT];
 
     size_t count;
     uint32_t write_idx;
