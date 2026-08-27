@@ -106,6 +106,7 @@ TpxlResult tpxl_init_audio_frame_queue(TpxlAudioFrameQueue* queue);
 void tpxl_audio_frame_queue_close(TpxlAudioFrameQueue* queue);
 TpxlResult tpxl_audio_frame_queue_push(TpxlAudioFrameQueue* queue, TpxlAudioFrame* frame, atomic_bool* shutdown);
 TpxlResult tpxl_audio_frame_queue_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame* out_frame, atomic_bool* shutdown);
+TpxlResult tpxl_audio_frame_queue_try_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame* out_frame, atomic_bool* shutdown);
 void tpxl_destroy_audio_frame_queue(TpxlAudioFrameQueue* queue);
 
 TpxlResult tpxl_init_video_frame_queue(TpxlVideoFrameQueue* queue);

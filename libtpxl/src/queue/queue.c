@@ -382,6 +382,42 @@ TpxlResult tpxl_audio_frame_queue_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame
     return TPXL_OK;
 }
 
+TpxlResult tpxl_audio_frame_queue_try_pop(TpxlAudioFrameQueue* queue, TpxlAudioFrame* out_frame, atomic_bool* shutdown) {
+
+    if (!queue || !out_frame || !shutdown) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    pthread_mutex_lock(&queue->mutex);
+
+    while (queue->count == 0 && !queue->closed && !atomic_load(shutdown)) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_EMPTY;
+    }
+
+    if (atomic_load(shutdown)) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_SHUTDOWN;
+    }
+
+    if (queue->count == 0 && queue->closed) {
+        pthread_mutex_unlock(&queue->mutex);
+        return TPXL_QUEUE_CLOSED;
+    }
+
+    *out_frame = queue->slots[queue->read_idx];
+
+    queue->slots[queue->read_idx] = (TpxlAudioFrame){0};
+    queue->read_idx = (queue->read_idx + 1) % MAX_AUDIO_FRAME_COUNT;
+    queue->count--;
+
+    pthread_cond_signal(&queue->not_full);
+
+    pthread_mutex_unlock(&queue->mutex);
+
+    return TPXL_OK;
+}
+
 void tpxl_destroy_audio_frame_queue(TpxlAudioFrameQueue* queue) {
 
     if (!queue) {
