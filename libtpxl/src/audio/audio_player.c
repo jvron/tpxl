@@ -156,7 +156,12 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
              
             // Needs a decoded frame.
 
-            TpxlResult result = tpxl_audio_frame_queue_pop(&player->frame_queue, &player->current_frame, &player->shutdown);
+            TpxlResult result = tpxl_audio_frame_queue_try_pop(&player->frame_queue, &player->current_frame, &player->shutdown);
+
+            if (result == TPXL_QUEUE_EMPTY) {
+                memset(out + frames_written * AUDIO_CHANNELS, 0, (frame_count - frames_written) * AUDIO_CHANNELS * sizeof(float));
+                break;
+            }
 
             if (result == TPXL_QUEUE_CLOSED) {
 
@@ -197,7 +202,7 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
         }
     }
 
-    atomic_fetch_add(&player->frames_played, frames_written);
+    atomic_fetch_add(&player->frames_played, frame_count);
 }
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) {
