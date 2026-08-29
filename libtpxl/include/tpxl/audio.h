@@ -38,6 +38,7 @@ typedef struct {
 } TpxlAudioFrame;
 
 TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
+double tpxl_get_audio_duration(TpxlAudio* audio);
 TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
 void tpxl_free_audio_frame(TpxlAudioFrame* frame);
 void tpxl_close_audio(TpxlAudio* audio);

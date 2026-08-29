@@ -286,6 +286,19 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
     return TPXL_OK;
 }
 
+double tpxl_get_audio_duration(TpxlAudio* audio) {
+
+    if (!audio) {
+        return 0.0;
+    }
+
+    if (audio->format_context->duration == AV_NOPTS_VALUE) {
+        return 0.0;
+    }
+
+    return (double)audio->format_context->duration / AV_TIME_BASE;
+}
+
 static const TpxlAudioFormat tpxl_audio_format_map[] = {
     [AV_SAMPLE_FMT_U8]   = TPXL_AUDIO_FORMAT_U8,
     [AV_SAMPLE_FMT_S16]  = TPXL_AUDIO_FORMAT_S16,

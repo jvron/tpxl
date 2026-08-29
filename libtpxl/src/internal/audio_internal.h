@@ -19,8 +19,6 @@
 #include "video_internal.h"
 
 struct TpxlAudioImp {
-    uint64_t duration;
-
     int audio_stream_index;
     int sample_rate;
     AVRational time_base;
