@@ -283,6 +283,19 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
     return TPXL_OK;
 }
 
+void tpxl_kitty_delete(uint32_t frame_id) {
+
+    fprintf(
+        stdout,
+        "\x1b_Ga=d,"
+        "d=i,"
+        "i=%u\x1b\\",
+        frame_id
+    );
+
+    fflush(stdout);
+}
+
 void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context) {
 
     if (!kitty_context) {

@@ -105,6 +105,11 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
     return tpxl_kitty_display(&renderer->kitty_context, frame_id);
 }
 
+void tpxl_renderer_delete(uint32_t frame_id) {
+    
+    tpxl_kitty_delete(frame_id);
+}
+
 void tpxl_destroy_renderer(TpxlRenderer* renderer) {
 
     if (!renderer) {

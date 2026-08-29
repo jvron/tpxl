@@ -15,6 +15,7 @@ TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaTy
 TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame);
 TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id);
+void tpxl_renderer_delete(uint32_t frame_id);
 void tpxl_destroy_renderer(TpxlRenderer* renderer);
 
 #endif
