@@ -11,7 +11,10 @@ typedef struct {
     size_t frame_size;
 
     char* encoded_data;
-    size_t encoded_length;
+    size_t encoded_capacity;
+
+    uint8_t* compressed_data;
+    size_t compressed_capacity;
 
     int kitty_format;
     int cursor_policy;

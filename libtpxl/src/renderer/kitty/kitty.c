@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <zlib.h>
+
 #include "kitty.h"
 #include "tpxl/type.h"
 #include "util/base64.h"
@@ -53,22 +55,36 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
 
     size_t frame_size = width * height * tpxl_format_to_channels(format);
 
-    if (kitty_context->encoded_data != NULL && kitty_context->frame_size == frame_size) {
+    if (kitty_context->compressed_data != NULL && 
+        kitty_context->encoded_data != NULL &&
+         kitty_context->frame_size == frame_size) {
         return TPXL_OK;
     }
 
-    size_t encoded_length = tpxl_base64_encoded_size(frame_size);
+    size_t compressed_capacity = compressBound(frame_size);
+    uint8_t* compressed_data = malloc(compressed_capacity);
     
-    char* data = malloc(encoded_length);
+    if (!compressed_data) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+    free(kitty_context->compressed_data);
+
+    kitty_context->compressed_data = compressed_data;
+    kitty_context->compressed_capacity = compressed_capacity;
+
+    size_t encoded_capacity = tpxl_base64_encoded_size(compressed_capacity);
     
-    if (!data) {
+    char* encoded_data = malloc(encoded_capacity);
+    
+    if (!encoded_data) {
+        free(kitty_context->compressed_data);
         return TPXL_OUT_OF_MEMORY;
     }
     free(kitty_context->encoded_data);
 
     kitty_context->frame_size = frame_size;
-    kitty_context->encoded_length = encoded_length;
-    kitty_context->encoded_data = data;
+    kitty_context->encoded_capacity = encoded_capacity;
+    kitty_context->encoded_data = encoded_data;
 
     return TPXL_OK;
 }
@@ -165,8 +181,22 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
         return TPXL_INVALID_FORMAT;
     }
 
+    size_t compressed_length = kitty_context->compressed_capacity;
+
+    int ret = compress2(
+        kitty_context->compressed_data,
+        &compressed_length,
+        frame->pixels,
+        kitty_context->frame_size,
+        Z_BEST_SPEED
+    );
+
+    if (ret != Z_OK) {
+        return TPXL_COMPRESSION_FAILED;
+    }
+
     size_t output_length = 0;
-    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_size, kitty_context->encoded_data, &output_length) != TPXL_OK) {
+    if (tpxl_base64_encode(kitty_context->compressed_data, compressed_length, kitty_context->encoded_data, &output_length) != TPXL_OK) {
         return TPXL_ENCODING_FAILED;
     }
 
@@ -194,6 +224,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
                 "r=%u,"
                 "C=%d,"
                 "m=%d,"
+                "o=z,"
                 "q=2;%.*s\x1b\\",
                 frame_id,
                 kitty_context->kitty_format,
@@ -257,6 +288,9 @@ void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context) {
     if (!kitty_context) {
         return;
     }
+
+    free(kitty_context->compressed_data);
+    kitty_context->compressed_data = NULL;
 
     free(kitty_context->encoded_data);
     kitty_context->encoded_data = NULL;
