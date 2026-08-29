@@ -59,13 +59,13 @@ int display_image(const char* file, bool print_info, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_destroy_renderer(renderer);
+        tpxl_destroy_renderer(&renderer);
         tpxl_free_image(&image);
         return EXIT_FAILURE;
     }
 
     tpxl_free_image(&image);
-    tpxl_destroy_renderer(renderer);
+    tpxl_destroy_renderer(&renderer);
 
     return EXIT_SUCCESS;
 }

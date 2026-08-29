@@ -75,7 +75,7 @@ int play_audio(const char* path) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_audio(audio);
+        tpxl_close_audio(&audio);
         return EXIT_FAILURE;
     }
 
@@ -83,8 +83,8 @@ int play_audio(const char* path) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_audio_player(player);
-        tpxl_close_audio(audio);
+        tpxl_close_audio_player(&player);
+        tpxl_close_audio(&audio);
         return EXIT_FAILURE;
     }
 
@@ -99,8 +99,8 @@ int play_audio(const char* path) {
 
         if (result != TPXL_OK) {
             printf("Error: %s\n", tpxl_result_to_string(result));
-            tpxl_close_audio_player(player);
-            tpxl_close_audio(audio);
+            tpxl_close_audio_player(&player);
+            tpxl_close_audio(&audio);
             return EXIT_FAILURE;
         }
 
@@ -133,8 +133,8 @@ int play_audio(const char* path) {
 
     printf("\n");
 
-    tpxl_close_audio_player(player);
-    tpxl_close_audio(audio);
+    tpxl_close_audio_player(&player);
+    tpxl_close_audio(&audio);
 
     return EXIT_SUCCESS;
 }

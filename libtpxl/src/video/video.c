@@ -419,19 +419,20 @@ void tpxl_free_video_frame(TpxlVideoFrame* video_frame) {
     *video_frame = (TpxlVideoFrame){0};
 }
 
-void tpxl_close_video(TpxlVideo* video) {
+void tpxl_close_video(TpxlVideo** video) {
 
-    if (!video) {
+    if (!*video) {
         return;
     }
 
-    tpxl_close_video_audio(video->audio);
+    tpxl_close_video_audio(&(*video)->audio);
 
-    av_frame_free(&video->av_frame);
+    av_frame_free(&(*video)->av_frame);
 
-    avcodec_free_context(&video->codec_context);
-    avformat_close_input(&video->format_context);
-    sws_freeContext(video->sws_context);
+    avcodec_free_context(&(*video)->codec_context);
+    avformat_close_input(&(*video)->format_context);
+    sws_freeContext((*video)->sws_context);
 
-    free(video);
+    free(*video);
+    *video = NULL;
 }

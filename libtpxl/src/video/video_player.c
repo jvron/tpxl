@@ -249,7 +249,7 @@ static void tpxl_abort_video_player_creation(TpxlVideoPlayer* player) {
     tpxl_video_frame_queue_close(&player->upload_queue);
     tpxl_video_frame_queue_close(&player->display_queue);
 
-    tpxl_close_audio_player(player->audio_player);
+    tpxl_close_audio_player(&player->audio_player);
 
     if (player->demux_thread_created) {
         pthread_join(player->demux_thread, NULL);
@@ -531,34 +531,35 @@ bool tpxl_video_playing(TpxlVideoPlayer* player) {
 double tpxl_get_video_time(TpxlVideoPlayer* player) {
 
     assert(player);
-    
+
     return tpxl_get_audio_clock(player->audio_player);
 }
 
-void tpxl_close_video_player(TpxlVideoPlayer* player) {
+void tpxl_close_video_player(TpxlVideoPlayer** player) {
 
-    if (!player) {
+    if (!*player) {
         return;
     }
 
-    atomic_store(&player->shutdown, true);
+    atomic_store(&(*player)->shutdown, true);
 
-    tpxl_packet_queue_close(&player->video_packet_queue);
-    tpxl_packet_queue_close(&player->audio_packet_queue);
-    tpxl_video_frame_queue_close(&player->upload_queue);
-    tpxl_video_frame_queue_close(&player->display_queue);
+    tpxl_packet_queue_close(&(*player)->video_packet_queue);
+    tpxl_packet_queue_close(&(*player)->audio_packet_queue);
+    tpxl_video_frame_queue_close(&(*player)->upload_queue);
+    tpxl_video_frame_queue_close(&(*player)->display_queue);
 
-    tpxl_close_audio_player(player->audio_player);
+    tpxl_close_audio_player(&(*player)->audio_player);
 
-    pthread_join(player->demux_thread, NULL);
-    pthread_join(player->decode_thread, NULL);
-    pthread_join(player->upload_thread, NULL);
-    pthread_join(player->play_thread, NULL);
+    pthread_join((*player)->demux_thread, NULL);
+    pthread_join((*player)->decode_thread, NULL);
+    pthread_join((*player)->upload_thread, NULL);
+    pthread_join((*player)->play_thread, NULL);
 
-    tpxl_destroy_packet_queue(&player->video_packet_queue);
-    tpxl_destroy_packet_queue(&player->audio_packet_queue);
-    tpxl_video_frame_queue_close(&player->upload_queue);
-    tpxl_video_frame_queue_close(&player->display_queue);
+    tpxl_destroy_packet_queue(&(*player)->video_packet_queue);
+    tpxl_destroy_packet_queue(&(*player)->audio_packet_queue);
+    tpxl_video_frame_queue_close(&(*player)->upload_queue);
+    tpxl_video_frame_queue_close(&(*player)->display_queue);
 
-    free(player);
+    free(*player);
+    *player = NULL;
 }

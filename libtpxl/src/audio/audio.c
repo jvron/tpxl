@@ -584,26 +584,28 @@ static void tpxl_destroy_audio_resources(TpxlAudio* audio) {
     av_channel_layout_uninit(&audio->output_channel_layout);
 }
 
-void tpxl_close_audio(TpxlAudio* audio) {
+void tpxl_close_audio(TpxlAudio** audio) {
 
-    if (!audio) {
+    if (!*audio) {
         return;
     }
 
-    tpxl_destroy_audio_resources(audio);
+    tpxl_destroy_audio_resources(*audio);
 
-    avformat_close_input(&audio->format_context);
+    avformat_close_input(&(*audio)->format_context);
 
-    free(audio);
+    free(*audio);
+    *audio = NULL;
 }
 
-void tpxl_close_video_audio(TpxlAudio* audio) {
+void tpxl_close_video_audio(TpxlAudio** audio) {
 
-    if (!audio) {
+    if (!*audio) {
         return;
     }
 
-    tpxl_destroy_audio_resources(audio);
+    tpxl_destroy_audio_resources(*audio);
 
-    free(audio);
+    free(*audio);
+    *audio = NULL;
 }

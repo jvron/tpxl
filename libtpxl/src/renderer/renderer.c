@@ -110,13 +110,13 @@ void tpxl_renderer_delete(uint32_t frame_id) {
     tpxl_kitty_delete(frame_id);
 }
 
-void tpxl_destroy_renderer(TpxlRenderer* renderer) {
+void tpxl_destroy_renderer(TpxlRenderer** renderer) {
 
-    if (!renderer) {
+    if (!*renderer) {
         return;
     }
 
-    tpxl_destroy_kitty_context(&renderer->kitty_context);
-    free(renderer);
-    renderer = NULL;
+    tpxl_destroy_kitty_context(&(*renderer)->kitty_context);
+    free(*renderer);
+    *renderer = NULL;
 }

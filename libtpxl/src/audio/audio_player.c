@@ -354,22 +354,23 @@ bool tpxl_audio_playing(TpxlAudioPlayer* player) {
     return atomic_load(&player->playing);
 }
 
-void tpxl_close_audio_player(TpxlAudioPlayer* player) {
+void tpxl_close_audio_player(TpxlAudioPlayer** player) {
 
     if (!player) {
         return;
     }
 
-    atomic_store(&player->shutdown, true);
-    atomic_store(&player->playing, false);
+    atomic_store(&(*player)->shutdown, true);
+    atomic_store(&(*player)->playing, false);
 
-    tpxl_audio_frame_queue_close(&player->frame_queue);
+    tpxl_audio_frame_queue_close(&(*player)->frame_queue);
 
-    pthread_join(player->decode_thread, NULL);
+    pthread_join((*player)->decode_thread, NULL);
 
-    tpxl_destroy_audio_frame_queue(&player->frame_queue);
+    tpxl_destroy_audio_frame_queue(&(*player)->frame_queue);
 
-    ma_device_uninit(&player->device);
+    ma_device_uninit(&(*player)->device);
 
-    free(player);
+    free(*player);
+    player = NULL;
 }

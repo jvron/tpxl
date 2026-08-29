@@ -70,7 +70,7 @@ int play_video(const char* path, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
 
@@ -79,7 +79,7 @@ int play_video(const char* path, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
 
@@ -87,7 +87,7 @@ int play_video(const char* path, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
     
@@ -95,7 +95,7 @@ int play_video(const char* path, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
 
@@ -114,7 +114,7 @@ int play_video(const char* path, TpxlContext* context) {
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
 
@@ -123,8 +123,8 @@ int play_video(const char* path, TpxlContext* context) {
     
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_close_video(video);
-        tpxl_destroy_renderer(renderer);
+        tpxl_close_video(&video);
+        tpxl_destroy_renderer(&renderer);
         return EXIT_FAILURE;
     }
 
@@ -133,9 +133,9 @@ int play_video(const char* path, TpxlContext* context) {
     if (result != TPXL_OK) {
         printf("\033[%uB", video_rows);
         printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_destroy_renderer(renderer);
-        tpxl_close_video_player(player);
-        tpxl_close_video(video);
+        tpxl_destroy_renderer(&renderer);
+        tpxl_close_video_player(&player);
+        tpxl_close_video(&video);
         return EXIT_FAILURE;
     }
 
@@ -153,13 +153,13 @@ int play_video(const char* path, TpxlContext* context) {
     }
 
     printf("\n");
-
+    printf("Frame count: %d\n", tpxl_get_video_frame_count(video));
     printf("\033[%uB", video_rows + 1);
     fflush(stdout);
 
-    tpxl_close_video_player(player);
-    tpxl_destroy_renderer(renderer);
-    tpxl_close_video(video);
+    tpxl_close_video_player(&player);
+    tpxl_destroy_renderer(&renderer);
+    tpxl_close_video(&video);
 
     return EXIT_SUCCESS;
 }
