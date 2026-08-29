@@ -7,6 +7,7 @@
 
 #include <miniaudio/miniaudio.h>
 
+#include "internal/thread.h"
 #include "tpxl/audio.h"
 #include "tpxl/type.h"
 #include "tpxl/video.h"
@@ -22,7 +23,7 @@ static void* tpxl_audio_decode_worker(void* arg) {
 
     TpxlAudioPlayer* player = (TpxlAudioPlayer*)arg; 
 
-    player->decode_status = THREAD_RUNNING;
+    player->decode_status = TPXL_THREAD_RUNNING;
 
     while (!atomic_load(&player->shutdown)) {
 
@@ -31,12 +32,12 @@ static void* tpxl_audio_decode_worker(void* arg) {
 
         if (result == TPXL_EOF) {
             tpxl_audio_frame_queue_close(&player->frame_queue);
-            player->decode_status = THREAD_FINISHED;
+            player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
         if (result != TPXL_OK) {
             tpxl_audio_frame_queue_close(&player->frame_queue);
-            player->decode_status = THREAD_ERROR;
+            player->decode_status = TPXL_THREAD_ERROR;
             break;
         }
 
@@ -44,14 +45,14 @@ static void* tpxl_audio_decode_worker(void* arg) {
 
         if (result == TPXL_SHUTDOWN) {
             tpxl_free_audio_frame(&frame);
-            player->decode_status = THREAD_FINISHED;
+            player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_free_audio_frame(&frame);
             tpxl_audio_frame_queue_close(&player->frame_queue);
-            player->decode_status = THREAD_ERROR;
+            player->decode_status = TPXL_THREAD_ERROR;
             break;
         }
     }
@@ -64,7 +65,7 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
     TpxlVideoPlayer* video_player = (TpxlVideoPlayer*)arg; 
     TpxlAudioPlayer* audio_player = video_player->audio_player;
 
-    audio_player->decode_status = THREAD_RUNNING;
+    audio_player->decode_status = TPXL_THREAD_RUNNING;
 
     bool draining = false;
 
@@ -78,24 +79,24 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
             result = tpxl_packet_queue_pop(&video_player->audio_packet_queue, &packet, &audio_player->shutdown);
 
             if (result == TPXL_SHUTDOWN) {
-                audio_player->decode_status = THREAD_FINISHED;
+                audio_player->decode_status = TPXL_THREAD_FINISHED;
                 break;
             }
             if (result == TPXL_QUEUE_CLOSED) {
 
-                if (atomic_load(&video_player->demux_status) == THREAD_FINISHED) {
+                if (atomic_load(&video_player->demux_status) == TPXL_THREAD_FINISHED) {
                     draining = true;
                     packet = NULL;
                 } 
                 else {
                     tpxl_audio_frame_queue_close(&audio_player->frame_queue);
-                    audio_player->decode_status = THREAD_ERROR;
+                    audio_player->decode_status = TPXL_THREAD_ERROR;
                     break;
                 }
             } 
             else if (result != TPXL_OK) {
                 tpxl_audio_frame_queue_close(&audio_player->frame_queue);
-                audio_player->decode_status = THREAD_ERROR;
+                audio_player->decode_status = TPXL_THREAD_ERROR;
                 break;
             }
         }
@@ -107,7 +108,7 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
 
         if (result == TPXL_EOF) {
             tpxl_audio_frame_queue_close(&audio_player->frame_queue);
-            audio_player->decode_status = THREAD_FINISHED;
+            audio_player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
 
@@ -117,7 +118,7 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
 
         if (result != TPXL_OK) {
             tpxl_audio_frame_queue_close(&audio_player->frame_queue);
-            audio_player->decode_status = THREAD_ERROR;
+            audio_player->decode_status = TPXL_THREAD_ERROR;
             break;
         }
 
@@ -125,14 +126,14 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
 
         if (result == TPXL_SHUTDOWN) {
             tpxl_free_audio_frame(&frame);
-            audio_player->decode_status = THREAD_FINISHED;
+            audio_player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
             tpxl_free_audio_frame(&frame);
             tpxl_audio_frame_queue_close(&audio_player->frame_queue);
-            audio_player->decode_status = THREAD_ERROR;
+            audio_player->decode_status = TPXL_THREAD_ERROR;
             break;
         }
     }
