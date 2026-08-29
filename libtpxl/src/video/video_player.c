@@ -292,11 +292,10 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->has_current_frame = false;
     (*player)->playing = false;
     
-    uint32_t count = 0;
-    tpxl_get_video_frame_count(video, &count);
-    (*player)->frame_count = count;
+    (*player)->frame_count = tpxl_get_video_frame_count(video);;
 
     atomic_init(&(*player)->frame_id, 1);
+    atomic_init(&(*player)->frame_ready, false);
     atomic_init(&(*player)->shutdown, false);
     atomic_init(&(*player)->demux_status, THREAD_STATUS_UNKNOWN);
 
@@ -310,7 +309,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
         *player = NULL;
         return TPXL_VIDEO_PLAYER_CREATION_FAILED;
     }
-    
+
     if (tpxl_init_video_frame_queue(&(*player)->upload_queue) != TPXL_OK) {
         tpxl_destroy_packet_queue(&(*player)->video_packet_queue);
         tpxl_destroy_packet_queue(&(*player)->audio_packet_queue);
@@ -403,6 +402,8 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* rende
         player->has_current_frame = true;
     }
 
+    atomic_store(&player->frame_ready, true);    
+
     double audio_clock = tpxl_get_audio_clock(player->audio_player);
     double video_time = av_q2d(player->video->time_base) * player->current_frame.pts;
     double diff = video_time - audio_clock;
@@ -443,15 +444,24 @@ TpxlResult tpxl_play_video(TpxlVideoPlayer* player, TpxlRenderer* renderer) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    TpxlResult result = tpxl_play_audio(player->audio_player);
-
-    if (result != TPXL_OK) {
-        return TPXL_VIDEO_PLAYING_FAILED;
-    }
+    TpxlResult result = TPXL_OK;
 
     player->playing = true;
 
+    bool audio_started = false;
+
     while (player->playing) {
+
+        if (atomic_load(&player->frame_ready) && !audio_started) {
+
+            result = tpxl_play_audio(player->audio_player);
+        
+            if (result != TPXL_OK) {
+                return TPXL_VIDEO_PLAYING_FAILED;
+            }
+
+            audio_started = true;
+        }
 
         result = tpxl_update_video_player(player, renderer);
 

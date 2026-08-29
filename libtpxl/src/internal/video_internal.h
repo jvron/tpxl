@@ -74,6 +74,7 @@ struct TpxlVideoPlayerImp {
     bool upload_thread_created;
 
     TpxlAudioPlayer* audio_player;
+    atomic_bool frame_ready;
 };
 
 TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVideoFrame* out_frame);
