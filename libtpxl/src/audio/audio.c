@@ -25,6 +25,8 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         return TPXL_INVALID_ARGUMENT;
     }
 
+    av_log_set_level(AV_LOG_ERROR);
+    
     *audio = NULL;
 
     AVFormatContext* format_context = NULL;

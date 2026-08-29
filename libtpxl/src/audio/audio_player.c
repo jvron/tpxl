@@ -202,7 +202,7 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
         }
     }
 
-    atomic_fetch_add(&player->frames_played, frame_count);
+    atomic_fetch_add_explicit(&player->frames_submitted, frames_written, memory_order_relaxed);
 }
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) {
@@ -223,6 +223,8 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
     config.playback.channels = AUDIO_CHANNELS;
     config.pUserData = *player;
     config.dataCallback = audio_callback;
+    config.periodSizeInFrames = 480;
+    config.noPreSilencedOutputBuffer = true;
 
     ma_result result = ma_device_init(NULL, &config, &(*player)->device);
 
@@ -236,7 +238,7 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
 
     atomic_init(&(*player)->playing, false);
     atomic_init(&(*player)->shutdown, false);
-    atomic_init(&(*player)->frames_played, 0);
+    atomic_init(&(*player)->frames_submitted, 0);
 
     if (tpxl_init_audio_frame_queue(&(*player)->frame_queue) != TPXL_OK) {
         ma_device_uninit(&(*player)->device);
@@ -278,6 +280,8 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
     config.playback.channels = AUDIO_CHANNELS;
     config.pUserData = player;
     config.dataCallback = audio_callback;
+    config.periodSizeInFrames = 480;
+    config.noPreSilencedOutputBuffer = true;
 
     ma_result result = ma_device_init(NULL, &config, &(player)->device);
 
@@ -291,6 +295,7 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
 
     atomic_init(&(player)->playing, false);
     atomic_init(&(player)->shutdown, false);
+    atomic_init(&player->frames_submitted, 0);
 
     if (tpxl_init_audio_frame_queue(&(player)->frame_queue) != TPXL_OK) {
         ma_device_uninit(&(player)->device);
@@ -336,7 +341,7 @@ double tpxl_get_audio_clock(TpxlAudioPlayer* player) {
     
     assert(player);
 
-    return (double)atomic_load(&player->frames_played) / AUDIO_SAMPLE_RATE;
+    return (double)atomic_load_explicit(&player->frames_submitted, memory_order_relaxed) / AUDIO_SAMPLE_RATE;
 }
 
 bool tpxl_audio_playing(TpxlAudioPlayer* player) {
