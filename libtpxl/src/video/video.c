@@ -100,7 +100,6 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->output_height = video_stream->codecpar->height;
     (*video)->format = TPXL_FORMAT_RGB;
     (*video)->video_stream_format = video_stream->codecpar->format;
-    (*video)->duration = video_stream->duration;
     (*video)->frame_count = video_stream->nb_frames;
     (*video)->video_stream_index = video_stream_index;
     (*video)->time_base = video_stream->time_base;
@@ -235,8 +234,19 @@ TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format) {
 uint32_t tpxl_get_video_frame_count(TpxlVideo* video) {
 
     assert(video);
-
+    
     return video->frame_count;
+}
+
+double tpxl_get_video_duration(TpxlVideo* video) {
+
+    assert(video);
+
+    if (video->format_context->duration == AV_NOPTS_VALUE) {
+        return 0.0;
+    }
+
+    return (double)video->format_context->duration / AV_TIME_BASE;
 }
 
 static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {

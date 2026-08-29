@@ -6,6 +6,7 @@
 #include <threads.h>
 #include <unistd.h>
 #include <stdatomic.h>
+#include <assert.h>
 
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
@@ -412,7 +413,6 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
     double video_time = av_q2d(player->video->time_base) * player->current_frame.pts;
     double diff = video_time - audio_clock;
 
-
     if (diff > VIDEO_SYNC_MAX) {
 
         // Video is ahead
@@ -526,6 +526,13 @@ bool tpxl_video_playing(TpxlVideoPlayer* player) {
     }
 
     return atomic_load(&player->playing);
+}
+
+double tpxl_get_video_time(TpxlVideoPlayer* player) {
+
+    assert(player);
+    
+    return tpxl_get_audio_clock(player->audio_player);
 }
 
 void tpxl_close_video_player(TpxlVideoPlayer* player) {

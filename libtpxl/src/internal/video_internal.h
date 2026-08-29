@@ -24,7 +24,6 @@ struct TpxlVideoImp {
     uint32_t output_width;
     uint32_t output_height;
     TpxlFormat format;
-    uint64_t duration;
     uint32_t frame_count;
 
     int video_stream_index;
