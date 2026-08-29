@@ -28,6 +28,8 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         return TPXL_INVALID_ARGUMENT;
     }
 
+    av_log_set_level(AV_LOG_ERROR);
+    
     *video = NULL;
 
     AVFormatContext* format_context = NULL;
@@ -113,7 +115,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         video_stream->codecpar->width, 
         video_stream->codecpar->height, 
         AV_PIX_FMT_RGB24, 
-        SWS_BILINEAR,
+        SWS_FAST_BILINEAR,
         NULL, 
         NULL, 
         NULL
@@ -177,7 +179,7 @@ TpxlResult tpxl_video_set_output_size(TpxlVideo* video, uint32_t width, uint32_t
         width,
         height,
         AV_PIX_FMT_RGB24, 
-        SWS_BILINEAR,
+        SWS_FAST_BILINEAR,
         NULL, 
         NULL, 
         NULL

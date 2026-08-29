@@ -21,7 +21,8 @@
 #include "internal/video_internal.h"
 #include "internal/audio_internal.h"
 
-#define VIDEO_SYNC_THRESHOLD 0.02
+#define VIDEO_SYNC_MIN (-0.040)
+#define VIDEO_SYNC_MAX (0.020)
 
 static void* tpxl_demux_worker(void* args) {
 
@@ -291,6 +292,8 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->current_frame = (TpxlVideoFrame){0};
     (*player)->has_current_frame = false;
     (*player)->playing = false;
+    (*player)->previous_frame_id = 0;
+    (*player)->has_previous_frame = false;
     
     (*player)->frame_count = tpxl_get_video_frame_count(video);;
 
@@ -408,31 +411,46 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player, TpxlRenderer* rende
     double video_time = av_q2d(player->video->time_base) * player->current_frame.pts;
     double diff = video_time - audio_clock;
 
-    if (diff > VIDEO_SYNC_THRESHOLD) {
+
+    if (diff > VIDEO_SYNC_MAX) {
 
         // Video is ahead
         // Wait for audio clock to catch up.
-        tpxl_sleep_ms(1);
+        double sleep_time = diff - VIDEO_SYNC_MAX;
+
+        if (sleep_time > 0.0) {
+            tpxl_sleep_us((uint64_t)(sleep_time * 1000000.0));
+        }
 
         return TPXL_OK;
     }
-    else if (diff < -VIDEO_SYNC_THRESHOLD) {
+    else if (diff < VIDEO_SYNC_MIN) {
 
         // Video is behind. 
         // Drop this frame.
+        tpxl_renderer_delete(player->current_frame.id);
         tpxl_free_video_frame(&player->current_frame);
         player->has_current_frame = false;
     }
     else {
         result = tpxl_renderer_display(renderer, player->current_frame.id);
 
-        tpxl_free_video_frame(&player->current_frame);
-        player->has_current_frame = false;
-
         if (result != TPXL_OK) {
+            tpxl_free_video_frame(&player->current_frame);
+            player->has_current_frame = false;
             player->playing = false;
             return result;
         }
+
+        if (player->has_previous_frame) {
+            tpxl_renderer_delete(player->previous_frame_id);
+        }
+
+        player->previous_frame_id = player->current_frame.id;
+        player->has_previous_frame = true;
+
+        tpxl_free_video_frame(&player->current_frame);
+        player->has_current_frame = false;
     }
 
     return TPXL_OK;
