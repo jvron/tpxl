@@ -71,10 +71,6 @@ int main(int argc, char* argv[]) {
         printf("Error: %s", tpxl_result_to_string(TPXL_INVALID_FILE));
         return EXIT_FAILURE;
     }
-
-    if (file_type == TPXL_FILE_AUDIO) {
-        return play_audio(file);
-    }
     
     TpxlContext context;
     TpxlResult result = tpxl_init_context(&context);
@@ -118,6 +114,9 @@ int main(int argc, char* argv[]) {
             break;
         case TPXL_FILE_VIDEO:
             exit_code = play_video(file, &context);
+            break;
+        case TPXL_FILE_AUDIO:
+            exit_code = play_audio(file);
             break;
         
         default:
