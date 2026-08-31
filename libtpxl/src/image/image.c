@@ -1,29 +1,25 @@
-#include <stdint.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
 #include <stdio.h>
+#include <stdint.h>
 
 #include "tpxl/type.h"
 #include "tpxl/image.h"
 
-TpxlResult tpxl_load_image(const char* path, TpxlImage* image) {
+TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {
 
-    if (!path || !image) {
+    if (!file || !image) {
         return TPXL_INVALID_ARGUMENT;
     }
 
     int channels = 0;
     int width = 0;
     int height = 0;
-    unsigned char* pixels = stbi_load(path, &width, &height, &channels, 0);
+    unsigned char* pixels = stbi_load(file, &width, &height, &channels, 0);
 
     if (!pixels) {
-        image->width = 0;
-        image->height = 0;
-        image->format = TPXL_FORMAT_UNKNOWN;
-        image->pixels = NULL;
-
+        *image = (TpxlImage){0};
         return TPXL_IMAGE_LOAD_FAILED;
     }
 
@@ -58,12 +54,10 @@ void tpxl_free_image(TpxlImage* image) {
     if (!image) {
         return;
     }
+
     stbi_image_free(image->pixels);
 
-    image->width = 0;
-    image->height = 0;
-    image->format = TPXL_FORMAT_UNKNOWN;
-    image->pixels = NULL;
+    *image = (TpxlImage){0};
 }
 
 void tpxl_free_frame(TpxlImage* frame) {
@@ -74,13 +68,11 @@ void tpxl_free_frame(TpxlImage* frame) {
 
     free(frame->pixels);
     
-    frame->width = 0;
-    frame->height = 0;
-    frame->format = TPXL_FORMAT_UNKNOWN;
-    frame->pixels = NULL;
+    *frame = (TpxlImage){0};
 }
 
 TpxlResult tpxl_print_image_info(TpxlImage* image) {
+   
     if (!image) {
         return TPXL_INVALID_ARGUMENT;
     }
