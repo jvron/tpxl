@@ -6,60 +6,46 @@
 #include "tpxl/image.h"
 #include "tpxl/type.h"
 
-TpxlResult tpxl_print_animation_info(TpxlAnimation* animation) {
-
-    if (!animation) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    printf("Width: %d\n", animation->width);
-    printf("Height: %d\n", animation->height);
-    printf("Format: %s\n", tpxl_format_to_string(animation->format));
-    printf("Frame count: %lu\n", animation->count);
-
-    return TPXL_OK;
-}
-
-TpxlResult tpxl_init_animator(TpxlAnimator* animator, TpxlAnimation* animation) {
+TpxlResult tpxl_init_animation_player(TpxlAnimationPlayer* player, TpxlAnimation* animation) {
     
-    if (!animator || !animation) {
+    if (!player || !animation) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    animator->animation = animation;
-    animator->current_frame = 0;
-    animator->elapsed = 0;
+    player->animation = animation;
+    player->current_frame = 0;
+    player->elapsed = 0;
 
     return TPXL_OK;
 }
 
-bool tpxl_update_animator(TpxlAnimator* animator, uint32_t delta) {
+bool tpxl_update_animation_player(TpxlAnimationPlayer* player, uint32_t delta) {
 
     bool changed = false;
 
-    animator->elapsed += delta;
+    player->elapsed += delta;
 
-    uint32_t delay = animator->animation->delays[animator->current_frame];
+    uint32_t delay = player->animation->delays[player->current_frame];
 
-    while (animator->elapsed >= delay) {
+    while (player->elapsed >= delay) {
         
         changed = true;
 
-        animator->elapsed -= delay;
+        player->elapsed -= delay;
 
-        animator->current_frame++;
+        player->current_frame++;
 
-        if (animator->current_frame >= animator->animation->count) {
-            animator->current_frame = 0;
+        if (player->current_frame >= player->animation->count) {
+            player->current_frame = 0;
         }
 
-        delay = animator->animation->delays[animator->current_frame];
+        delay = player->animation->delays[player->current_frame];
     }
     return changed;
 }
 
-TpxlImage* tpxl_get_animation_frame(TpxlAnimator* animator) {
-    return &animator->animation->frames[animator->current_frame];
+TpxlImage* tpxl_get_animation_frame(TpxlAnimationPlayer* player) {
+    return &player->animation->frames[player->current_frame];
 }
 
 void tpxl_free_animation(TpxlAnimation* animation) {
@@ -75,7 +61,19 @@ void tpxl_free_animation(TpxlAnimation* animation) {
     free(animation->frames);
     free(animation->delays);
 
-    animation->count = 0;
-    animation->frames = NULL;
-    animation->delays = NULL;
+    *animation = (TpxlAnimation){0};
+}
+
+TpxlResult tpxl_print_animation_info(TpxlAnimation* animation) {
+
+    if (!animation) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    printf("Width: %d\n", animation->width);
+    printf("Height: %d\n", animation->height);
+    printf("Format: %s\n", tpxl_format_to_string(animation->format));
+    printf("Frame count: %lu\n", animation->count);
+
+    return TPXL_OK;
 }

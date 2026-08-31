@@ -21,14 +21,14 @@ typedef struct {
     TpxlAnimation* animation;
     size_t current_frame;
     uint32_t elapsed; 
-} TpxlAnimator;
+} TpxlAnimationPlayer;
 
 TpxlResult tpxl_load_gif(const char* path, TpxlAnimation* animation);
 
-TpxlResult tpxl_print_animation_info(TpxlAnimation* animation);
-TpxlResult tpxl_init_animator(TpxlAnimator* animator, TpxlAnimation* animation);
-bool tpxl_update_animator(TpxlAnimator* animator, uint32_t delta);
-TpxlImage* tpxl_get_animation_frame(TpxlAnimator* animator);
+TpxlResult tpxl_init_animation_player(TpxlAnimationPlayer* player, TpxlAnimation* animation);
+bool tpxl_update_animation_player(TpxlAnimationPlayer* player, uint32_t delta);
+TpxlImage* tpxl_get_animation_frame(TpxlAnimationPlayer* player);
 void tpxl_free_animation(TpxlAnimation* animation);
+TpxlResult tpxl_print_animation_info(TpxlAnimation* animation);
 
 #endif
