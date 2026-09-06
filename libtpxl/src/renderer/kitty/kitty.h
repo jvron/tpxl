@@ -37,7 +37,8 @@ TpxlResult tpxl_set_kitty_cursor_policy(TpxlKittyContext* kitty_context, TpxlMed
 TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame);
 TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id);
-void tpxl_kitty_delete(uint32_t frame_id);
+void tpxl_kitty_delete_placement(uint32_t frame_id);
+void tpxl_kitty_delete_data(uint32_t frame_id);
 void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context);
 
 #endif
