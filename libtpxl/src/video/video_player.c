@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -303,6 +302,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     atomic_init(&(*player)->frame_ready, false);
     atomic_init(&(*player)->shutdown, false);
     atomic_init(&(*player)->demux_status, TPXL_THREAD_STATUS_UNKNOWN);
+    atomic_init(&(*player)->frames_played, 0);
 
     if (tpxl_init_packet_queue(&(*player)->video_packet_queue) != TPXL_OK ||
         tpxl_init_packet_queue(&(*player)->audio_packet_queue) != TPXL_OK) {
@@ -335,10 +335,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
         return TPXL_VIDEO_PLAYER_CREATION_FAILED;
     }
 
-    int result = 0;
-    result = pthread_create(&(*player)->demux_thread, NULL, tpxl_demux_worker, *player);
-
-    if (result != 0) {
+    if (pthread_create(&(*player)->demux_thread, NULL, tpxl_demux_worker, *player) != 0) {
         tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
@@ -346,9 +343,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
 
     (*player)->demux_thread_created = true;
 
-    result = pthread_create(&(*player)->decode_thread, NULL, tpxl_video_decode_worker, *player);
-
-    if (result != 0) {
+    if (pthread_create(&(*player)->decode_thread, NULL, tpxl_video_decode_worker, *player) != 0) {
         tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
@@ -356,9 +351,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
 
     (*player)->decode_thread_created = true;
 
-    result = pthread_create(&(*player)->upload_thread, NULL, tpxl_upload_worker, *player);
-
-    if (result != 0) {
+    if (pthread_create(&(*player)->upload_thread, NULL, tpxl_upload_worker, *player) != 0) {
         tpxl_abort_video_player_creation(*player);
         *player = NULL;
         return TPXL_THREAD_CREATION_ERROR;
@@ -429,7 +422,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
 
         // Video is behind. 
         // Drop this frame.
-        tpxl_renderer_delete(player->current_frame.id);
+        tpxl_renderer_delete_data(player->current_frame.id);
         tpxl_free_video_frame(&player->current_frame);
         player->has_current_frame = false;
     }
@@ -443,8 +436,10 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
             return result;
         }
 
+        atomic_fetch_add(&player->frames_played, 1);
+
         if (player->has_previous_frame) {
-            tpxl_renderer_delete(player->previous_frame_id);
+            tpxl_renderer_delete_data(player->previous_frame_id);
         }
 
         player->previous_frame_id = player->current_frame.id;
@@ -531,8 +526,13 @@ bool tpxl_video_playing(TpxlVideoPlayer* player) {
 double tpxl_get_video_time(TpxlVideoPlayer* player) {
 
     assert(player);
-
     return tpxl_get_audio_clock(player->audio_player);
+}
+
+uint32_t tpxl_get_frames_played(TpxlVideoPlayer* player) {
+
+    assert(player);
+    return atomic_load(&player->frames_played);
 }
 
 void tpxl_close_video_player(TpxlVideoPlayer** player) {

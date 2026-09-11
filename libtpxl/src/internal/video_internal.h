@@ -56,6 +56,8 @@ struct TpxlVideoPlayerImp {
     uint32_t previous_frame_id;
     bool has_previous_frame;
 
+    atomic_uint frames_played;
+
     TpxlPacketQueue video_packet_queue;
     TpxlPacketQueue audio_packet_queue;
 
