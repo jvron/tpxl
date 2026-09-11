@@ -7,6 +7,7 @@
 #include "tpxl/animation.h"
 #include "tpxl/renderer.h"
 #include "tpxl/event.h"
+#include "tpxl/util.h"
 
 #include "cli.h"
 
@@ -16,14 +17,6 @@ static uint64_t get_time_ms(void) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
     return (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
-}
-
-static void sleep_ms(uint32_t ms) {
-    struct timespec ts;
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000L;
-
-    nanosleep(&ts, NULL);
 }
 
 int display_gif(const char* path, TpxlContext* context, bool print_info) {
@@ -61,8 +54,8 @@ int display_gif(const char* path, TpxlContext* context, bool print_info) {
         return EXIT_FAILURE;
     }
     
-    TpxlAnimator animator;
-    result = tpxl_init_animator(&animator, &animation);
+    TpxlAnimationPlayer player;
+    result = tpxl_init_animation_player(&player, &animation);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
@@ -71,7 +64,6 @@ int display_gif(const char* path, TpxlContext* context, bool print_info) {
     }
 
     TpxlRenderer* renderer = NULL;
-
     result = tpxl_create_renderer(&renderer, context,animation.width, animation.height, animation.format, TPXL_MEDIA_ANIMATED);
 
     if (result != TPXL_OK) {
@@ -99,7 +91,7 @@ int display_gif(const char* path, TpxlContext* context, bool print_info) {
         if (result != TPXL_OK) {
             printf("\033[%uB", image_rows);
             printf("Error: %s\n", tpxl_result_to_string(result));
-            tpxl_destroy_renderer(renderer);
+            tpxl_destroy_renderer(&renderer);
             tpxl_free_animation(&animation);
             return EXIT_FAILURE;
         }
@@ -109,35 +101,36 @@ int display_gif(const char* path, TpxlContext* context, bool print_info) {
                 running = false;
             }
         }
+        
         uint64_t now = get_time_ms();
         uint64_t delta = now - previous;
         previous = now;
-        bool frame_changed = tpxl_update_animator(&animator, delta);
+        bool frame_changed = tpxl_update_animation_player(&player, delta);
 
         if (frame_changed) {
 
-            TpxlImage* frame = tpxl_get_animation_frame(&animator);
+            TpxlImage* frame = tpxl_get_animation_frame(&player);
     
             result = tpxl_renderer_render(renderer, frame);
 
             if (result != TPXL_OK) {
                 printf("\033[%uB", image_rows);
                 printf("Error: %s\n", tpxl_result_to_string(result));
-                tpxl_destroy_renderer(renderer);
+                tpxl_destroy_renderer(&renderer);
                 tpxl_free_animation(&animation);
                 return EXIT_FAILURE;
             }
         }
 
-        uint32_t remaining = animator.animation->delays[animator.current_frame] - animator.elapsed;
+        uint32_t remaining = player.animation->delays[player.current_frame] - player.elapsed;
 
-        sleep_ms(remaining);
+        tpxl_sleep_ms(remaining);
     }
 
     printf("\033[%uB", image_rows + 1);
     fflush(stdout);
 
-    tpxl_destroy_renderer(renderer);
+    tpxl_destroy_renderer(&renderer);
     tpxl_free_animation(&animation);
 
     return EXIT_SUCCESS;
