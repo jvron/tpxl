@@ -238,6 +238,13 @@ uint32_t tpxl_get_video_frame_count(TpxlVideo* video) {
     return video->frame_count;
 }
 
+double tpxl_get_video_frame_rate(TpxlVideo* video) {
+
+    assert(video);
+
+    return av_q2d(video->format_context->streams[video->video_stream_index]->avg_frame_rate);
+}
+
 double tpxl_get_video_duration(TpxlVideo* video) {
 
     assert(video);
