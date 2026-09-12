@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
@@ -10,7 +9,6 @@
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 
-#include "internal/thread.h"
 #include "tpxl/audio.h"
 #include "tpxl/renderer.h"
 #include "tpxl/type.h"
@@ -18,6 +16,7 @@
 #include "tpxl/util.h"
 
 #include "queue/queue.h"
+#include "internal/thread.h"
 #include "internal/video_internal.h"
 #include "internal/audio_internal.h"
 
@@ -541,6 +540,7 @@ void tpxl_close_video_player(TpxlVideoPlayer** player) {
         return;
     }
 
+    atomic_store(&(*player)->playing, false);
     atomic_store(&(*player)->shutdown, true);
 
     tpxl_packet_queue_close(&(*player)->video_packet_queue);
