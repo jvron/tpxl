@@ -3,6 +3,7 @@
 #include <sixel.h>
 
 #include "tpxl/context.h"
+#include "tpxl/image.h"
 #include "tpxl/type.h"
 
 #include "sixel_backend.h"
@@ -34,6 +35,10 @@ TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* 
 
     sixel_context->target_column = context->terminal.cursor_column + sixel_context->cell_x;
     sixel_context->target_row = context->terminal.cursor_row + sixel_context->cell_y;
+
+    // set output dimensions to the viewport's pixel dimensions for image scaling
+    sixel_context->output_width = context->viewport.width;
+    sixel_context->output_height = context->viewport.height;
 
     if (!create_sixel_objects) {
         return TPXL_OK;
@@ -77,10 +82,31 @@ TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, uint32_t width,
     return TPXL_OK;
 }
 
+TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type) {
+
+    if (!sixel_context) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (media_type == TPXL_MEDIA_UNKNOWN || media_type == TPXL_MEDIA_AUDIO) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    sixel_context->media_type = media_type;
+
+    return TPXL_OK;
+}
+
 TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) {
 
     if (frame->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
+    }
+
+    if (sixel_context->media_type == TPXL_MEDIA_IMAGE) {
+        if (tpxl_resize_image(frame, sixel_context->output_width, sixel_context->output_height) != TPXL_OK) {
+            return TPXL_IMAGE_RESIZE_FAILED;
+        }
     }
 
     int ret = sixel_dither_initialize(
@@ -97,6 +123,8 @@ TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) 
     if (ret != SIXEL_OK) {
         return TPXL_RENDER_FAILED;
     }
+
+    fprintf(stdout,"\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
 
     ret = sixel_encode(
         frame->pixels,
