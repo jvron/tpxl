@@ -57,7 +57,7 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
 
     if (kitty_context->compressed_data != NULL && 
         kitty_context->encoded_data != NULL &&
-         kitty_context->frame_size == frame_size) {
+        kitty_context->frame_size == frame_size) {
         return TPXL_OK;
     }
 
@@ -89,17 +89,18 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_kitty_cursor_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type) {
+TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type) {
 
     if (!kitty_context){
         return TPXL_INVALID_ARGUMENT;
     }
 
     switch (media_type) {
-        case TPXL_MEDIA_STILL:
+        case TPXL_MEDIA_IMAGE:
             kitty_context->cursor_policy = 0;
             break;
-        case TPXL_MEDIA_ANIMATED:
+        case TPXL_MEDIA_ANIMATION:
+        case TPXL_MEDIA_VIDEO:
             kitty_context->cursor_policy = 1;
             break;
         default:
@@ -268,7 +269,7 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
         "c=%u,"
         "r=%u,"
         "C=%d,"
-        "q=2;",
+        "q=2;\x1b\\",
         frame_id,
         kitty_context->offset_x,
         kitty_context->offset_y, 
@@ -277,7 +278,6 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
         kitty_context->cursor_policy
     );
 
-    fprintf(stdout, "\x1b\\");
     fflush(stdout);
 
     return TPXL_OK;

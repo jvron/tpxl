@@ -47,7 +47,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, u
                 return result;
             }
 
-            result = tpxl_set_kitty_cursor_policy(&(*renderer)->kitty_context, media_type);
+            result = tpxl_set_kitty_media_policy(&(*renderer)->kitty_context, media_type);
 
             if (result != TPXL_OK) {
                 free(*renderer);
@@ -70,6 +70,14 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, u
             (*renderer)->sixel_context = (TpxlSixelContext){0};
 
             result = tpxl_set_sixel_context(&(*renderer)->sixel_context, context, true);
+
+            if (result != TPXL_OK) {
+                free(*renderer);
+                *renderer = NULL;
+                return result;
+            }
+
+            result = tpxl_set_sixel_media_policy(&(*renderer)->sixel_context, media_type);
 
             if (result != TPXL_OK) {
                 free(*renderer);
@@ -135,7 +143,15 @@ TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaTy
         return TPXL_INVALID_ARGUMENT;
     }
 
-    return tpxl_set_kitty_cursor_policy(&renderer->kitty_context, media_type);
+    switch (renderer->backend) {
+        case TPXL_BACKEND_KITTY:
+            return tpxl_set_kitty_media_policy(&renderer->kitty_context, media_type);
+        case TPXL_BACKEND_SIXEL:
+            return tpxl_set_sixel_media_policy(&renderer->sixel_context, media_type);
+
+        default:
+            return TPXL_INVALID_BACKEND;
+    } 
 }
 
 TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame) {
