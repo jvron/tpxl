@@ -1,5 +1,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+#include <stb/stb_image_resize2.h>
 
 #include <stdio.h>
 #include <stdint.h>
@@ -45,6 +46,67 @@ TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {
             tpxl_free_image(image);
             return TPXL_UNSUPPORTED_FORMAT;
     }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t output_height) {
+
+    if (!image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    stbir_pixel_layout layout = STBIR_RGB;
+
+    switch (image->format) {
+        case TPXL_FORMAT_R:
+            layout = STBIR_1CHANNEL;
+        case TPXL_FORMAT_RG:
+            layout = STBIR_2CHANNEL;
+            break;
+        case TPXL_FORMAT_RGB:
+            layout = STBIR_RGB;
+            break;
+        case TPXL_FORMAT_RGBA:
+            layout = STBIR_RGBA;
+            break;
+
+        default:
+            return TPXL_INVALID_FORMAT;
+    }
+
+    size_t output_size = output_width * output_height * tpxl_format_to_channels(image->format);
+    uint8_t* output_buffer = malloc(output_size);
+
+    if (!output_buffer) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    void* resized_pixels = stbir_resize(
+        image->pixels, 
+        image->width, 
+        image->height, 
+        0, 
+        output_buffer, 
+        output_width, 
+        output_height, 
+        0, 
+        layout, 
+        STBIR_TYPE_UINT8, 
+        STBIR_EDGE_CLAMP, 
+        STBIR_FILTER_CUBICBSPLINE
+    );
+
+    if (!resized_pixels) {
+        free(output_buffer);
+        return TPXL_IMAGE_RESIZE_FAILED;
+    }
+
+    stbi_image_free(image->pixels);
+
+    image->width = output_width;
+    image->height = output_height;
+    image->pixels = (uint8_t*)resized_pixels;
 
     return TPXL_OK;
 }
