@@ -390,7 +390,7 @@ TpxlResult tpxl_audio_frame_queue_try_pop(TpxlAudioFrameQueue* queue, TpxlAudioF
 
     pthread_mutex_lock(&queue->mutex);
 
-    while (queue->count == 0 && !queue->closed && !atomic_load(shutdown)) {
+    if (queue->count == 0 && !queue->closed && !atomic_load(shutdown)) {
         pthread_mutex_unlock(&queue->mutex);
         return TPXL_QUEUE_EMPTY;
     }

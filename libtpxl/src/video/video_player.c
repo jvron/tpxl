@@ -15,7 +15,7 @@
 #include "tpxl/video.h"
 #include "tpxl/util.h"
 
-#include "queue/queue.h"
+#include "util/queue.h"
 #include "internal/thread.h"
 #include "internal/video_internal.h"
 #include "internal/audio_internal.h"

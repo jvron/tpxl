@@ -12,7 +12,7 @@
 #include "tpxl/type.h"
 #include "tpxl/video.h"
 
-#include "queue/queue.h"
+#include "util/queue.h"
 #include "internal/audio_internal.h"
 #include "internal/video_internal.h"
 

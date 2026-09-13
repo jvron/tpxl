@@ -13,7 +13,7 @@
 #include <miniaudio/miniaudio.h>
 
 #include "tpxl/audio.h"
-#include "queue/queue.h"
+#include "util/queue.h"
 
 #include "thread.h"
 #include "video_internal.h"
