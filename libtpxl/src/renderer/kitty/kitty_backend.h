@@ -1,5 +1,5 @@
-#ifndef TPXL_RENDERER_KITTY_H
-#define TPXL_RENDERER_KITTY_H
+#ifndef TPXL_KITTY_BACKEND_H
+#define TPXL_KITTY_BACKEND_H
 
 #include <stdint.h>
 #include <stdio.h>

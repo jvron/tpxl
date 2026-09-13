@@ -10,7 +10,7 @@
 #include "tpxl/type.h"
 
 #include "util/base64.h"
-#include "kitty.h"
+#include "kitty_backend.h"
 
 const size_t CHUNK_SIZE = 4096;
 

@@ -6,7 +6,7 @@
 #include "tpxl/type.h"
 #include "tpxl/renderer.h"
 
-#include "kitty/kitty.h"
+#include "kitty/kitty_backend.h"
 #include "sixel/sixel_backend.h"
 
 struct TpxlRendererImp {
