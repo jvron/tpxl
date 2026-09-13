@@ -4,6 +4,7 @@
 
 #include "tpxl/context.h"
 #include "tpxl/image.h"
+#include "tpxl/renderer.h"
 #include "tpxl/type.h"
 
 #include "sixel_backend.h"
@@ -88,8 +89,16 @@ TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMedi
         return TPXL_INVALID_ARGUMENT;
     }
 
-    if (media_type == TPXL_MEDIA_UNKNOWN || media_type == TPXL_MEDIA_AUDIO) {
-        return TPXL_INVALID_ARGUMENT;
+    switch (media_type) {
+        case TPXL_MEDIA_IMAGE:
+            sixel_context->cursor_policy = TPXL_CURSOR_ADVANCE;
+            break;
+        case TPXL_MEDIA_ANIMATION:
+        case TPXL_MEDIA_VIDEO:
+            sixel_context->cursor_policy = TPXL_CURSOR_PRESERVE;
+            break;
+        default:
+            return TPXL_INVALID_ARGUMENT;
     }
 
     sixel_context->media_type = media_type;
@@ -124,7 +133,7 @@ TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) 
         return TPXL_RENDER_FAILED;
     }
 
-    fprintf(stdout,"\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
+   fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
 
     ret = sixel_encode(
         frame->pixels,
@@ -137,6 +146,10 @@ TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) 
 
     if (ret != SIXEL_OK) {
         return TPXL_RENDER_FAILED;
+    }
+
+    if (sixel_context->cursor_policy == TPXL_CURSOR_ADVANCE) {
+        fprintf(stdout, "\033[%u;%uH", sixel_context->target_row + sixel_context->rows - 1, sixel_context->target_column);
     }
 
     return TPXL_OK;

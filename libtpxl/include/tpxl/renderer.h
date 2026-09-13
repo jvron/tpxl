@@ -7,6 +7,11 @@
 
 typedef struct TpxlRendererImp TpxlRenderer;
 
+typedef enum {
+    TPXL_CURSOR_PRESERVE,
+    TPXL_CURSOR_ADVANCE,
+} TpxlCursorPolicy;
+
 TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, uint32_t width, uint32_t height, TpxlFormat format, TpxlMediaType media_type);
 TpxlResult tpxl_update_renderer_context(TpxlRenderer* renderer, TpxlContext* context);
 TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format);

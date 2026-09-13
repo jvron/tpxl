@@ -6,9 +6,11 @@
 
 #include <zlib.h>
 
-#include "kitty.h"
+#include "tpxl/renderer.h"
 #include "tpxl/type.h"
+
 #include "util/base64.h"
+#include "kitty.h"
 
 const size_t CHUNK_SIZE = 4096;
 
@@ -97,11 +99,11 @@ TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMedi
 
     switch (media_type) {
         case TPXL_MEDIA_IMAGE:
-            kitty_context->cursor_policy = 0;
+            kitty_context->cursor_policy = TPXL_CURSOR_PRESERVE;
             break;
         case TPXL_MEDIA_ANIMATION:
         case TPXL_MEDIA_VIDEO:
-            kitty_context->cursor_policy = 1;
+            kitty_context->cursor_policy = TPXL_CURSOR_ADVANCE;
             break;
         default:
             return TPXL_INVALID_ARGUMENT;

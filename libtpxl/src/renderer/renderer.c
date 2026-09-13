@@ -10,7 +10,7 @@
 #include "sixel/sixel_backend.h"
 
 struct TpxlRendererImp {
-
+    TpxlMediaType media_type;
     TpxlBackend backend;
 
     union {

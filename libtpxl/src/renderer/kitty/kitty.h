@@ -6,6 +6,7 @@
 
 #include "tpxl/context.h"
 #include "tpxl/type.h"
+#include "tpxl/renderer.h"
 
 typedef struct {
     size_t frame_size;
@@ -17,7 +18,7 @@ typedef struct {
     size_t compressed_capacity;
 
     int kitty_format;
-    int cursor_policy;
+    TpxlCursorPolicy cursor_policy;
 
     uint32_t columns;
     uint32_t rows;

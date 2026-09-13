@@ -7,10 +7,12 @@
 #include <sixel.h>
 
 #include "tpxl/context.h"
+#include "tpxl/renderer.h"
 #include "tpxl/type.h"
 
 typedef struct {
     TpxlMediaType media_type;
+    TpxlCursorPolicy cursor_policy;
     size_t frame_size;
 
     uint32_t columns;
