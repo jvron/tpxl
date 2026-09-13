@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <string.h>
 
-#include "tpxl/audio.h"
 #include "tpxl/type.h"
 #include "tpxl/file.h"
 #include "tpxl/context.h"
@@ -17,25 +17,43 @@ int main(int argc, char* argv[]) {
     static struct option options[] = {
         {"info", no_argument, NULL, 'i'},
         {"help", no_argument, NULL, 'h'},
+        {"backend", required_argument, NULL, 'b'},
         {NULL, 0, NULL, 0}
     };
 
+    TpxlBackend backend = TPXL_BACKEND_AUTO;
+
     int opt;
-    while ((opt = getopt_long(argc, argv, "ih", options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "ib:h", options, NULL)) != -1) {
 
         switch (opt) {
             case 'i':
                 print_info = true;
                 break;
+
+            case 'b':
+                if (strcmp(optarg, "kitty") == 0) {
+                    backend = TPXL_BACKEND_KITTY;
+                } else if (strcmp(optarg, "sixel") == 0) {
+                    backend = TPXL_BACKEND_SIXEL;
+                } else if (strcmp(optarg, "auto") == 0) {
+                    backend = TPXL_BACKEND_AUTO;
+                } else {
+                    printf("Error: invalid backend\n");
+                    return EXIT_FAILURE;
+                }
+                break;
+
             case 'h':
                 printf(
                     "Usage:\n"
                     "    tpxl [OPTIONS] <file>\n"
                     "\n"
                     "Options:\n"
-                    "    -i, --info       Print media information\n"
-                    "    -h, --help       Show this help message\n"
-                    "    -V, --version    Show version information\n"
+                    "    -i, --info           Print media information\n"
+                    "    -b, --backend <name> Select rendering backend (auto, kitty, sixel)\n"
+                    "    -h, --help           Show this help message\n"
+                    "    -V, --version        Show version information\n"
                     "\n"
                     "Arguments:\n"
                     "    <file>           Media file to open\n"
@@ -80,7 +98,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     
-    result = tpxl_context_set_backend(&context, TPXL_BACKEND_KITTY);
+    result = tpxl_context_set_backend(&context, backend);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
@@ -106,9 +124,8 @@ int main(int argc, char* argv[]) {
     switch(file_type) {
         case TPXL_FILE_JPEG:
         case TPXL_FILE_PNG:
-            exit_code = display_image(file, print_info, &context);
+            exit_code = display_image(file, &context, print_info);
             break;
-
         case TPXL_FILE_GIF:
             exit_code = display_gif(file, &context, print_info);
             break;
