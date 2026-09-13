@@ -108,6 +108,15 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
+TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column) {
+
+    if(fprintf(stdout, "\033[%u;%uH", row, column) < 0) {
+        return TPXL_IO_ERROR;
+    }
+
+    return TPXL_OK;
+}
+
 TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
 
     if (!terminal) {
