@@ -14,7 +14,7 @@ typedef enum {
 } TpxlSixelEntryState;
 
 typedef struct {
-    uint8_t* data;
+    char* data;
     size_t size;
     uint32_t id;
 } TpxlSixelImage;

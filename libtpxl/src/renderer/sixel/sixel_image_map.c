@@ -80,40 +80,22 @@ TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t fr
 
     size_t index = tpxl_hash_u32(frame_id) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
 
-    if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
-        return TPXL_MAP_NOT_FOUND;
-    } 
-    else {
-        if (image_map->states[index] == TPXL_ENTRY_OCCUPIED && image_map->entries[index].id == frame_id) {
-            image_map->states[index] = TPXL_ENTRY_DELETED;
+    for (size_t probe = 0; probe < TPXL_SIXEL_IMAGE_MAP_CAPACITY; probe++) {
+        if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
+            return TPXL_MAP_NOT_FOUND;
         }
-        else {
-            bool found = false;
+        if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
 
-            for (size_t probe = 0; probe < TPXL_SIXEL_IMAGE_MAP_CAPACITY; probe++) {
-                if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
-                    return TPXL_MAP_NOT_FOUND;
-                }
-                if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
-
-                    if (image_map->entries[index].id == frame_id) {
-                        image_map->states[index] = TPXL_ENTRY_DELETED;
-                        found = true;
-                        break;
-                    }
-                }
-                index = (index + 1) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
-            }
-
-            if (!found) {
-                return TPXL_MAP_NOT_FOUND;
+            if (image_map->entries[index].id == frame_id) {
+                image_map->states[index] = TPXL_ENTRY_DELETED;
+                image_map->count--;
+                return TPXL_OK;
             }
         }
+        index = (index + 1) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
     }
 
-    image_map->count--;
-
-    return TPXL_OK;
+    return TPXL_MAP_NOT_FOUND;
 }
 
 TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage* out_sixel_image) {
@@ -128,26 +110,19 @@ TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id,
 
     size_t index = tpxl_hash_u32(frame_id) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
 
-    if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
-        return TPXL_MAP_NOT_FOUND;
-    } 
-    else {
-        for (size_t probe = 0; probe < TPXL_SIXEL_IMAGE_MAP_CAPACITY; probe++) {
-            if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
-                return TPXL_MAP_NOT_FOUND;
-            }
-            if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
-
-                if (image_map->entries[index].id == frame_id) {
-                    *out_sixel_image = image_map->entries[index];
-                    return TPXL_OK;
-                }
-            }
-            index = (index + 1) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
+    for (size_t probe = 0; probe < TPXL_SIXEL_IMAGE_MAP_CAPACITY; probe++) {
+        if (image_map->states[index] == TPXL_ENTRY_EMPTY) {
+            return TPXL_MAP_NOT_FOUND;
         }
+        if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
 
-        return TPXL_MAP_NOT_FOUND;
+            if (image_map->entries[index].id == frame_id) {
+                *out_sixel_image = image_map->entries[index];
+                return TPXL_OK;
+            }
+        }
+        index = (index + 1) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
     }
 
-    return TPXL_OK;
+    return TPXL_MAP_NOT_FOUND;
 }
