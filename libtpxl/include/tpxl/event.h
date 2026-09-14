@@ -1,8 +1,9 @@
 #ifndef TPXL_EVENT_H
 #define TPXL_EVENT_H
 
-#include "tpxl/type.h"
 #include <stdint.h>
+
+#include "tpxl/type.h"
 
 typedef enum {
     TPXL_KEY_UNKNOWN = 0,
@@ -11,14 +12,16 @@ typedef enum {
     TPXL_KEY_S,
     TPXL_KEY_D,
     TPXL_KEY_Q,
-
+    TPXL_KEY_H,
+    TPXL_KEY_M,
+    TPXL_KEY_P,
+    TPXL_KEY_SPACE,
 } TpxlKey;
 
 typedef enum {
     TPXL_EVENT_NONE = 0,
     TPXL_EVENT_KEY,
     TPXL_EVENT_RESIZE,
-
 } TpxlEventType;
 
 typedef struct {
@@ -33,7 +36,6 @@ typedef struct {
 
         } resize;
     };
-
 } TpxlEvent;
 
 TpxlResult tpxl_poll_event(TpxlEvent* event);

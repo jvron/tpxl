@@ -39,7 +39,6 @@ TpxlResult tpxl_poll_event(TpxlEvent* event) {
         }
 
         if (read_result == 1) {
-
             event->type = TPXL_EVENT_KEY;
 
             switch (c) {
@@ -48,6 +47,10 @@ TpxlResult tpxl_poll_event(TpxlEvent* event) {
                 case 'a': event->key = TPXL_KEY_A; break;
                 case 's': event->key = TPXL_KEY_S; break;
                 case 'd': event->key = TPXL_KEY_D; break;
+                case 'h': event->key = TPXL_KEY_H; break;
+                case 'm': event->key = TPXL_KEY_M; break;
+                case 'p': event->key = TPXL_KEY_P; break;
+                case ' ': event->key = TPXL_KEY_SPACE; break;
 
                 default:
                     event->key = TPXL_KEY_UNKNOWN;
