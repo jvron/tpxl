@@ -1,4 +1,7 @@
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <sixel.h>
 
@@ -8,16 +11,46 @@
 #include "tpxl/type.h"
 
 #include "sixel_backend.h"
+#include "sixel_image_map.h"
 
-static int tpxl_write_stdout(char* data, int size, void* priv) {
+static int tpxl_write_stdout(char* data, int chunk_size, void* priv) {
 
     (void)priv;
 
-    if (fwrite(data, 1, size, stdout) == size) {
+    if (fwrite(data, 1, chunk_size, stdout) == chunk_size) {
         return 0;
     }
 
     return -1;
+}
+
+static int tpxl_write_image_map(char* data, int chunk_size, void* priv) {
+
+    TpxlSixelContext* sixel_context = priv; 
+
+    size_t required = sixel_context->encoded_buffer_size + chunk_size;
+    if ( required > sixel_context->encoded_buffer_capacity) {
+
+        size_t new_capacity = sixel_context->encoded_buffer_capacity;
+
+        while (new_capacity < required) {
+            new_capacity *= 2;
+        }
+
+        char* encoded_buffer = realloc(sixel_context->encoded_buffer, new_capacity);
+
+        if (!encoded_buffer) {
+            return -1;
+        }
+
+        sixel_context->encoded_buffer = encoded_buffer;
+        sixel_context->encoded_buffer_capacity = new_capacity;
+    }
+
+    memcpy(sixel_context->encoded_buffer + sixel_context->encoded_buffer_size, data, chunk_size);
+    sixel_context->encoded_buffer_size += chunk_size;
+
+    return 0;
 }
 
 TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* context, bool create_sixel_objects) {
@@ -45,12 +78,33 @@ TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* 
         return TPXL_OK;
     }
 
-    if (sixel_output_new(&sixel_context->output, tpxl_write_stdout, NULL, NULL) != SIXEL_OK) {
+    size_t initial_size = 4096;
+    char* encoded_buffer = malloc(initial_size);
+
+    if (!encoded_buffer) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    sixel_context->encoded_buffer_size = 0;
+    sixel_context->encoded_buffer_capacity = initial_size;
+    sixel_context->encoded_buffer = encoded_buffer;
+
+    if (tpxl_init_sixel_image_map(&sixel_context->image_map) != TPXL_OK) {
+        return TPXL_SIXEL_BACKEND_CREATION_FAILED;
+    }
+
+    if (sixel_output_new(&sixel_context->output_stdout, tpxl_write_stdout, NULL, NULL) != SIXEL_OK) {
+        return TPXL_SIXEL_BACKEND_CREATION_FAILED;
+    }
+
+    if (sixel_output_new(&sixel_context->output_image_map, tpxl_write_image_map, sixel_context, NULL) != SIXEL_OK) {
+        sixel_output_unref(sixel_context->output_stdout);
         return TPXL_SIXEL_BACKEND_CREATION_FAILED;
     }
 
     if (sixel_dither_new(&sixel_context->dither, 256, NULL) != SIXEL_OK) {
-        sixel_output_unref(sixel_context->output);
+        sixel_output_unref(sixel_context->output_image_map);
+        sixel_output_unref(sixel_context->output_stdout);
         return TPXL_SIXEL_BACKEND_CREATION_FAILED;
     }
 
@@ -75,8 +129,6 @@ TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, uint32_t width,
         default:
             return TPXL_UNSUPPORTED_FORMAT;
     }
-
-    sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_STUCKI);
     
     sixel_context->frame_size = width * height * tpxl_format_to_channels(format);
 
@@ -91,10 +143,12 @@ TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMedi
 
     switch (media_type) {
         case TPXL_MEDIA_IMAGE:
+            sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_STUCKI);
             sixel_context->cursor_policy = TPXL_CURSOR_ADVANCE;
             break;
         case TPXL_MEDIA_ANIMATION:
         case TPXL_MEDIA_VIDEO:
+            sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_FS);
             sixel_context->cursor_policy = TPXL_CURSOR_PRESERVE;
             break;
         default:
@@ -141,16 +195,106 @@ TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) 
         frame->height,
         0, 
         sixel_context->dither, 
-        sixel_context->output
+        sixel_context->output_stdout
     );
 
     if (ret != SIXEL_OK) {
         return TPXL_RENDER_FAILED;
     }
 
-    if (sixel_context->cursor_policy == TPXL_CURSOR_ADVANCE) {
-        fprintf(stdout, "\033[%u;%uH", sixel_context->target_row + sixel_context->rows - 1, sixel_context->target_column);
+    // Sixel advances the cursor by default
+    if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
+        fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
     }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t frame_id) {
+
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
+        return TPXL_INVALID_FORMAT;
+    }
+
+    if (sixel_context->media_type == TPXL_MEDIA_IMAGE) {
+        if (tpxl_resize_image(frame, sixel_context->output_width, sixel_context->output_height) != TPXL_OK) {
+            return TPXL_IMAGE_RESIZE_FAILED;
+        }
+    }
+
+    sixel_dither_new(&sixel_context->dither, 256, NULL);
+
+    int ret = sixel_dither_initialize(
+        sixel_context->dither,
+        frame->pixels,
+        frame->width,
+        frame->height,
+        sixel_context->sixel_format,
+        SIXEL_LARGE_LUM,
+        SIXEL_REP_AVERAGE_PIXELS,
+        SIXEL_QUALITY_HIGH
+    );
+
+    sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_FS);
+
+    if (ret != SIXEL_OK) {
+        return TPXL_RENDER_FAILED;
+    }
+
+    ret = sixel_encode(
+        frame->pixels,
+        frame->width, 
+        frame->height,
+        0, 
+        sixel_context->dither, 
+        sixel_context->output_image_map
+    );
+
+    if (ret != SIXEL_OK) {
+        return TPXL_RENDER_FAILED;
+    }
+
+    char* encoded_data = malloc(sixel_context->encoded_buffer_size);
+
+    if (!encoded_data) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    memcpy(encoded_data, sixel_context->encoded_buffer, sixel_context->encoded_buffer_size);
+
+    TpxlSixelImage image = {
+        .data = encoded_data,
+        .size = sixel_context->encoded_buffer_size,
+        .id = frame_id
+    };
+
+    tpxl_sixel_image_map_insert(&sixel_context->image_map, &image, frame_id);
+
+    sixel_context->encoded_buffer_size = 0;
+
+    sixel_dither_destroy(sixel_context->dither);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id) {
+
+    TpxlSixelImage sixel_image = {0};
+    TpxlResult result = tpxl_get_sixel_image(&sixel_context->image_map, frame_id,  &sixel_image);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
+
+    fwrite(sixel_image.data, 1, sixel_image.size, stdout);
+
+    if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
+        fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
+    }
+
+    fflush(stdout);
 
     return TPXL_OK;
 }
@@ -161,9 +305,15 @@ void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context) {
         return;
     }
 
+    free(sixel_context->encoded_buffer);
+    sixel_context->encoded_buffer = NULL;
+
     sixel_dither_unref(sixel_context->dither);
     sixel_context->dither = NULL;
 
-    sixel_output_unref(sixel_context->output);
-    sixel_context->output = NULL;
+    sixel_output_unref(sixel_context->output_image_map);
+    sixel_context->output_image_map = NULL;
+
+    sixel_output_unref(sixel_context->output_stdout);
+    sixel_context->output_stdout = NULL;
 }
