@@ -128,3 +128,19 @@ TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id,
 
     return TPXL_MAP_NOT_FOUND;
 }
+
+void tpxl_destroy_sixel_image_map(TpxlSixelImageMap* image_map) {
+
+    if (!image_map) {
+        return;
+    }
+
+    for (size_t i = 0; i < TPXL_SIXEL_IMAGE_MAP_CAPACITY; i++) {
+        if (image_map->states[i] == TPXL_ENTRY_OCCUPIED) {
+            free(image_map->entries[i].data); 
+            image_map->entries[i].data = NULL;
+        }
+    }
+
+    *image_map = (TpxlSixelImageMap){0};
+}

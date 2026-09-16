@@ -30,5 +30,6 @@ TpxlResult tpxl_init_sixel_image_map(TpxlSixelImageMap* image_map);
 TpxlResult tpxl_sixel_image_map_insert(TpxlSixelImageMap* image_map, TpxlSixelImage* sixel_image, uint32_t frame_id);
 TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t frame_id);
 TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage* out_sixel_image);
+void tpxl_destroy_sixel_image_map(TpxlSixelImageMap* image_map);
 
 #endif
