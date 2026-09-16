@@ -177,7 +177,15 @@ TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32
         return TPXL_INVALID_ARGUMENT;
     }
 
-    return tpxl_kitty_transmit(&renderer->kitty_context, frame, frame_id);
+    switch (renderer->backend) {
+        case TPXL_BACKEND_KITTY:
+            return tpxl_kitty_transmit(&renderer->kitty_context, frame, frame_id);
+        case TPXL_BACKEND_SIXEL:
+            return tpxl_sixel_upload(&renderer->sixel_context, frame, frame_id);
+
+        default:
+            return TPXL_INVALID_BACKEND;
+    } 
 }
 
 TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
@@ -186,7 +194,15 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    return tpxl_kitty_display(&renderer->kitty_context, frame_id);
+    switch (renderer->backend) {
+        case TPXL_BACKEND_KITTY:
+            return tpxl_kitty_display(&renderer->kitty_context, frame_id);
+        case TPXL_BACKEND_SIXEL:
+            return tpxl_sixel_display(&renderer->sixel_context, frame_id);
+
+        default:
+            return TPXL_INVALID_BACKEND;
+    } 
 }
 
 void tpxl_renderer_delete_placement(uint32_t frame_id) {
