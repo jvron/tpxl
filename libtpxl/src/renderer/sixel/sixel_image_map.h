@@ -1,9 +1,10 @@
 #ifndef TPXL_SIXEL_IMAGE_MAP
 #define TPXL_SIXEL_IMAGE_MAP
 
-#include "tpxl/type.h"
 #include <stdint.h>
 #include <stdio.h>
+
+#include "tpxl/type.h"
 
 #define TPXL_SIXEL_IMAGE_MAP_CAPACITY 128
 

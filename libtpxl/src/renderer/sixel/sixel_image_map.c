@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "tpxl/type.h"
 #include "sixel_image_map.h"
@@ -43,7 +44,6 @@ TpxlResult tpxl_sixel_image_map_insert(TpxlSixelImageMap* image_map, TpxlSixelIm
                 image_map->states[index] = TPXL_ENTRY_OCCUPIED;
             }
             image_map->count++;
-
             return TPXL_OK;
         } 
         else if (image_map->states[index] == TPXL_ENTRY_DELETED) {
@@ -87,6 +87,8 @@ TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t fr
         if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
 
             if (image_map->entries[index].id == frame_id) {
+                free(image_map->entries[index].data);
+                image_map->entries[index].data = NULL;
                 image_map->states[index] = TPXL_ENTRY_DELETED;
                 image_map->count--;
                 return TPXL_OK;
