@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+#include <unistd.h>
 
 #include <sixel.h>
 
@@ -78,7 +80,7 @@ TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* 
         return TPXL_OK;
     }
 
-    size_t initial_size = 4096;
+    size_t initial_size = 8192;
     char* encoded_buffer = malloc(initial_size);
 
     if (!encoded_buffer) {
@@ -250,6 +252,8 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         sixel_context->output_image_map
     );
 
+    sixel_dither_unref(sixel_context->dither);
+
     if (ret != SIXEL_OK) {
         return TPXL_RENDER_FAILED;
     }
@@ -267,12 +271,15 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         .size = sixel_context->encoded_buffer_size,
         .id = frame_id
     };
+    
+    TpxlResult result = tpxl_sixel_image_map_insert(&sixel_context->image_map, &image, frame_id);
 
-    tpxl_sixel_image_map_insert(&sixel_context->image_map, &image, frame_id);
+    if (result != TPXL_OK) {
+        free(encoded_data);
+        return result;
+    }
 
     sixel_context->encoded_buffer_size = 0;
-
-    sixel_dither_destroy(sixel_context->dither);
 
     return TPXL_OK;
 }
@@ -288,7 +295,9 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
 
     fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
 
-    fwrite(sixel_image.data, 1, sixel_image.size, stdout);
+    if (write(STDOUT_FILENO, sixel_image.data, sixel_image.size) < 0) {
+        return TPXL_RENDER_FAILED;
+    }
 
     if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
         fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
@@ -299,11 +308,26 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
     return TPXL_OK;
 }
 
+TpxlResult tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) {
+
+    assert(sixel_context);
+
+    TpxlResult result = tpxl_sixel_image_map_remove(&sixel_context->image_map, frame_id);
+
+    if (result == TPXL_MAP_EMPTY) {
+        return TPXL_OK;
+    }
+
+    return result;
+}
+
 void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context) {
 
     if (!sixel_context) {
         return;
     }
+
+    tpxl_destroy_sixel_image_map(&sixel_context->image_map);
 
     free(sixel_context->encoded_buffer);
     sixel_context->encoded_buffer = NULL;
