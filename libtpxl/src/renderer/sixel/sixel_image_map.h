@@ -18,6 +18,10 @@ typedef struct {
     char* data;
     size_t size;
     uint32_t id;
+    uint32_t row;
+    uint32_t column;
+    uint32_t rows;
+    uint32_t columns;
 } TpxlSixelImage;
 
 typedef struct {
