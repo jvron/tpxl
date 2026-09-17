@@ -205,12 +205,30 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
     } 
 }
 
-void tpxl_renderer_delete_placement(uint32_t frame_id) {
-    tpxl_kitty_delete_placement(frame_id);
+void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id) {
+
+    if (!renderer) {
+        return;
+    }
+
+    if (renderer->backend == TPXL_BACKEND_KITTY) {
+        tpxl_kitty_delete_placement(frame_id);
+    } else if (renderer->backend == TPXL_BACKEND_SIXEL) {
+        tpxl_sixel_delete_placement(&renderer->sixel_context, frame_id);
+    }
 }
 
-void tpxl_renderer_delete_data(uint32_t frame_id) {
-    tpxl_kitty_delete_data(frame_id);
+void tpxl_renderer_delete_data(TpxlRenderer* renderer, uint32_t frame_id) {
+
+    if (!renderer) {
+        return;
+    }
+
+    if (renderer->backend == TPXL_BACKEND_KITTY) {
+        tpxl_kitty_delete_data(frame_id);
+    } else if (renderer->backend == TPXL_BACKEND_SIXEL) {
+        tpxl_sixel_delete_data(&renderer->sixel_context, frame_id);
+    }
 }
 
 void tpxl_destroy_renderer(TpxlRenderer** renderer) {
