@@ -48,7 +48,7 @@ TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMedi
 TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame);
 TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id);
-TpxlResult tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id);
+void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id);
 void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context);
 
 #endif

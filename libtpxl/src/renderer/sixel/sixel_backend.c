@@ -295,7 +295,7 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
 
     fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
 
-    if (write(STDOUT_FILENO, sixel_image.data, sixel_image.size) < 0) {
+    if (fwrite(sixel_image.data, 1, sixel_image.size, stdout) != sixel_image.size) {
         return TPXL_RENDER_FAILED;
     }
 
@@ -308,17 +308,11 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
     return TPXL_OK;
 }
 
-TpxlResult tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) {
+void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) {
 
     assert(sixel_context);
 
-    TpxlResult result = tpxl_sixel_image_map_remove(&sixel_context->image_map, frame_id);
-
-    if (result == TPXL_MAP_EMPTY) {
-        return TPXL_OK;
-    }
-
-    return result;
+    tpxl_sixel_image_map_remove(&sixel_context->image_map, frame_id);
 }
 
 void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context) {
