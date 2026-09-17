@@ -12,38 +12,9 @@
 #include "tpxl/video.h"
 #include "tpxl/type.h"
 
-#define MAX_SLOT_COUNT 32
 #define MAX_VIDEO_FRAME_COUNT 16
 #define MAX_AUDIO_FRAME_COUNT 32
 #define MAX_PACKET_COUNT 64
-
-typedef struct {
-    TpxlImage slots[MAX_SLOT_COUNT];
-
-    size_t count;
-    uint32_t write_idx;
-    uint32_t read_idx;
-    bool closed;
-
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
-
-} TpxlFrameQueue;
-
-typedef struct {
-    uint32_t slots[MAX_SLOT_COUNT];
-
-    size_t count;
-    uint32_t write_idx;
-    uint32_t read_idx;
-    bool closed;
-
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
-
-} TpxlFrameIDQueue;
 
 typedef struct {
     TpxlAudioFrame slots[MAX_AUDIO_FRAME_COUNT];
@@ -88,19 +59,6 @@ typedef struct {
     pthread_cond_t not_full;
     
 } TpxlPacketQueue;
-
-
-TpxlResult tpxl_init_frame_queue(TpxlFrameQueue* queue);
-void tpxl_frame_queue_close(TpxlFrameQueue* queue);
-TpxlResult tpxl_frame_queue_push(TpxlFrameQueue* queue, TpxlImage* frame, atomic_bool* shutdown);
-TpxlResult tpxl_frame_queue_pop(TpxlFrameQueue* queue, TpxlImage* out_frame, atomic_bool* shutdown);
-void tpxl_destroy_frame_queue(TpxlFrameQueue* queue);
-
-TpxlResult tpxl_init_frame_id_queue(TpxlFrameIDQueue* queue);
-void tpxl_frame_id_queue_close(TpxlFrameIDQueue* queue);
-TpxlResult tpxl_frame_id_queue_push(TpxlFrameIDQueue* queue, uint32_t frame_id, atomic_bool* shutdown);
-TpxlResult tpxl_frame_id_queue_pop(TpxlFrameIDQueue* queue, uint32_t* out_frame_id, atomic_bool* shutdown);
-void tpxl_destroy_frame_id_queue(TpxlFrameIDQueue* queue);
 
 TpxlResult tpxl_init_audio_frame_queue(TpxlAudioFrameQueue* queue);
 void tpxl_audio_frame_queue_close(TpxlAudioFrameQueue* queue);
