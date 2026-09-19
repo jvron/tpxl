@@ -8,6 +8,7 @@ project(tpxl
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(TPXL_ASAN "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 option(TPXL_TSAN "Enable ThreadSanitizer" OFF)
@@ -87,7 +88,6 @@ add_custom_command(
         --enable-static
         --disable-python
         --disable-tests
-        --disable-debug
         --disable-gcov
         --without-libcurl
         --without-gd
