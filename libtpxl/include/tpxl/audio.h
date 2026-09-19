@@ -46,8 +46,10 @@ void tpxl_close_video_audio(TpxlAudio** audio);
 
 TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
 TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);
+TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player);
 double tpxl_get_audio_clock(TpxlAudioPlayer* player);
-bool tpxl_audio_playing(TpxlAudioPlayer* player);
+bool tpxl_audio_player_active(TpxlAudioPlayer* player);
+bool tpxl_audio_player_playing(TpxlAudioPlayer* player);
 void tpxl_close_audio_player(TpxlAudioPlayer** player);
 
 #endif

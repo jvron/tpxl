@@ -11,7 +11,6 @@
 #include "util/queue.h"
 #include "internal/thread.h"
 #include "internal/audio_internal.h"
-#include "internal/video_internal.h"
 
 #define AUDIO_SAMPLE_RATE 48000
 #define AUDIO_CHANNELS 2
@@ -167,6 +166,7 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
                 memset(out + frames_written * AUDIO_CHANNELS, 0, (frame_count - frames_written) * AUDIO_CHANNELS * sizeof(float));
 
                 atomic_store(&player->playing, false);
+                atomic_store(&player->active, false);
                 break;
             }
 
@@ -266,6 +266,8 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
         return TPXL_THREAD_CREATION_ERROR;
     }
 
+    atomic_init(&(*player)->active, true);
+
     return TPXL_OK;
 }
 
@@ -291,6 +293,8 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
         return TPXL_THREAD_CREATION_ERROR;
     }
 
+    atomic_init(&player->active, true);
+
     video_player->audio_player = player;
 
     return TPXL_OK;
@@ -313,6 +317,23 @@ TpxlResult tpxl_play_audio(TpxlAudioPlayer* player) {
     return TPXL_OK;
 }
 
+TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    ma_result result = ma_device_stop(&player->device);
+
+    if (result != MA_SUCCESS) {
+        return TPXL_AUDIO_PLAYING_FAILED;
+    }
+
+    atomic_store(&player->playing, false);
+
+    return TPXL_OK;
+}
+
 double tpxl_get_audio_clock(TpxlAudioPlayer* player) {
     
     assert(player);
@@ -320,7 +341,16 @@ double tpxl_get_audio_clock(TpxlAudioPlayer* player) {
     return (double)atomic_load_explicit(&player->frames_submitted, memory_order_relaxed) / AUDIO_SAMPLE_RATE;
 }
 
-bool tpxl_audio_playing(TpxlAudioPlayer* player) {
+bool tpxl_audio_player_active(TpxlAudioPlayer* player) {
+
+    if (!player) {
+        return false;
+    }
+
+    return atomic_load(&player->active);
+}
+
+bool tpxl_audio_player_playing(TpxlAudioPlayer* player) {
 
     if (!player) {
         return false;
@@ -331,11 +361,12 @@ bool tpxl_audio_playing(TpxlAudioPlayer* player) {
 
 void tpxl_close_audio_player(TpxlAudioPlayer** player) {
 
-    if (!player) {
+    if (!player || !*player) {
         return;
     }
 
     atomic_store(&(*player)->shutdown, true);
+    atomic_store(&(*player)->active, false);
     atomic_store(&(*player)->playing, false);
 
     tpxl_audio_frame_queue_close(&(*player)->frame_queue);
@@ -347,5 +378,5 @@ void tpxl_close_audio_player(TpxlAudioPlayer** player) {
     ma_device_uninit(&(*player)->device);
 
     free(*player);
-    player = NULL;
+    *player = NULL;
 }
