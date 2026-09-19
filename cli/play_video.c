@@ -1,34 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
-#include "tpxl/renderer.h"
 #include "tpxl/type.h"
 #include "tpxl/util.h"
 #include "tpxl/video.h"
 #include "tpxl/event.h"
+#include "tpxl/renderer.h"
 
 #include "cli.h"
-
-static void print_status_bar(TpxlVideoPlayer* player, double fps, double current, double duration) {
-
-    int current_sec = (int)current;
-    int duration_sec = (int)duration;
-
-    printf(
-        "\r%02d:%02d/",
-        current_sec / 60,
-        current_sec % 60
-    );
-
-    printf(
-        "%02d:%02d ",
-        duration_sec / 60,
-        duration_sec % 60
-    );
-
-    printf("frame=%u fps=%.1f [h] Hide [q] Quit", tpxl_get_frames_played(player), fps);
-}
 
 int play_video(const char* path, TpxlContext* context) {
 
@@ -84,7 +63,7 @@ int play_video(const char* path, TpxlContext* context) {
     result = tpxl_get_video_output_dimensions(video, &output_width, &output_height);
 
     TpxlRenderer* renderer = NULL;
-    result = tpxl_create_renderer(&renderer, context, output_width, output_height, format, TPXL_MEDIA_ANIMATED);
+    result = tpxl_create_renderer(&renderer, context, output_width, output_height, format, TPXL_MEDIA_VIDEO);
 
     if (result != TPXL_OK) {
         printf("Error: %s\n", tpxl_result_to_string(result));
@@ -125,7 +104,7 @@ int play_video(const char* path, TpxlContext* context) {
         return EXIT_FAILURE;
     }
 
-    result = tpxl_play_video(player);
+    result = tpxl_start_video(player);
 
     if (result != TPXL_OK) {
         printf("\033[%uB", video_rows);
@@ -141,7 +120,10 @@ int play_video(const char* path, TpxlContext* context) {
 
     bool display_status_bar = true;
 
-    while (tpxl_video_playing(player)) {
+    while (tpxl_video_player_active(player)) {
+
+        bool playing = tpxl_video_player_playing(player);
+        bool muted = tpxl_video_player_muted(player);
 
         TpxlEvent event;
         TpxlResult result = tpxl_poll_event(&event);
@@ -161,11 +143,22 @@ int play_video(const char* path, TpxlContext* context) {
             if (event.key == TPXL_KEY_H) {
                 if (display_status_bar) {
                     display_status_bar = false;
-
                     printf("\033[%uB", video_rows + 1);
                     printf("\033[2K\r");
                 } else {
                     display_status_bar = true;
+                }
+            } else if (event.key == TPXL_KEY_P) {
+                if (playing) {
+                    tpxl_pause_video(player);
+                } else {
+                    tpxl_play_video(player);
+                }
+            } else if (event.key == TPXL_KEY_M) {
+                if (muted) {
+                    tpxl_unmute_video(player);
+                } else {
+                    tpxl_mute_video(player);
                 }
             }
         }
@@ -174,12 +167,37 @@ int play_video(const char* path, TpxlContext* context) {
             double current = tpxl_get_video_time(player);
 
             printf("\033[%uB", video_rows + 1);
-            print_status_bar(player, fps, current, duration);
+
+            printf("\r\033[K");
+            
+            int current_sec = (int)current;
+            int duration_sec = (int)duration;
+
+            printf(
+                "\r%02d:%02d/",
+                current_sec / 60,
+                current_sec % 60
+            );
+
+            printf(
+                "%02d:%02d ",
+                duration_sec / 60,
+                duration_sec % 60
+            );
+
+            printf(
+                "frame=%u fps=%.1f  [p] %s   [m] %s   [h] hide   [q] quit", 
+                tpxl_get_frames_played(player), 
+                fps, 
+                playing ? "pause" : "play",
+                muted ? "unmute" : "mute"
+            );
+            
             printf("\033[%uA\033[%uG", video_rows + 1, video_cols);
             fflush(stdout);
         }
 
-        tpxl_sleep_ms(200);
+        tpxl_sleep_ms(100);
     }
 
     printf("\033[%uB", video_rows + 2);
