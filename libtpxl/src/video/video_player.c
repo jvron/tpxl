@@ -559,6 +559,24 @@ TpxlResult tpxl_pause_video(TpxlVideoPlayer* player) {
     return TPXL_OK;
 }
 
+TpxlResult tpxl_mute_video(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_mute_audio(player->audio_player);
+}
+
+TpxlResult tpxl_unmute_video(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    return tpxl_unmute_audio(player->audio_player);
+}
+
 bool tpxl_video_player_active(TpxlVideoPlayer* player) {
 
     if (!player) {
@@ -575,6 +593,13 @@ bool tpxl_video_player_playing(TpxlVideoPlayer* player) {
     }
 
     return atomic_load(&player->playing);
+}
+
+bool tpxl_video_player_muted(TpxlVideoPlayer* player) {
+
+    assert(player);
+
+    return tpxl_audio_player_muted(player->audio_player);
 }
 
 double tpxl_get_video_time(TpxlVideoPlayer* player) {
