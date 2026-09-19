@@ -231,6 +231,7 @@ static TpxlResult tpxl_create_audio_player_internal(TpxlAudioPlayer** player, Tp
 
     new_player->audio = audio;
 
+    atomic_init(&new_player->active, false);
     atomic_init(&new_player->playing, false);
     atomic_init(&new_player->shutdown, false);
     atomic_init(&new_player->frames_submitted, 0);
@@ -266,7 +267,7 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
         return TPXL_THREAD_CREATION_ERROR;
     }
 
-    atomic_init(&(*player)->active, true);
+    atomic_store(&(*player)->active, true);
 
     return TPXL_OK;
 }
@@ -293,7 +294,7 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
         return TPXL_THREAD_CREATION_ERROR;
     }
 
-    atomic_init(&player->active, true);
+    atomic_store(&player->active, true);
 
     video_player->audio_player = player;
 
@@ -326,10 +327,58 @@ TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player) {
     ma_result result = ma_device_stop(&player->device);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_PLAYING_FAILED;
+        return TPXL_AUDIO_PAUSING_FAILED;
     }
 
     atomic_store(&player->playing, false);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_mute_audio(TpxlAudioPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (player->muted) {
+        return TPXL_OK;
+    }
+
+    ma_result result = ma_device_get_master_volume(&player->device, &player->volume);
+
+    if (result != MA_SUCCESS) {
+        return TPXL_AUDIO_MUTE_FAILED;
+    }
+    
+    result = ma_device_set_master_volume(&player->device, 0.0f);
+
+    if (result != MA_SUCCESS) {
+        return TPXL_AUDIO_MUTE_FAILED;
+    }
+
+    player->muted = true;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_unmute_audio(TpxlAudioPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (!player->muted) {
+        return TPXL_OK;
+    }
+
+    ma_result result = ma_device_set_master_volume(&player->device, player->volume);
+
+    if (result != MA_SUCCESS) {
+        return TPXL_AUDIO_UNMUTE_FAILED;
+    }
+
+    player->muted = false;
 
     return TPXL_OK;
 }
@@ -357,6 +406,13 @@ bool tpxl_audio_player_playing(TpxlAudioPlayer* player) {
     }
 
     return atomic_load(&player->playing);
+}
+
+bool tpxl_audio_player_muted(TpxlAudioPlayer* player) {
+
+    assert(player);
+
+    return player->muted;
 }
 
 void tpxl_close_audio_player(TpxlAudioPlayer** player) {

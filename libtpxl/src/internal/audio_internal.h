@@ -45,6 +45,9 @@ struct TpxlAudioPlayerImp {
     atomic_bool active;
     atomic_bool playing;
 
+    float volume;
+    bool muted;
+
     TpxlAudioFrame current_frame;
     size_t current_frame_position;
 
