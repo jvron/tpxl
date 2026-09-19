@@ -1,16 +1,15 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "tpxl/type.h"
+
 #include "sixel_image_map.h"
 
 TpxlResult tpxl_init_sixel_image_map(TpxlSixelImageMap* image_map) {
 
-    if (!image_map) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(image_map);
 
     *image_map = (TpxlSixelImageMap){0};
 
@@ -23,9 +22,7 @@ static uint32_t tpxl_hash_u32(uint32_t key) {
 
 TpxlResult tpxl_sixel_image_map_insert(TpxlSixelImageMap* image_map, TpxlSixelImage* sixel_image, uint32_t frame_id) {
 
-    if (!image_map || !sixel_image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(image_map && sixel_image);
 
     size_t index = tpxl_hash_u32(frame_id) % TPXL_SIXEL_IMAGE_MAP_CAPACITY;
 
@@ -70,9 +67,7 @@ TpxlResult tpxl_sixel_image_map_insert(TpxlSixelImageMap* image_map, TpxlSixelIm
 
 TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t frame_id) {
 
-    if (!image_map) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(image_map);
 
     if (image_map->count == 0) {
         return TPXL_MAP_EMPTY;
@@ -102,9 +97,7 @@ TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t fr
 
 TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage* out_sixel_image) {
 
-    if (!image_map || !out_sixel_image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(image_map && out_sixel_image);
 
     if (image_map->count == 0) {
         return TPXL_MAP_EMPTY;
@@ -131,14 +124,11 @@ TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id,
 
 void tpxl_destroy_sixel_image_map(TpxlSixelImageMap* image_map) {
 
-    if (!image_map) {
-        return;
-    }
+    assert(image_map);
 
     for (size_t i = 0; i < TPXL_SIXEL_IMAGE_MAP_CAPACITY; i++) {
         if (image_map->states[i] == TPXL_ENTRY_OCCUPIED) {
             free(image_map->entries[i].data); 
-            image_map->entries[i].data = NULL;
         }
     }
 
