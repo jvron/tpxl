@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 200809L
+#include <stdint.h>
 
 #include "tpxl/util.h"
 
@@ -6,8 +6,18 @@
 
 #include <windows.h>
 
-void tpxl_sleep_ms(uint32_t milliseconds) {
+uint64_t tpxl_get_time_ms(void) {
 
+    LARGE_INTEGER counter;
+    LARGE_INTEGER frequency;
+
+    QueryPerformanceCounter(&counter);
+    QueryPerformanceFrequency(&frequency);
+
+    return (uint64_t)counter.QuadPart * 1000 / frequency.QuadPart;
+}
+
+void tpxl_sleep_ms(uint32_t milliseconds) {
     Sleep(milliseconds);
 }
 
@@ -19,7 +29,17 @@ void tpxl_sleep_us(uint64_t microseconds) {
 
 #else
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <time.h>
+
+uint64_t tpxl_get_time_ms(void) {
+
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
+}
 
 void tpxl_sleep_ms(uint32_t milliseconds) {
 
