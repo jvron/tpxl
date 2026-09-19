@@ -29,8 +29,11 @@ void tpxl_close_video(TpxlVideo** video);
 
 TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* renderer, TpxlVideo* video);
 TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player);
+TpxlResult tpxl_start_video(TpxlVideoPlayer* player);
+TpxlResult tpxl_pause_video(TpxlVideoPlayer* player);
 TpxlResult tpxl_play_video(TpxlVideoPlayer* player);
-bool tpxl_video_playing(TpxlVideoPlayer* player);
+bool tpxl_video_player_active(TpxlVideoPlayer* player);
+bool tpxl_video_player_playing(TpxlVideoPlayer* player);
 double tpxl_get_video_time(TpxlVideoPlayer* player);
 uint32_t tpxl_get_frames_played(TpxlVideoPlayer* player);
 void tpxl_close_video_player(TpxlVideoPlayer** player);

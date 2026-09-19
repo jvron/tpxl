@@ -48,7 +48,10 @@ struct TpxlVideoPlayerImp {
     uint32_t frame_count;
 
     atomic_uint frame_id;
-    atomic_bool playing;
+
+    bool started;              // Video play thread has been created.
+    atomic_bool active;        // Video player is alive; false after EOF or fatal error.
+    atomic_bool playing;       // Video playback is running; false when paused or fatal error.
 
     TpxlVideoFrame current_frame;
     bool has_current_frame;

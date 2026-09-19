@@ -290,13 +290,13 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->display_queue = (TpxlVideoFrameQueue){0};
     (*player)->current_frame = (TpxlVideoFrame){0};
     (*player)->has_current_frame = false;
-    (*player)->playing = false;
     (*player)->previous_frame_id = 0;
     (*player)->has_previous_frame = false;
     
     (*player)->frame_count = tpxl_get_video_frame_count(video);;
 
     atomic_init(&(*player)->frame_id, 1);
+    atomic_init(&(*player)->active, false);
     atomic_init(&(*player)->playing, false);
     atomic_init(&(*player)->frame_ready, false);
     atomic_init(&(*player)->shutdown, false);
@@ -364,6 +364,8 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
         return TPXL_VIDEO_PLAYER_CREATION_FAILED;
     }
 
+    atomic_store(&(*player)->active, true);
+
     return TPXL_OK;
 }
 
@@ -382,16 +384,19 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
 
         if (result == TPXL_QUEUE_CLOSED && player->upload_status == TPXL_THREAD_ERROR) {
             atomic_store(&player->playing, false);
+            atomic_store(&player->active, false);
             return TPXL_VIDEO_PLAYING_FAILED;
         }
 
         if (result == TPXL_QUEUE_CLOSED) {
             atomic_store(&player->playing, false);
+            atomic_store(&player->active, false);
             return TPXL_EOF;
         }
 
         if (result != TPXL_OK) {
             atomic_store(&player->playing, false);
+            atomic_store(&player->active, false);
             return result;
         }
 
@@ -421,7 +426,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
 
         // Video is behind. 
         // Drop this frame.
-        tpxl_renderer_delete_data(player->current_frame.id);
+        tpxl_renderer_delete_data(player->renderer, player->current_frame.id);
         tpxl_free_video_frame(&player->current_frame);
         player->has_current_frame = false;
     }
@@ -432,13 +437,14 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
             tpxl_free_video_frame(&player->current_frame);
             player->has_current_frame = false;
             atomic_store(&player->playing, false);
+            atomic_store(&player->active, false);
             return result;
         }
 
         atomic_fetch_add(&player->frames_played, 1);
 
         if (player->has_previous_frame) {
-            tpxl_renderer_delete_data(player->previous_frame_id);
+           tpxl_renderer_delete_data(player->renderer, player->previous_frame_id);
         }
 
         player->previous_frame_id = player->current_frame.id;
@@ -461,7 +467,12 @@ static void* tpxl_video_play_worker(void* arg) {
 
     bool audio_started = false;
 
-    while (atomic_load(&player->playing)) {
+    while (atomic_load(&player->active)) {
+
+        if (!atomic_load(&player->playing)) {
+            tpxl_sleep_ms(100);
+            continue;
+        }
 
         if (atomic_load(&player->frame_ready) && !audio_started) {
 
@@ -491,13 +502,13 @@ static void* tpxl_video_play_worker(void* arg) {
     return NULL;
 }
 
-TpxlResult tpxl_play_video(TpxlVideoPlayer* player) {
+TpxlResult tpxl_start_video(TpxlVideoPlayer* player) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    if (atomic_load(&player->playing)) {
+    if (player->started) {
         return TPXL_OK;
     }
 
@@ -508,12 +519,56 @@ TpxlResult tpxl_play_video(TpxlVideoPlayer* player) {
         return TPXL_THREAD_CREATION_ERROR;
     }   
 
+    player->started = true;
     player->play_thread_created = true;
 
     return TPXL_OK;
 }
 
-bool tpxl_video_playing(TpxlVideoPlayer* player) {
+TpxlResult tpxl_play_video(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = tpxl_play_audio(player->audio_player);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    atomic_store(&player->playing, true);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_pause_video(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+ 
+    TpxlResult result = tpxl_pause_audio(player->audio_player);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    atomic_store(&player->playing, false);
+
+    return TPXL_OK;
+}
+
+bool tpxl_video_player_active(TpxlVideoPlayer* player) {
+
+    if (!player) {
+        return false;
+    }
+
+    return atomic_load(&player->active);
+}
+
+bool tpxl_video_player_playing(TpxlVideoPlayer* player) {
 
     if (!player) {
         return false;
@@ -541,6 +596,7 @@ void tpxl_close_video_player(TpxlVideoPlayer** player) {
     }
 
     atomic_store(&(*player)->playing, false);
+    atomic_store(&(*player)->active, false);
     atomic_store(&(*player)->shutdown, true);
 
     tpxl_packet_queue_close(&(*player)->video_packet_queue);
