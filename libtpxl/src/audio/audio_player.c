@@ -1,18 +1,15 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include <string.h>
-#include <unistd.h>
 #include <assert.h>
-#include <stdatomic.h>
 
 #include <miniaudio/miniaudio.h>
 
-#include "internal/thread.h"
 #include "tpxl/audio.h"
 #include "tpxl/type.h"
 #include "tpxl/video.h"
 
 #include "util/queue.h"
+#include "internal/thread.h"
 #include "internal/audio_internal.h"
 #include "internal/video_internal.h"
 
@@ -206,15 +203,13 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
     atomic_fetch_add_explicit(&player->frames_submitted, frames_written, memory_order_relaxed);
 }
 
-TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) {
+static TpxlResult tpxl_create_audio_player_internal(TpxlAudioPlayer** player, TpxlAudio* audio) {
 
-    if (!player || !audio) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    *player = NULL;
 
-    *player = calloc(1, sizeof(TpxlAudioPlayer));
-
-    if (!*player) {
+    TpxlAudioPlayer* new_player = calloc(1, sizeof(TpxlAudioPlayer));
+    
+    if (!new_player) {
         return TPXL_OUT_OF_MEMORY;
     }
 
@@ -222,36 +217,48 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
     config.playback.format = ma_format_f32;
     config.sampleRate = AUDIO_SAMPLE_RATE;
     config.playback.channels = AUDIO_CHANNELS;
-    config.pUserData = *player;
+    config.pUserData = new_player;
     config.dataCallback = audio_callback;
     config.periodSizeInFrames = 480;
     config.noPreSilencedOutputBuffer = true;
 
-    ma_result result = ma_device_init(NULL, &config, &(*player)->device);
+    ma_result result = ma_device_init(NULL, &config, &new_player->device);
 
     if (result != MA_SUCCESS) {
-        free(*player);
-        *player = NULL;
+        free(new_player);
         return TPXL_AUDIO_PLAYER_CREATION_FAILED;
     }
 
-    (*player)->audio = audio;
+    new_player->audio = audio;
 
-    atomic_init(&(*player)->playing, false);
-    atomic_init(&(*player)->shutdown, false);
-    atomic_init(&(*player)->frames_submitted, 0);
+    atomic_init(&new_player->playing, false);
+    atomic_init(&new_player->shutdown, false);
+    atomic_init(&new_player->frames_submitted, 0);
 
-    if (tpxl_init_audio_frame_queue(&(*player)->frame_queue) != TPXL_OK) {
-        ma_device_uninit(&(*player)->device);
-        free(*player);
-        *player = NULL;
+    if (tpxl_init_audio_frame_queue(&new_player->frame_queue) != TPXL_OK) {
+        ma_device_uninit(&new_player->device);
+        free(new_player);
         return TPXL_AUDIO_PLAYER_CREATION_FAILED;
     }
 
-    int thread_result = 0;
-    thread_result = pthread_create(&(*player)->decode_thread, NULL, tpxl_audio_decode_worker, *player);
+    *player = new_player;
 
-    if (thread_result != 0) {
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) {
+
+    if (!player || !audio) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = tpxl_create_audio_player_internal(player, audio);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    if (pthread_create(&(*player)->decode_thread, NULL, tpxl_audio_decode_worker, *player) != 0) {
         ma_device_uninit(&(*player)->device);
         tpxl_destroy_audio_frame_queue(&(*player)->frame_queue);
         free(*player);
@@ -269,46 +276,14 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
     }
 
     TpxlAudioPlayer* player = NULL;
-    player = calloc(1, sizeof(TpxlAudioPlayer));
 
-    if (!player) {
-        return TPXL_OUT_OF_MEMORY;
+    TpxlResult result = tpxl_create_audio_player_internal(&player, audio);
+
+    if (result != TPXL_OK) {
+        return result;
     }
 
-    ma_device_config config = ma_device_config_init(ma_device_type_playback);
-    config.playback.format = ma_format_f32;
-    config.sampleRate = AUDIO_SAMPLE_RATE;
-    config.playback.channels = AUDIO_CHANNELS;
-    config.pUserData = player;
-    config.dataCallback = audio_callback;
-    config.periodSizeInFrames = 480;
-    config.noPreSilencedOutputBuffer = true;
-
-    ma_result result = ma_device_init(NULL, &config, &(player)->device);
-
-    if (result != MA_SUCCESS) {
-        free(player);
-        player = NULL;
-        return TPXL_AUDIO_PLAYER_CREATION_FAILED;
-    }
-
-    (player)->audio = audio;
-
-    atomic_init(&(player)->playing, false);
-    atomic_init(&(player)->shutdown, false);
-    atomic_init(&player->frames_submitted, 0);
-
-    if (tpxl_init_audio_frame_queue(&(player)->frame_queue) != TPXL_OK) {
-        ma_device_uninit(&(player)->device);
-        free(player);
-        player = NULL;
-        return TPXL_AUDIO_PLAYER_CREATION_FAILED;
-    }
-
-    int thread_result = 0;
-    thread_result = pthread_create(&(player)->decode_thread, NULL, tpxl_video_audio_decode_worker, video_player);
-
-    if (thread_result != 0) {
+    if (pthread_create(&(player)->decode_thread, NULL, tpxl_video_audio_decode_worker, video_player) != 0) {
         ma_device_uninit(&(player)->device);
         tpxl_destroy_audio_frame_queue(&(player)->frame_queue);
         free(player);
