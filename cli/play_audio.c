@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "tpxl/type.h"
 #include "tpxl/audio.h"
@@ -20,42 +19,6 @@ static const char* get_filename(const char* path) {
     }
 
     return path;
-}
-
-static void print_time(double seconds) {
-
-    uint32_t minutes = (uint32_t)seconds / 60;
-    uint32_t secs = (uint32_t)seconds % 60;
-
-    printf("%02u:%02u", minutes, secs);
-}
-
-static void print_progress(double played, double duration) {
-
-    const uint32_t bar_width = 28;
-
-    double progress = 0.0;
-
-    if (duration > 0.0) {
-        progress = played / duration;
-    }
-
-    if (progress < 0.0) {
-        progress = 0.0;
-    }
-    else if (progress > 1.0) {
-        progress = 1.0;
-    }
-
-    uint32_t filled = (uint32_t)(progress * bar_width);
-
-    putchar('[');
-
-    for (uint32_t i = 0; i < bar_width; i++) {
-        putchar(i < filled ? '#' : ' ');
-    }
-
-    putchar(']');
 }
 
 int play_audio(const char* path) {
@@ -90,9 +53,11 @@ int play_audio(const char* path) {
 
     double duration = tpxl_get_audio_duration(audio);
 
-    printf("\nPlaying: %s\n", get_filename(path));
+    printf("\n%s\n\n", get_filename(path));
 
-    while (true) {
+    while (tpxl_audio_player_active(player)) {
+
+        bool playing = tpxl_audio_player_playing(player);
 
         TpxlEvent event;
         TpxlResult result = tpxl_poll_event(&event);
@@ -108,27 +73,39 @@ int play_audio(const char* path) {
             if (event.key == TPXL_KEY_Q) {
                 break;
             }
+            if (event.key == TPXL_KEY_P) {
+                if (playing) {
+                    tpxl_pause_audio(player);
+                } else {
+                    tpxl_play_audio(player);
+                }
+            }
+        }
+
+        if (!playing) {
+            tpxl_sleep_ms(100);
+            continue;
         }
 
         double played = tpxl_get_audio_clock(player);
 
-        printf("\r");
-        print_time(played);
-        printf(" ");
+        int played_sec = (int)played;
+        int duration_sec = (int)duration;
 
-        print_progress(played, duration);
+        printf("\r\033[K");
 
-        printf(" ");
-        print_time(duration);
-        printf("    [q] Quit");
-
+        printf(
+            "%s %02d:%02d/%02d:%02d  [p] %s  [q] quit",
+            playing ? "Playing" : "Paused",
+            played_sec / 60,
+            played_sec % 60,
+            duration_sec / 60,
+            duration_sec % 60,
+            playing ? "pause" : "play"
+        );
         fflush(stdout);
 
-        if (played >= duration) {
-            break;
-        }
-
-        tpxl_sleep_ms(50);
+        tpxl_sleep_ms(100);
     }
 
     printf("\n");
