@@ -46,7 +46,7 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
     size_t i = 0;
     char c;
 
-    printf("\033[6n");
+    fprintf(stdout, "\033[6n");
     fflush(stdout);
 
     while (i < sizeof(buffer) - 1) {
@@ -71,6 +71,10 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
         return TPXL_IO_ERROR;
     }
 
+    if (parsed_row <= 0 || parsed_column <= 0) {
+        return TPXL_IO_ERROR;
+    }
+
     *row = (uint32_t)parsed_row;
     *column = (uint32_t)parsed_column;
 
@@ -89,16 +93,57 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
         return TPXL_IO_ERROR;
     }
 
+    if (!window_size.ws_row || !window_size.ws_col) {
+        return TPXL_IO_ERROR;
+    }   
+
     terminal->rows = window_size.ws_row;
     terminal->columns = window_size.ws_col;
-    terminal->pixel_width = window_size.ws_xpixel;
-    terminal->pixel_height = window_size.ws_ypixel;
 
-    if (terminal->rows && terminal->columns && terminal->pixel_width && terminal->pixel_height) {
-        terminal->cell_width = terminal->pixel_width / terminal->columns;
-        terminal->cell_height = terminal->pixel_height / terminal->rows;
+    if (window_size.ws_xpixel && window_size.ws_ypixel) {
+        terminal->pixel_width = window_size.ws_xpixel;
+        terminal->pixel_height = window_size.ws_ypixel;
+    } else {
+        fprintf(stdout, "\033[14t");
+        fflush(stdout);
+
+        char buffer[32];
+        size_t i = 0;
+        char c;
+
+        while (i < sizeof(buffer) - 1) {
+
+            if (read(STDIN_FILENO, &c, 1) != 1) {
+                return TPXL_IO_ERROR;
+            }
+
+            buffer[i++] = c;
+
+            if (c == 't') {
+                break;
+            }
+        }
+
+        buffer[i] = '\0';
+
+        int height;
+        int width;
+
+        if (sscanf(buffer, "\033[4;%d;%dt", &height, &width) != 2) {
+            return TPXL_IO_ERROR;
+        }
+
+        if (height <= 0 || width <= 0) {
+            return TPXL_IO_ERROR;
+        }
+
+        terminal->pixel_height = (uint32_t)height;
+        terminal->pixel_width = (uint32_t)width;
     }
 
+    terminal->cell_width = terminal->pixel_width / terminal->columns;
+    terminal->cell_height = terminal->pixel_height / terminal->rows;
+    
    TpxlResult result = tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
    
     if (result != TPXL_OK) {
