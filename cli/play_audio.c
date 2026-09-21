@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +57,7 @@ int play_audio(const char* path) {
     while (tpxl_audio_player_active(player)) {
 
         bool playing = tpxl_audio_player_playing(player);
+        bool muted = tpxl_audio_player_muted(player);
 
         TpxlEvent event;
         TpxlResult result = tpxl_poll_event(&event);
@@ -79,12 +79,13 @@ int play_audio(const char* path) {
                 } else {
                     tpxl_play_audio(player);
                 }
+            } else if (event.key == TPXL_KEY_M) {
+                if (muted) {
+                    tpxl_unmute_audio(player);
+                } else {
+                    tpxl_mute_audio(player);
+                }
             }
-        }
-
-        if (!playing) {
-            tpxl_sleep_ms(100);
-            continue;
         }
 
         double played = tpxl_get_audio_clock(player);
@@ -95,13 +96,14 @@ int play_audio(const char* path) {
         printf("\r\033[K");
 
         printf(
-            "%s %02d:%02d/%02d:%02d  [p] %s  [q] quit",
+            "%s %02d:%02d/%02d:%02d  [p] %s [m] %s [q] quit",
             playing ? "Playing" : "Paused",
             played_sec / 60,
             played_sec % 60,
             duration_sec / 60,
             duration_sec % 60,
-            playing ? "pause" : "play"
+            playing ? "pause" : "play",
+            muted ? "unmute" : "mute"
         );
         fflush(stdout);
 
