@@ -6,66 +6,45 @@
 
 #include "cli.h"
 
-int display_image(const char* file, bool print_info, TpxlContext* context) {
+int display_image(const char* file, TpxlContext* context, bool print_info) {
     
-    TpxlResult result;
+    int exit_code = EXIT_SUCCESS;
+    TpxlResult result = TPXL_OK;
 
-    TpxlImage image;
+    TpxlImage image = {0};
+    TpxlRenderer* renderer = NULL;
+
     result = tpxl_load_image(file, &image);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
+    if (result != TPXL_OK) goto error;
 
     if (print_info) {
         result = tpxl_print_image_info(&image);
+        if (result != TPXL_OK) goto error;
 
-        tpxl_free_image(&image);
-
-        if (result != TPXL_OK) {
-            printf("Error: %s\n", tpxl_result_to_string(result));
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
+        goto cleanup;
     }
 
     result = tpxl_update_context_terminal(context);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_free_image(&image);
-        return EXIT_FAILURE;
-    }
+    if (result != TPXL_OK) goto error;
 
     result = tpxl_update_context_viewport(context, image.width, image.height);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_free_image(&image);
-        return EXIT_FAILURE;
-    }
-
-    TpxlRenderer* renderer = NULL;
-    result = tpxl_create_renderer(&renderer, context, image.width, image.height, image.format, TPXL_MEDIA_STILL);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_free_image(&image);
-        return EXIT_FAILURE;
-    }
+    if (result != TPXL_OK) goto error;
+    
+    result = tpxl_create_renderer(&renderer, context, image.width, image.height, image.format, TPXL_MEDIA_IMAGE);
+    if (result != TPXL_OK) goto error;
 
     result = tpxl_renderer_render(renderer, &image);
+    if (result != TPXL_OK) goto error;
 
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        tpxl_destroy_renderer(&renderer);
+    goto cleanup;
+
+    error:
+    printf("Error: %s\n", tpxl_result_to_string(result));
+    exit_code = EXIT_FAILURE;
+
+    cleanup:
         tpxl_free_image(&image);
-        return EXIT_FAILURE;
-    }
+        tpxl_destroy_renderer(&renderer);
 
-    tpxl_free_image(&image);
-    tpxl_destroy_renderer(&renderer);
-
-    return EXIT_SUCCESS;
+    return exit_code;
 }
