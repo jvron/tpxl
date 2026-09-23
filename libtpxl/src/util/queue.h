@@ -1,10 +1,9 @@
 #ifndef TPXL_QUEUE_H
 #define TPXL_QUEUE_H
 
-#include <stdatomic.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <bits/pthreadtypes.h>
+#include <pthread.h>
+#include <stdatomic.h>
 
 #include <libavcodec/packet.h>
 

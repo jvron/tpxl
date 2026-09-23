@@ -1,9 +1,3 @@
-#include <pthread.h>
-#include <stdatomic.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-
 #include "queue.h"
 #include "tpxl/type.h"
 
@@ -13,24 +7,16 @@ TpxlResult tpxl_init_audio_frame_queue(TpxlAudioFrameQueue* queue) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    int result = 0;
-
-    result = pthread_mutex_init(&queue->mutex, NULL);
-
-    if (result != 0) {
+    if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_empty, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_empty, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_full, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_full, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         pthread_cond_destroy(&queue->not_empty);
         return TPXL_ERROR;
@@ -177,24 +163,16 @@ TpxlResult tpxl_init_video_frame_queue(TpxlVideoFrameQueue* queue) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    int result = 0;
-
-    result = pthread_mutex_init(&queue->mutex, NULL);
-
-    if (result != 0) {
+    if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_empty, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_empty, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_full, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_full, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         pthread_cond_destroy(&queue->not_empty);
         return TPXL_ERROR;
@@ -305,24 +283,16 @@ TpxlResult tpxl_init_packet_queue(TpxlPacketQueue* queue) {
         return TPXL_INVALID_ARGUMENT;
     }
 
-    int result = 0;
-
-    result = pthread_mutex_init(&queue->mutex, NULL);
-
-    if (result != 0) {
+    if (pthread_mutex_init(&queue->mutex, NULL) != 0) {
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_empty, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_empty, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         return TPXL_ERROR;
     }
 
-    result = pthread_cond_init(&queue->not_full, NULL);
-
-    if (result != 0) {
+    if (pthread_cond_init(&queue->not_full, NULL) != 0) {
         pthread_mutex_destroy(&queue->mutex);
         pthread_cond_destroy(&queue->not_empty);
         return TPXL_ERROR;
