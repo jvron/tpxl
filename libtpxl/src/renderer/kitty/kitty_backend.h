@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <pthread.h>
 
 #include "tpxl/context.h"
 #include "tpxl/type.h"
@@ -19,6 +20,9 @@ typedef struct {
 
     int kitty_format;
     TpxlCursorPolicy cursor_policy;
+
+    pthread_mutex_t output_mutex;
+    bool output_mutex_initialized;
 
     uint32_t columns;
     uint32_t rows;
@@ -38,8 +42,8 @@ TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMedi
 TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame);
 TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id);
-void tpxl_kitty_delete_placement(uint32_t frame_id);
-void tpxl_kitty_delete_data(uint32_t frame_id);
+void tpxl_kitty_delete_placement(TpxlKittyContext* kitty_context, uint32_t frame_id);
+void tpxl_kitty_delete_data(TpxlKittyContext* kitty_context, uint32_t frame_id);
 void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context);
 
 #endif
