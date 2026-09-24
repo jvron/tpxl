@@ -11,8 +11,6 @@ TpxlResult tpxl_init_context(TpxlContext* context) {
 
     context->backend = TPXL_BACKEND_AUTO;
     context->scale_mode = TPXL_SCALE_FIT;
-    context->horizontal_alignment = TPXL_ALIGN_START;
-    context->vertical_alignment = TPXL_ALIGN_START;
 
     TpxlResult result = tpxl_init_terminal(&context->terminal);
 
@@ -47,18 +45,6 @@ TpxlResult tpxl_context_set_backend(TpxlContext* context, TpxlBackend backend) {
     }
 
     context->backend = backend;
-
-    return TPXL_OK;
-}
-
-TpxlResult tpxl_context_set_alignment(TpxlContext* context, TpxlAlignment horizontal, TpxlAlignment vertical) {
-
-    if (!context || horizontal >= TPXL_ALIGN_COUNT || vertical >= TPXL_ALIGN_COUNT) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    context->horizontal_alignment = horizontal;
-    context->vertical_alignment = vertical;
 
     return TPXL_OK;
 }
@@ -100,42 +86,8 @@ TpxlResult tpxl_update_context_viewport(TpxlContext* context, uint32_t content_w
             context->viewport.width = content_width;
             context->viewport.height = content_height;
             break;
-
         case TPXL_SCALE_FIT: 
             result = tpxl_viewport_fit(&context->viewport, area_width, area_height, content_width, content_height);
-            break;
-
-        default:
-            result = TPXL_INVALID_ARGUMENT;
-            break;
-    }
-
-    switch (context->horizontal_alignment) {
-
-        case TPXL_ALIGN_START:
-            context->viewport.x = 0;
-            break;
-        case TPXL_ALIGN_CENTER:
-            context->viewport.x = (area_width - context->viewport.width) / 2;
-            break;
-        case TPXL_ALIGN_END:
-            context->viewport.x = area_width - context->viewport.width;
-            break;
-        default:
-            result = TPXL_INVALID_ARGUMENT;
-            break;
-    }
-
-    switch (context->vertical_alignment) {
-
-        case TPXL_ALIGN_START:
-            context->viewport.y = 0;
-            break;
-        case TPXL_ALIGN_CENTER:
-            context->viewport.y = (area_height - context->viewport.height) / 2;
-            break;
-        case TPXL_ALIGN_END:
-            context->viewport.y = area_height - context->viewport.height;
             break;
         default:
             result = TPXL_INVALID_ARGUMENT;
