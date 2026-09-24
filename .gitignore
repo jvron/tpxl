@@ -1,23 +1,25 @@
 build/
-
-*.o
-*.obj
-
-*.a
-*.lib
-
-*.so
-*.dylib
-*.dll
-
-*.d
-
-*.dSYM/
-*.pdb
-
+cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
-cmake-build-*/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+
+compile_commands.json
+
+*.gcda
+*.gcno
+*.gcov
+
+*.prof
+*.profraw
+*.profdata
+perf.data
+perf.data.old
+
+.gdb_history
+.lldbinit
 
 .vscode/
 .idea/
@@ -26,8 +28,13 @@ cmake-build-*/
 Thumbs.db
 
 *.tmp
-*.log
 *.swp
 *~
+*.bak
+*.o
+
+*.log
 
 docs/_build/
+
+.cache
