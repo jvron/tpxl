@@ -1,9 +1,7 @@
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>
 
 #include <sixel.h>
 
@@ -30,7 +28,19 @@ static int tpxl_write_image_map(char* data, int chunk_size, void* priv) {
 
     TpxlSixelContext* sixel_context = priv; 
 
+    if (!sixel_context->encoded_buffer) {
+
+        char* buffer = malloc(sixel_context->encoded_buffer_capacity);
+
+        if (!buffer) {
+            return -1;
+        }
+
+        sixel_context->encoded_buffer = buffer;
+    }
+
     size_t required = sixel_context->encoded_buffer_size + chunk_size;
+    
     if ( required > sixel_context->encoded_buffer_capacity) {
 
         size_t new_capacity = sixel_context->encoded_buffer_capacity;
@@ -80,7 +90,7 @@ TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* 
         return TPXL_OK;
     }
 
-    size_t initial_size = 8192;
+    size_t initial_size = 16382;
     char* encoded_buffer = malloc(initial_size);
 
     if (!encoded_buffer) {
@@ -209,6 +219,8 @@ TpxlResult tpxl_sixel_render(TpxlSixelContext* sixel_context, TpxlImage* frame) 
         fprintf(stdout, "\033[%u;%uH", sixel_context->target_row, sixel_context->target_column);
     }
 
+    fflush(stdout);
+
     return TPXL_OK;
 }
 
@@ -224,7 +236,11 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         }
     }
 
-    sixel_dither_new(&sixel_context->dither, 256, NULL);
+    sixel_dither_unref(sixel_context->dither);
+    sixel_dither_new(&sixel_context->dither, 128, NULL);
+
+    sixel_dither_set_pixelformat(sixel_context->dither, sixel_context->sixel_format);
+    sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_FS);
 
     int ret = sixel_dither_initialize(
         sixel_context->dither,
@@ -236,8 +252,6 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         SIXEL_REP_AVERAGE_PIXELS,
         SIXEL_QUALITY_HIGH
     );
-
-    sixel_dither_set_diffusion_type(sixel_context->dither, SIXEL_DIFFUSE_FS);
 
     if (ret != SIXEL_OK) {
         return TPXL_RENDER_FAILED;
@@ -252,22 +266,12 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         sixel_context->output_image_map
     );
 
-    sixel_dither_unref(sixel_context->dither);
-
     if (ret != SIXEL_OK) {
-        return TPXL_RENDER_FAILED;
+        return TPXL_ENCODING_FAILED;
     }
-
-    char* encoded_data = malloc(sixel_context->encoded_buffer_size);
-
-    if (!encoded_data) {
-        return TPXL_OUT_OF_MEMORY;
-    }
-
-    memcpy(encoded_data, sixel_context->encoded_buffer, sixel_context->encoded_buffer_size);
 
     TpxlSixelImage image = {
-        .data = encoded_data,
+        .data = sixel_context->encoded_buffer,
         .size = sixel_context->encoded_buffer_size,
         .id = frame_id,
         .row = sixel_context->target_row,
@@ -279,10 +283,13 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
     TpxlResult result = tpxl_sixel_image_map_insert(&sixel_context->image_map, &image, frame_id);
 
     if (result != TPXL_OK) {
-        free(encoded_data);
+        free(sixel_context->encoded_buffer);
+        sixel_context->encoded_buffer = NULL;
+        sixel_context->encoded_buffer_size = 0;
         return result;
     }
 
+    sixel_context->encoded_buffer = NULL;
     sixel_context->encoded_buffer_size = 0;
 
     return TPXL_OK;
