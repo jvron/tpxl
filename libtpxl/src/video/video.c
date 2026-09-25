@@ -220,15 +220,13 @@ TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, u
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_video_format(TpxlVideo* video, TpxlFormat* format) {
+TpxlFormat tpxl_get_video_format(TpxlVideo* video) {
 
-    if (!video || !format) {
-        return TPXL_INVALID_ARGUMENT;
+    if (!video) {
+        return TPXL_FORMAT_UNKNOWN;
     }
 
-    *format = video->format;
-
-    return TPXL_OK;
+    return video->format;
 }
 
 uint32_t tpxl_get_video_frame_count(TpxlVideo* video) {

@@ -431,7 +431,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         player->has_current_frame = false;
     }
     else {
-        result = tpxl_renderer_display(player->renderer, player->current_frame.id);
+        result = tpxl_renderer_display(player->renderer, player->current_frame.id, player->row, player->column);
 
         if (result != TPXL_OK) {
             tpxl_free_video_frame(&player->current_frame);
@@ -502,7 +502,7 @@ static void* tpxl_video_play_worker(void* arg) {
     return NULL;
 }
 
-TpxlResult tpxl_start_video(TpxlVideoPlayer* player) {
+TpxlResult tpxl_start_video(TpxlVideoPlayer* player, uint32_t row, uint32_t column) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -511,6 +511,9 @@ TpxlResult tpxl_start_video(TpxlVideoPlayer* player) {
     if (player->started) {
         return TPXL_OK;
     }
+
+    player->row = row;
+    player->column = column;
 
     atomic_store(&player->playing, true);
 

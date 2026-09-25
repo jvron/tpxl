@@ -44,6 +44,9 @@ struct TpxlVideoImp {
 struct TpxlVideoPlayerImp {
     TpxlRenderer* renderer;
 
+    uint32_t row;
+    uint32_t column;
+
     TpxlVideo* video;
     uint32_t frame_count;
 
