@@ -25,5 +25,5 @@ elseif(TPXL_TSAN)
     add_link_options(-fsanitize=thread)
 endif()
 
-add_subdirectory(libtpxl)
+add_subdirectory(lib)
 add_subdirectory(cli)

@@ -95,7 +95,7 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
         layout, 
         STBIR_TYPE_UINT8, 
         STBIR_EDGE_CLAMP, 
-        STBIR_FILTER_CUBICBSPLINE
+        STBIR_FILTER_DEFAULT
     );
 
     if (!resized_pixels) {
