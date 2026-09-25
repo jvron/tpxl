@@ -1,8 +1,8 @@
 #ifndef TPXL_RENDERER_H
 #define TPXL_RENDERER_H
 
-#include "tpxl/context.h"
 #include "tpxl/type.h"
+#include "tpxl/terminal.h"
 
 typedef struct TpxlRendererImp TpxlRenderer;
 
@@ -11,9 +11,26 @@ typedef enum {
     TPXL_CURSOR_ADVANCE,
 } TpxlCursorPolicy;
 
-TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlContext* context, uint32_t width, uint32_t height, TpxlFormat format, TpxlMediaType media_type);
-TpxlResult tpxl_update_renderer_context(TpxlRenderer* renderer, TpxlContext* context);
-TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format);
+typedef enum {
+    TPXL_BACKEND_AUTO = 0,
+    TPXL_BACKEND_KITTY,
+    TPXL_BACKEND_SIXEL,
+    TPXL_BACKEND_COUNT,
+} TpxlBackend;
+
+typedef struct {
+    TpxlTerminal* terminal;
+
+    TpxlMediaType media_type;
+    TpxlBackend backend;
+
+    uint32_t render_width;
+    uint32_t render_height;
+    TpxlFormat format;
+} TpxlRendererConfig;
+
+TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* config);
+TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t render_width, uint32_t render_height, TpxlFormat format);
 TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type);
 
 TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame, uint32_t row, uint32_t column);
