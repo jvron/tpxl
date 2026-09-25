@@ -8,7 +8,7 @@
 #include "util/base64.h"
 #include "kitty_backend.h"
 
-const size_t CHUNK_SIZE = 4096;
+#define TPXL_KITTY_CHUNK_SIZE 4096
 
 TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context) {
 
@@ -21,13 +21,6 @@ TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* 
     // sub-cell offset
     kitty_context->offset_x = context->viewport.x % context->terminal.cell_width;
     kitty_context->offset_y = context->viewport.y % context->terminal.cell_height;
-
-    // convert viewport x and y to cells
-    kitty_context->cell_x = context->viewport.x / context->terminal.cell_width;
-    kitty_context->cell_y = context->viewport.y / context->terminal.cell_height;
-
-    kitty_context->target_column = context->terminal.cursor_column + kitty_context->cell_x;
-    kitty_context->target_row = context->terminal.cursor_row + kitty_context->cell_y;
 
     // output_mutex_initialized will be false initially
     if (kitty_context->output_mutex_initialized) {
@@ -72,20 +65,20 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
     if (!compressed_data) {
         return TPXL_OUT_OF_MEMORY;
     }
+
+    size_t encoded_capacity = tpxl_base64_encoded_size(compressed_capacity);
+    char* encoded_data = malloc(encoded_capacity);
+
+    if (!encoded_data) {
+        free(compressed_data);
+        return TPXL_OUT_OF_MEMORY;
+    }
+
     free(kitty_context->compressed_data);
+    free(kitty_context->encoded_data);
 
     kitty_context->compressed_data = compressed_data;
     kitty_context->compressed_capacity = compressed_capacity;
-
-    size_t encoded_capacity = tpxl_base64_encoded_size(compressed_capacity);
-    
-    char* encoded_data = malloc(encoded_capacity);
-    
-    if (!encoded_data) {
-        free(kitty_context->compressed_data);
-        return TPXL_OUT_OF_MEMORY;
-    }
-    free(kitty_context->encoded_data);
 
     kitty_context->frame_size = frame_size;
     kitty_context->encoded_capacity = encoded_capacity;
@@ -113,7 +106,7 @@ TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMedi
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) {
+TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t row, uint32_t column) {
 
     assert(kitty_context && frame && frame->pixels);
 
@@ -130,17 +123,17 @@ TpxlResult tpxl_kitty_render(TpxlKittyContext* kitty_context, TpxlImage* frame) 
     pthread_mutex_lock(&kitty_context->output_mutex);
 
     // move cursor
-    fprintf(stdout,"\033[%u;%uH", kitty_context->target_row, kitty_context->target_column);
+    fprintf(stdout,"\033[%u;%uH", row, column);
 
-    for (size_t i = 0; i < output_length; i += CHUNK_SIZE) {
+    for (size_t i = 0; i < output_length; i += TPXL_KITTY_CHUNK_SIZE) {
 
         char* chunk = kitty_context->encoded_data + i;
 
         size_t remaining = output_length - i;
 
-        size_t chunk_length = remaining < CHUNK_SIZE ? remaining : CHUNK_SIZE;
+        size_t chunk_length = remaining < TPXL_KITTY_CHUNK_SIZE ? remaining : TPXL_KITTY_CHUNK_SIZE;
 
-        int more_chunks = remaining > CHUNK_SIZE ? 1 : 0;
+        int more_chunks = remaining > TPXL_KITTY_CHUNK_SIZE ? 1 : 0;
 
         if (i == 0) {
             fprintf(
@@ -213,15 +206,15 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
 
     pthread_mutex_lock(&kitty_context->output_mutex);
 
-    for (size_t i = 0; i < output_length; i += CHUNK_SIZE) {
+    for (size_t i = 0; i < output_length; i += TPXL_KITTY_CHUNK_SIZE) {
 
         char* chunk = kitty_context->encoded_data + i;
 
         size_t remaining = output_length - i;
 
-        size_t chunk_length = remaining < CHUNK_SIZE ? remaining : CHUNK_SIZE;
+        size_t chunk_length = remaining < TPXL_KITTY_CHUNK_SIZE ? remaining : TPXL_KITTY_CHUNK_SIZE;
 
-        int more_chunks = remaining > CHUNK_SIZE ? 1 : 0;
+        int more_chunks = remaining > TPXL_KITTY_CHUNK_SIZE ? 1 : 0;
 
         if (i == 0) {
             fprintf(
@@ -269,13 +262,13 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id) {
+TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id, uint32_t row, uint32_t column) {
 
     assert(kitty_context);
     
     pthread_mutex_lock(&kitty_context->output_mutex);
 
-    fprintf(stdout,"\033[%u;%uH", kitty_context->target_row, kitty_context->target_column);
+    fprintf(stdout,"\033[%u;%uH", row, column);
 
     fprintf(
         stdout,
