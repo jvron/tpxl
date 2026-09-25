@@ -6,8 +6,8 @@
 
 #include <sixel.h>
 
-#include "tpxl/context.h"
 #include "tpxl/renderer.h"
+#include "tpxl/terminal.h"
 #include "tpxl/type.h"
 
 #include "sixel_image_map.h"
@@ -38,8 +38,8 @@ typedef struct {
     int sixel_format;
 } TpxlSixelContext;
 
-TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* context, bool create_sixel_objects);
-TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context);
+TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
 TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t row, uint32_t column);

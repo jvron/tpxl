@@ -4,7 +4,6 @@
 
 #include <sixel.h>
 
-#include "tpxl/context.h"
 #include "tpxl/image.h"
 #include "tpxl/renderer.h"
 #include "tpxl/type.h"
@@ -64,21 +63,9 @@ static int tpxl_write_image_map(char* data, int chunk_size, void* priv) {
     return 0;
 }
 
-TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* context, bool create_sixel_objects) {
+TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context) {
 
-    assert(sixel_context && context);
-
-    // convert viewport dimensions to terminal cells
-    sixel_context->columns = (context->viewport.width + context->terminal.cell_width - 1) / context->terminal.cell_width;
-    sixel_context->rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
-
-    // set output dimensions to the viewport's pixel dimensions for image scaling
-    sixel_context->output_width = context->viewport.width;
-    sixel_context->output_height = context->viewport.height;
-
-    if (!create_sixel_objects) {
-        return TPXL_OK;
-    }
+    assert(sixel_context);
 
     size_t initial_size = 16382;
     char* encoded_buffer = malloc(initial_size);
@@ -113,11 +100,9 @@ TpxlResult tpxl_set_sixel_context(TpxlSixelContext* sixel_context, TpxlContext* 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, uint32_t width, uint32_t height, TpxlFormat format) {
+TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
 
-    if (!sixel_context) {
-        return TPXL_INVALID_ARGUMENT;
-    }
+    assert(sixel_context && terminal);
 
     switch (format) {
         case TPXL_FORMAT_RGB:
@@ -131,7 +116,14 @@ TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, uint32_t width,
         default:
             return TPXL_UNSUPPORTED_FORMAT;
     }
+
+    // convert pixel dimensions to terminal cells
+    sixel_context->columns = (width + terminal->cell_width - 1) / terminal->cell_width;
+    sixel_context->rows = (height + terminal->cell_height - 1) / terminal->cell_height;
     
+    sixel_context->output_width = width;
+    sixel_context->output_height = height;
+
     sixel_context->frame_size = width * height * tpxl_format_to_channels(format);
 
     return TPXL_OK;
