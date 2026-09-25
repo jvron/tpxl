@@ -5,8 +5,8 @@
 
 #include "tpxl/type.h"
 #include "tpxl/file.h"
-#include "tpxl/context.h"
 #include "tpxl/terminal.h"
+#include "tpxl/renderer.h"
 
 #include "cli.h"
 
@@ -77,8 +77,7 @@ int main(int argc, char* argv[]) {
 
     if (argc - optind == 1) {
         file = argv[optind];
-    }
-    else {
+    } else {
         printf("Usage: tpxl [OPTIONS] <file>\n");
         return EXIT_FAILURE;
     }
@@ -90,47 +89,28 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
     
-    TpxlContext context;
-    TpxlResult result = tpxl_init_context(&context);
+    TpxlTerminal terminal = {0};
 
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
-    
-    result = tpxl_context_set_backend(&context, backend);
+    TpxlResult result = tpxl_init_terminal(&terminal);
+    if (result != TPXL_OK) goto error;
 
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
+    result = tpxl_query_terminal(&terminal);
+    if (result != TPXL_OK) goto error;
 
-    result = tpxl_context_set_scale_mode(&context, TPXL_SCALE_FIT);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
-
-    result = tpxl_context_set_alignment(&context, TPXL_ALIGN_START, TPXL_ALIGN_START);
-
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
+    printf("\033[?25l");
 
     int exit_code = 0;
 
     switch(file_type) {
         case TPXL_FILE_JPEG:
         case TPXL_FILE_PNG:
-            exit_code = display_image(file, &context, print_info);
+            exit_code = display_image(file, &terminal,backend, print_info);
             break;
         case TPXL_FILE_GIF:
-            exit_code = display_gif(file, &context, print_info);
+            exit_code = display_gif(file, &terminal, backend, print_info);
             break;
         case TPXL_FILE_VIDEO:
-            exit_code = play_video(file, &context);
+            exit_code = play_video(file, &terminal, backend);
             break;
         case TPXL_FILE_AUDIO:
             exit_code = play_audio(file);
@@ -141,12 +121,14 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
     }
 
-    result = tpxl_shutdown_terminal(&context.terminal);
+    printf("\033[?25h");
 
-    if (result != TPXL_OK) {
-        printf("Error: %s\n", tpxl_result_to_string(result));
-        return EXIT_FAILURE;
-    }
+    result = tpxl_shutdown_terminal(&terminal);
+    if (result != TPXL_OK) goto error;
 
     return exit_code;
+
+    error:
+        printf("Error: %s\n", tpxl_result_to_string(result));
+        return EXIT_FAILURE;
 }
