@@ -9,7 +9,7 @@ static const char* result_to_string[] = {
     [TPXL_INVALID_FORMAT] = "invalid format",
     [TPXL_IMAGE_LOAD_FAILED] = "image loading failed",
     [TPXL_IMAGE_RESIZE_FAILED] = "image resizing failed",
-    [TPXL_GIF_LOAD_FAILED] = "gif loading failed",
+    [TPXL_ANIMATION_LOAD_FAILED] = "animation loading failed",
     [TPXL_VIDEO_LOAD_FAILED] = "video loading failed",
     [TPXL_AUDIO_LOAD_FAILED] = "audio loading failed",
     [TPXL_SIXEL_BACKEND_CREATION_FAILED] = "renderer sixel backend creation failed",
@@ -20,10 +20,14 @@ static const char* result_to_string[] = {
     [TPXL_VIDEO_NEED_PACKET] = "video decoder needs another packet",
     [TPXL_VIDEO_PLAYER_CREATION_FAILED] = "video player creation failed",
     [TPXL_VIDEO_PLAYING_FAILED] = "video playing failed",
+    [TPXL_VIDEO_PAUSING_FAILED] = "video pausing failed",
     [TPXL_AUDIO_PLAYER_CREATION_FAILED] = "audio player creation failed",
     [TPXL_AUDIO_DECODE_FAILED] = "audio decoding failed",
     [TPXL_AUDIO_NEED_PACKET] = "audio decoder needs another packet",
     [TPXL_AUDIO_PLAYING_FAILED] = "audio playing failed",
+    [TPXL_AUDIO_PAUSING_FAILED] = "audio pausing failed", 
+    [TPXL_AUDIO_MUTE_FAILED] = "audio muting failed",
+    [TPXL_AUDIO_UNMUTE_FAILED] = "audio unmuting failed",
     [TPXL_THREAD_CREATION_ERROR] = "thread creation error",
     [TPXL_SHUTDOWN] = "player thread shutdown",
     [TPXL_UNSUPPORTED_FORMAT] = "unsupported format",
@@ -46,14 +50,10 @@ static const char* format_to_string[] = {
 int tpxl_format_to_channels(TpxlFormat format) {
     
     switch (format) {
-        case TPXL_FORMAT_R:
-            return 1;
-        case TPXL_FORMAT_RG:
-            return 2;
-        case TPXL_FORMAT_RGB:
-            return 3;
-        case TPXL_FORMAT_RGBA:
-            return 4;
+        case TPXL_FORMAT_R: return 1;
+        case TPXL_FORMAT_RG: return 2;
+        case TPXL_FORMAT_RGB: return 3;
+        case TPXL_FORMAT_RGBA: return 4;
         default:
             return 0;
     }
