@@ -154,17 +154,17 @@ TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaTy
     } 
 }
 
-TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame) {
+TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame, uint32_t row, uint32_t column) {
 
-    if (!renderer || !frame) {
+    if (!renderer || !frame || !frame->pixels) {
         return TPXL_INVALID_ARGUMENT;
     }
 
     switch (renderer->backend) {
         case TPXL_BACKEND_KITTY:
-            return tpxl_kitty_render(&renderer->kitty_context, frame);
+            return tpxl_kitty_direct_render(&renderer->kitty_context, frame, row, column);
         case TPXL_BACKEND_SIXEL:
-            return tpxl_sixel_render(&renderer->sixel_context, frame);
+            return tpxl_sixel_direct_render(&renderer->sixel_context, frame, row, column);
 
         default:
             return TPXL_INVALID_BACKEND;
@@ -173,7 +173,7 @@ TpxlResult tpxl_renderer_render(TpxlRenderer* renderer, TpxlImage* frame) {
 
 TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id) {
 
-    if (!renderer || !frame) {
+    if (!renderer || !frame || !frame->pixels) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -188,7 +188,7 @@ TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32
     } 
 }
 
-TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
+TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id, uint32_t row, uint32_t column) {
 
     if (!renderer) {
         return TPXL_INVALID_ARGUMENT;
@@ -196,9 +196,9 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id) {
 
     switch (renderer->backend) {
         case TPXL_BACKEND_KITTY:
-            return tpxl_kitty_display(&renderer->kitty_context, frame_id);
+            return tpxl_kitty_display(&renderer->kitty_context, frame_id, row, column);
         case TPXL_BACKEND_SIXEL:
-            return tpxl_sixel_display(&renderer->sixel_context, frame_id);
+            return tpxl_sixel_display(&renderer->sixel_context, frame_id, row, column);
 
         default:
             return TPXL_INVALID_BACKEND;
@@ -212,7 +212,7 @@ void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id) {
     }
 
     if (renderer->backend == TPXL_BACKEND_KITTY) {
-        tpxl_kitty_delete_placement(frame_id);
+        tpxl_kitty_delete_placement(&renderer->kitty_context, frame_id);
     } else if (renderer->backend == TPXL_BACKEND_SIXEL) {
         tpxl_sixel_delete_placement(&renderer->sixel_context, frame_id);
     }
@@ -225,7 +225,7 @@ void tpxl_renderer_delete_data(TpxlRenderer* renderer, uint32_t frame_id) {
     }
 
     if (renderer->backend == TPXL_BACKEND_KITTY) {
-        tpxl_kitty_delete_data(frame_id);
+        tpxl_kitty_delete_data(&renderer->kitty_context, frame_id);
     } else if (renderer->backend == TPXL_BACKEND_SIXEL) {
         tpxl_sixel_delete_data(&renderer->sixel_context, frame_id);
     }
