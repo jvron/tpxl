@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <pthread.h>
 
-#include "tpxl/context.h"
+#include "tpxl/terminal.h"
 #include "tpxl/type.h"
 #include "tpxl/renderer.h"
 
@@ -26,12 +26,13 @@ typedef struct {
 
     uint32_t columns;
     uint32_t rows;
-    uint32_t offset_x;
-    uint32_t offset_y;
+
+    uint32_t output_width;
+    uint32_t output_height;
 } TpxlKittyContext;
 
-TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context);
-TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context);
+TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
 TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t row, uint32_t column);

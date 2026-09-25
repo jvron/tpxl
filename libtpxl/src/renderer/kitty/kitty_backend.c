@@ -4,23 +4,16 @@
 #include <zlib.h>
 
 #include "tpxl/type.h"
+#include "tpxl/terminal.h"
 
 #include "util/base64.h"
 #include "kitty_backend.h"
 
 #define TPXL_KITTY_CHUNK_SIZE 4096
 
-TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* context) {
+TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context) {
 
-    assert(kitty_context && context);
-
-    // convert viewport dimensions to terminal cells
-    kitty_context->columns = (context->viewport.width + context->terminal.cell_width - 1) / context->terminal.cell_width;
-    kitty_context->rows = (context->viewport.height + context->terminal.cell_height - 1) / context->terminal.cell_height;
-
-    // sub-cell offset
-    kitty_context->offset_x = context->viewport.x % context->terminal.cell_width;
-    kitty_context->offset_y = context->viewport.y % context->terminal.cell_height;
+    assert(kitty_context);
 
     // output_mutex_initialized will be false initially
     if (kitty_context->output_mutex_initialized) {
@@ -36,9 +29,9 @@ TpxlResult tpxl_set_kitty_context(TpxlKittyContext* kitty_context, TpxlContext* 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width, uint32_t height, TpxlFormat format) {
+TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
 
-    assert(kitty_context);
+    assert(kitty_context && terminal);
 
     switch (format) {
         case TPXL_FORMAT_RGB:
@@ -50,6 +43,13 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, uint32_t width,
         default:
             return TPXL_UNSUPPORTED_FORMAT;
     }
+
+    // convert pixel dimensions to terminal cells
+    kitty_context->columns = (width + terminal->cell_width - 1) / terminal->cell_width;
+    kitty_context->rows = (height + terminal->cell_height - 1) / terminal->cell_height;
+
+    kitty_context->output_width = width;
+    kitty_context->output_height = height;
 
     size_t frame_size = width * height * tpxl_format_to_channels(format);
 
@@ -115,7 +115,6 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
     }
 
     size_t output_length = 0;
-
     if (tpxl_base64_encode(frame->pixels, kitty_context->frame_size, kitty_context->encoded_data, &output_length) != TPXL_OK) {
         return TPXL_ENCODING_FAILED;
     }
@@ -142,8 +141,6 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
                 "f=%d,"
                 "s=%u,"
                 "v=%u,"
-                "X=%u,"
-                "Y=%u,"
                 "c=%u,"
                 "r=%u,"
                 "C=%d,"
@@ -151,8 +148,6 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
                 kitty_context->kitty_format,
                 frame->width,
                 frame->height,
-                kitty_context->offset_x,
-                kitty_context->offset_y, 
                 kitty_context->columns,
                 kitty_context->rows,
                 kitty_context->cursor_policy,
@@ -224,8 +219,6 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
                 "f=%d,"
                 "s=%u,"
                 "v=%u,"
-                "X=%u,"
-                "Y=%u,"
                 "c=%u,"
                 "r=%u,"
                 "C=%d,"
@@ -236,8 +229,6 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
                 kitty_context->kitty_format,
                 frame->width,
                 frame->height,
-                kitty_context->offset_x,
-                kitty_context->offset_y, 
                 kitty_context->columns,
                 kitty_context->rows,
                 kitty_context->cursor_policy,
@@ -274,15 +265,11 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
         stdout,
         "\x1b_Ga=p,"
         "i=%u,"
-        "X=%u,"
-        "Y=%u,"
         "c=%u,"
         "r=%u,"
         "C=%d,"
         "q=2;\x1b\\",
         frame_id,
-        kitty_context->offset_x,
-        kitty_context->offset_y, 
         kitty_context->columns,
         kitty_context->rows,
         kitty_context->cursor_policy
