@@ -95,7 +95,7 @@ TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t fr
     return TPXL_MAP_NOT_FOUND;
 }
 
-TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage* out_sixel_image) {
+TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage** out_sixel_image) {
 
     assert(image_map && out_sixel_image);
 
@@ -112,7 +112,7 @@ TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id,
         if (image_map->states[index] == TPXL_ENTRY_OCCUPIED) {
 
             if (image_map->entries[index].id == frame_id) {
-                *out_sixel_image = image_map->entries[index];
+                *out_sixel_image = &image_map->entries[index];
                 return TPXL_OK;
             }
         }
