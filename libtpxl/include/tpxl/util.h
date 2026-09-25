@@ -5,6 +5,13 @@
 
 #include "type.h"
 
+typedef enum {
+    TPXL_SCALE_NONE = 0,
+    TPXL_SCALE_FIT,
+    TPXL_SCALE_FILL,
+    TPXL_SCALE_COUNT,
+} TpxlScaleMode;
+
 uint64_t tpxl_get_time_ms(void);
 void tpxl_sleep_ms(uint32_t milliseconds);
 void tpxl_sleep_us(uint64_t microseconds);
