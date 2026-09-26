@@ -162,12 +162,6 @@ TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* 
         return TPXL_INVALID_FORMAT;
     }
 
-    if (sixel_context->media_type == TPXL_MEDIA_IMAGE) {
-        if (tpxl_resize_image(frame, sixel_context->output_width, sixel_context->output_height) != TPXL_OK) {
-            return TPXL_IMAGE_RESIZE_FAILED;
-        }
-    }
-
     int ret = sixel_dither_initialize(
         sixel_context->dither,
         frame->pixels,
@@ -214,12 +208,6 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
 
     if (frame->format == TPXL_FORMAT_UNKNOWN) {
         return TPXL_INVALID_FORMAT;
-    }
-
-    if (sixel_context->media_type == TPXL_MEDIA_IMAGE) {
-        if (tpxl_resize_image(frame, sixel_context->output_width, sixel_context->output_height) != TPXL_OK) {
-            return TPXL_IMAGE_RESIZE_FAILED;
-        }
     }
 
     sixel_dither_unref(sixel_context->dither);
