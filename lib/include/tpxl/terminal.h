@@ -8,7 +8,6 @@
 #include "type.h"
 
 typedef struct {
-    struct termios original_termios;
     bool initialized;
 
     uint32_t rows;

@@ -1,12 +1,162 @@
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
+
+#include "tpxl/type.h"
+#include "tpxl/terminal.h"
+
+#ifdef __WIN32
+
+#include <windows.h>
+
+static DWORD original_console_mode;
+
+TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
+
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *terminal = (TpxlTerminal){0};
+
+    HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+
+    if (input == INVALID_HANDLE_VALUE) {
+        return TPXL_IO_ERROR;
+    }
+
+    if (!GetConsoleMode(input, &original_console_mode)) {
+        return TPXL_IO_ERROR;
+    }
+
+    DWORD tpxl_mode = original_console_mode;
+
+    tpxl_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+
+    if (!SetConsoleMode(input, tpxl_mode)) {
+        return TPXL_IO_ERROR;
+    }
+
+    DWORD output_mode;
+
+    if (!GetConsoleMode(output, &output_mode)) {
+        return TPXL_IO_ERROR;
+    }
+
+    output_mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+    if (!SetConsoleMode(output, output_mode)) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->initialized = true;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
+
+    if (!row || !column) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if (output == INVALID_HANDLE_VALUE) {
+        return TPXL_IO_ERROR;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
+    if (!GetConsoleScreenBufferInfo(output, &info)) {
+        return TPXL_IO_ERROR;
+    }
+
+    *row = (uint32_t)info.dwCursorPosition.Y + 1;
+    *column = (uint32_t)info.dwCursorPosition.X + 1;
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if (output == INVALID_HANDLE_VALUE) {
+        return TPXL_IO_ERROR;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
+    if (!GetConsoleScreenBufferInfo(output, &info)) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->columns = (uint32_t)(info.srWindow.Right - info.srWindow.Left + 1);
+    terminal->rows = (uint32_t)(info.srWindow.Bottom - info.srWindow.Top + 1);
+
+    if (!terminal->columns || !terminal->rows) {
+        return TPXL_IO_ERROR;
+    }
+
+    HWND window = GetConsoleWindow();
+
+    if (!window) {
+        return TPXL_IO_ERROR;
+    }
+
+    RECT rect;
+
+    if (!GetClientRect(window, &rect)) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->pixel_width = (uint32_t)(rect.right - rect.left);
+    terminal->pixel_height = (uint32_t)(rect.bottom - rect.top);
+
+    if (!terminal->pixel_width || !terminal->pixel_height) {
+        return TPXL_IO_ERROR;
+    }
+
+    terminal->cell_width = terminal->pixel_width / terminal->columns;
+    terminal->cell_height = terminal->pixel_height / terminal->rows;
+
+    return tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+}
+
+TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
+
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    if (!terminal->initialized) {
+        return TPXL_OK;
+    }
+
+    HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
+
+    if (input == INVALID_HANDLE_VALUE) {
+        return TPXL_IO_ERROR;
+    }
+
+    if (!SetConsoleMode(input, original_console_mode)) {
+        return TPXL_IO_ERROR;
+    }
+
+    *terminal = (TpxlTerminal){0};
+
+    return TPXL_OK;
+}
+
+#else 
+
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
-#include "tpxl/type.h"
-#include "tpxl/terminal.h"
+static struct termios original_termios;
 
 TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
 
@@ -17,11 +167,11 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
     *terminal = (TpxlTerminal){0};
 
     // save current terminal settings
-    if (tcgetattr(STDIN_FILENO, &terminal->original_termios) == -1) {
+    if (tcgetattr(STDIN_FILENO, &original_termios) == -1) {
         return TPXL_IO_ERROR;
     }
 
-    struct termios tpxl_termios = terminal->original_termios;
+    struct termios tpxl_termios = original_termios;
 
     // disable canonical mode and echo
     tpxl_termios.c_lflag &= ~(ICANON | ECHO);
@@ -153,15 +303,6 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column) {
-
-    if(fprintf(stdout, "\033[%u;%uH", row, column) < 0) {
-        return TPXL_IO_ERROR;
-    }
-
-    return TPXL_OK;
-}
-
 TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
 
     if (!terminal) {
@@ -173,11 +314,22 @@ TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
     }
 
     // set back original settings
-    if (tcsetattr(STDIN_FILENO, TCSANOW, &terminal->original_termios) == -1) {
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &original_termios) == -1) {
         return TPXL_IO_ERROR;
     }
 
     *terminal = (TpxlTerminal){0};
+
+    return TPXL_OK;
+}
+
+#endif
+
+TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column) {
+
+    if(fprintf(stdout, "\033[%u;%uH", row, column) < 0) {
+        return TPXL_IO_ERROR;
+    }
 
     return TPXL_OK;
 }
