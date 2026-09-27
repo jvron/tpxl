@@ -204,6 +204,13 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id, uint
     } 
 }
 
+TpxlBackend tpxl_get_renderer_backend(TpxlRenderer* renderer) {
+
+    assert(renderer);
+
+    return renderer->backend;
+}
+
 void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id) {
 
     if (!renderer) {
