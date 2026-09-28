@@ -1,15 +1,9 @@
 #ifndef TPXL_AUDIO_INTERNAL_H
 #define TPXL_AUDIO_INTERNAL_H
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdatomic.h>
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/rational.h>
 #include <libswresample/swresample.h>
+
 #include <miniaudio/miniaudio.h>
 
 #include "tpxl/audio.h"
@@ -36,6 +30,9 @@ struct TpxlAudioImp {
 
     bool draining;
     bool drain_sent;
+
+    TpxlImage attached_thumbnail;
+    bool has_attached_thumbnail;
 };
 
 struct TpxlAudioPlayerImp {

@@ -256,7 +256,7 @@ double tpxl_get_video_duration(TpxlVideo* video) {
     return (double)video->format_context->duration / AV_TIME_BASE;
 }
 
-static TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {
+TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame) {
     
     int result = 0;
 

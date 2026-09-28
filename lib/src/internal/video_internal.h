@@ -1,20 +1,14 @@
 #ifndef TPXL_VIDEO_INTERNAL_H
 #define TPXL_VIDEO_INTERNAL_H
 
-#include <stdatomic.h>
-#include <stdbool.h>
-#include <stdint.h>
-
 #include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
 #include <libavutil/rational.h>
+#include <libavformat/avformat.h>
 
-#include "tpxl/renderer.h"
-#include "tpxl/type.h"
 #include "tpxl/audio.h"
 #include "tpxl/video.h"
 #include "util/queue.h"
+#include "tpxl/renderer.h"
 
 #include "thread.h"
 
@@ -93,6 +87,7 @@ struct TpxlVideoPlayerImp {
     atomic_bool frame_ready;
 };
 
+TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame, uint32_t output_width, uint32_t output_height, TpxlImage* frame);
 TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVideoFrame* out_frame);
 
 #endif

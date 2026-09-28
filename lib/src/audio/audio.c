@@ -1,18 +1,7 @@
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-
-#include <libavutil/mathematics.h>
-#include <libswresample/swresample.h>
-#include <libavcodec/avcodec.h>
-#include <libavcodec/packet.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/frame.h>
-#include <libavutil/rational.h>
-#include <libavutil/samplefmt.h>
+#include <libswscale/swscale.h>
 
 #include "tpxl/audio.h"
+#include "tpxl/image.h"
 #include "tpxl/type.h"
 
 #include "internal/audio_internal.h"
@@ -299,6 +288,123 @@ double tpxl_get_audio_duration(TpxlAudio* audio) {
     }
 
     return (double)audio->format_context->duration / AV_TIME_BASE;
+}
+
+TpxlResult tpxl_audio_get_attached_thumbnail(TpxlAudio* audio, TpxlImage** image) {
+
+    if (!audio || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = NULL;
+
+    if (audio->has_attached_thumbnail) {
+        *image = &audio->attached_thumbnail;
+        return TPXL_OK; 
+    }
+
+    AVStream* thumbnail_stream = NULL;
+
+    for (size_t i = 0; i < audio->format_context->nb_streams; i++) {
+
+        AVStream* stream = audio->format_context->streams[i];
+
+        if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+            thumbnail_stream = stream;
+            break;
+        }
+    }
+
+    if (!thumbnail_stream) {
+        return TPXL_NOT_FOUND;
+    }
+
+    const AVCodec* codec = avcodec_find_decoder(thumbnail_stream->codecpar->codec_id);
+
+    if (!codec) {
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    AVCodecContext* codec_context = avcodec_alloc_context3(codec);
+
+    if (!codec_context) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    int ret = avcodec_parameters_to_context(codec_context, thumbnail_stream->codecpar);
+
+    if (ret < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    ret = avcodec_open2(codec_context, codec, NULL);
+    
+    if (ret < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    AVFrame* frame = av_frame_alloc();
+
+    if (!frame) {
+        avcodec_free_context(&codec_context);
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    ret = avcodec_send_packet(codec_context, &thumbnail_stream->attached_pic);
+
+    if (ret < 0) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    ret = avcodec_receive_frame(codec_context, frame);
+
+    if (ret < 0) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    struct SwsContext* sws_ctx = sws_getContext(
+        frame->width, 
+        frame->height,
+        frame->format, 
+        frame->width, 
+        frame->height, 
+        AV_PIX_FMT_RGB24, 
+        SWS_BICUBIC,
+        NULL,
+        NULL, 
+        NULL
+    );
+
+    if (!sws_ctx) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_THUMBNAIL_LOAD_FAILED;
+    }
+
+    TpxlResult result = tpxl_convert_frame(sws_ctx, frame, frame->width, frame->height, &audio->attached_thumbnail);
+
+    if (result != TPXL_OK) {
+        sws_freeContext(sws_ctx);
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return result;
+    }
+
+    audio->has_attached_thumbnail = true;
+
+    *image = &audio->attached_thumbnail;
+
+    sws_freeContext(sws_ctx);
+    av_frame_free(&frame);
+    avcodec_free_context(&codec_context);
+
+    return TPXL_OK;
 }
 
 static const TpxlAudioFormat tpxl_audio_format_map[] = {
@@ -602,6 +708,10 @@ void tpxl_close_video_audio(TpxlAudio** audio) {
 
     if (!*audio) {
         return;
+    }
+
+    if ((*audio)->has_attached_thumbnail) {
+        tpxl_free_frame(&(*audio)->attached_thumbnail);
     }
 
     tpxl_destroy_audio_resources(*audio);
