@@ -59,8 +59,8 @@ struct TpxlVideoPlayerImp {
     TpxlVideoFrame current_frame;
     bool has_current_frame;
 
-    uint32_t previous_frame_id;
-    bool has_previous_frame;
+    TpxlVideoFrame last_frame;
+    bool has_last_frame;
 
     atomic_uint frames_played;
 

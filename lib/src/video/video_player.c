@@ -290,8 +290,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     (*player)->display_queue = (TpxlVideoFrameQueue){0};
     (*player)->current_frame = (TpxlVideoFrame){0};
     (*player)->has_current_frame = false;
-    (*player)->previous_frame_id = 0;
-    (*player)->has_previous_frame = false;
+    (*player)->has_last_frame = false;
     
     (*player)->frame_count = tpxl_get_video_frame_count(video);;
 
@@ -389,8 +388,19 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         }
 
         if (result == TPXL_QUEUE_CLOSED) {
+
+
+            if (player->has_last_frame) {
+
+                tpxl_renderer_delete_data(player->renderer, player->last_frame.id);
+
+                tpxl_free_video_frame(&player->last_frame);
+                player->has_last_frame = false;
+            }
+
             atomic_store(&player->playing, false);
             atomic_store(&player->active, false);
+
             return TPXL_EOF;
         }
 
@@ -434,6 +444,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         result = tpxl_renderer_display(player->renderer, player->current_frame.id, player->row, player->column);
 
         if (result != TPXL_OK) {
+            tpxl_renderer_delete_data(player->renderer, player->last_frame.id);
             tpxl_free_video_frame(&player->current_frame);
             player->has_current_frame = false;
             atomic_store(&player->playing, false);
@@ -443,14 +454,14 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
 
         atomic_fetch_add(&player->frames_played, 1);
 
-        if (player->has_previous_frame) {
-           tpxl_renderer_delete_data(player->renderer, player->previous_frame_id);
+        if (player->has_last_frame) {
+           tpxl_renderer_delete_data(player->renderer, player->last_frame.id);
+           tpxl_free_video_frame(&player->last_frame);
         }
 
-        player->previous_frame_id = player->current_frame.id;
-        player->has_previous_frame = true;
+        player->last_frame = player->current_frame;
+        player->has_last_frame = true;
 
-        tpxl_free_video_frame(&player->current_frame);
         player->has_current_frame = false;
     }
 
