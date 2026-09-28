@@ -38,6 +38,9 @@ struct TpxlVideoImp {
 
     bool drain_sent;
 
+    TpxlImage attached_thumbnail;
+    bool has_attached_thumbnail;
+
     TpxlAudio* audio;
 };
 

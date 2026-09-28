@@ -105,6 +105,8 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->time_base = video_stream->time_base;
     (*video)->format_context = format_context;
     (*video)->codec_context = codec_context;
+    (*video)->attached_thumbnail = (TpxlImage){0};
+    (*video)->has_attached_thumbnail = false;
     (*video)->drain_sent = false;
 
     struct SwsContext* sws_ctx = sws_getContext(
@@ -414,6 +416,123 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVide
     return result;
 }
 
+TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image) {
+
+    if (!video || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = NULL;
+
+    if (video->has_attached_thumbnail) {
+        *image = &video->attached_thumbnail;
+        return TPXL_OK; 
+    }
+
+    AVStream* thumbnail_stream = NULL;
+
+    for (size_t i = 0; i < video->format_context->nb_streams; i++) {
+
+        AVStream* stream = video->format_context->streams[i];
+
+        if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC) {
+            thumbnail_stream = stream;
+            break;
+        }
+    }
+
+    if (!thumbnail_stream) {
+        return TPXL_NOT_FOUND;
+    }
+
+    const AVCodec* codec = avcodec_find_decoder(thumbnail_stream->codecpar->codec_id);
+
+    if (!codec) {
+        return TPXL_VIDEO_LOAD_FAILED;
+    }
+
+    AVCodecContext* codec_context = avcodec_alloc_context3(codec);
+
+    if (!codec_context) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    int ret = avcodec_parameters_to_context(codec_context, thumbnail_stream->codecpar);
+
+    if (ret < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_VIDEO_LOAD_FAILED;
+    }
+
+    ret = avcodec_open2(codec_context, codec, NULL);
+    
+    if (ret < 0) {
+        avcodec_free_context(&codec_context);
+        return TPXL_VIDEO_LOAD_FAILED;
+    }
+
+    AVFrame* frame = av_frame_alloc();
+
+    if (!frame) {
+        avcodec_free_context(&codec_context);
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    ret = avcodec_send_packet(codec_context, &thumbnail_stream->attached_pic);
+
+    if (ret < 0) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    ret = avcodec_receive_frame(codec_context, frame);
+
+    if (ret < 0) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    struct SwsContext* sws_ctx = sws_getContext(
+        frame->width, 
+        frame->height,
+        frame->format, 
+        frame->width, 
+        frame->height, 
+        AV_PIX_FMT_RGB24, 
+        SWS_BICUBIC,
+        NULL,
+        NULL, 
+        NULL
+    );
+
+    if (!sws_ctx) {
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return TPXL_VIDEO_DECODE_FAILED;
+    }
+
+    TpxlResult result = tpxl_convert_frame(sws_ctx, frame, frame->width, frame->height, &video->attached_thumbnail);
+
+    if (result != TPXL_OK) {
+        sws_freeContext(sws_ctx);
+        av_frame_free(&frame);
+        avcodec_free_context(&codec_context);
+        return result;
+    }
+
+    video->has_attached_thumbnail = true;
+
+    *image = &video->attached_thumbnail;
+
+    sws_freeContext(sws_ctx);
+    av_frame_free(&frame);
+    avcodec_free_context(&codec_context);
+
+    return TPXL_OK;
+}
+
 void tpxl_free_video_frame(TpxlVideoFrame* video_frame) {
 
     if (!video_frame) {
@@ -437,6 +556,10 @@ void tpxl_close_video(TpxlVideo** video) {
     avcodec_free_context(&(*video)->codec_context);
     avformat_close_input(&(*video)->format_context);
     sws_freeContext((*video)->sws_context);
+
+    if ((*video)->has_attached_thumbnail) {
+        tpxl_free_frame(&(*video)->attached_thumbnail);
+    }
 
     free(*video);
     *video = NULL;
