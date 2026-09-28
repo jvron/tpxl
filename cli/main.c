@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
             exit_code = play_video(file, &terminal, backend);
             break;
         case TPXL_FILE_AUDIO:
-            exit_code = play_audio(file);
+            exit_code = play_audio(file, &terminal, backend);
             break;
         
         default:

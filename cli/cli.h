@@ -7,7 +7,7 @@
 int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend, bool print_info);
 int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, bool print_info);
 int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend);
-int play_audio(const char* path);
+int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend);
 
 #endif
 
