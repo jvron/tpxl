@@ -1,18 +1,12 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <assert.h>
 
-#include <libavutil/pixfmt.h>
+
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
-#include <libavcodec/codec.h>
-#include <libavcodec/packet.h>
-#include <libavformat/avformat.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/avutil.h>
-#include <libavutil/error.h>
-#include <libavutil/frame.h>
+
+
+
+
 
 #include "tpxl/video.h"
 #include "tpxl/audio.h"
@@ -416,16 +410,9 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVide
     return result;
 }
 
-TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image) {
-
-    if (!video || !image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    *image = NULL;
+static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
 
     if (video->has_attached_thumbnail) {
-        *image = &video->attached_thumbnail;
         return TPXL_OK; 
     }
 
@@ -448,7 +435,7 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
     const AVCodec* codec = avcodec_find_decoder(thumbnail_stream->codecpar->codec_id);
 
     if (!codec) {
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     AVCodecContext* codec_context = avcodec_alloc_context3(codec);
@@ -461,14 +448,14 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
 
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     ret = avcodec_open2(codec_context, codec, NULL);
     
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     AVFrame* frame = av_frame_alloc();
@@ -483,7 +470,7 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     ret = avcodec_receive_frame(codec_context, frame);
@@ -491,7 +478,7 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     struct SwsContext* sws_ctx = sws_getContext(
@@ -510,7 +497,7 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
     if (!sws_ctx) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_THUMBNAIL_LOAD_FAILED;
     }
 
     TpxlResult result = tpxl_convert_frame(sws_ctx, frame, frame->width, frame->height, &video->attached_thumbnail);
@@ -524,11 +511,67 @@ TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage** image
 
     video->has_attached_thumbnail = true;
 
-    *image = &video->attached_thumbnail;
-
     sws_freeContext(sws_ctx);
     av_frame_free(&frame);
     avcodec_free_context(&codec_context);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_video_get_attached_thumbnail(TpxlVideo* video, TpxlImage* image) {
+
+    if (!video || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = (TpxlImage){0};
+
+    TpxlResult result = tpxl_retrieve_video_thumbnail(video);
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    if (!video->has_attached_thumbnail) {
+        return TPXL_NOT_FOUND; 
+    }
+
+    size_t size = video->attached_thumbnail.width * 
+        video->attached_thumbnail.height * 
+        tpxl_format_to_channels(video->attached_thumbnail.format);
+
+    image->pixels = malloc(size);
+
+    if (!image->pixels) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    image->width = video->attached_thumbnail.width;
+    image->height = video->attached_thumbnail.height;
+    image->format = video->attached_thumbnail.format;
+
+    memcpy(image->pixels, video->attached_thumbnail.pixels, size);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_video_view_attached_thumbnail(TpxlVideo* video, const TpxlImage** image) {
+
+    if (!video || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = NULL;
+
+    TpxlResult result = tpxl_retrieve_video_thumbnail(video);
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    if (!video->has_attached_thumbnail) {
+        return TPXL_NOT_FOUND; 
+    }
+
+    *image = &video->attached_thumbnail;
 
     return TPXL_OK;
 }
