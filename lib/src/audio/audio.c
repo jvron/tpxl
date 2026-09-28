@@ -290,16 +290,9 @@ double tpxl_get_audio_duration(TpxlAudio* audio) {
     return (double)audio->format_context->duration / AV_TIME_BASE;
 }
 
-TpxlResult tpxl_audio_get_attached_thumbnail(TpxlAudio* audio, TpxlImage** image) {
-
-    if (!audio || !image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    *image = NULL;
+static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
 
     if (audio->has_attached_thumbnail) {
-        *image = &audio->attached_thumbnail;
         return TPXL_OK; 
     }
 
@@ -398,11 +391,67 @@ TpxlResult tpxl_audio_get_attached_thumbnail(TpxlAudio* audio, TpxlImage** image
 
     audio->has_attached_thumbnail = true;
 
-    *image = &audio->attached_thumbnail;
-
     sws_freeContext(sws_ctx);
     av_frame_free(&frame);
     avcodec_free_context(&codec_context);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_audio_get_attached_thumbnail(TpxlAudio* audio, TpxlImage* image) {
+
+    if (!audio || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = (TpxlImage){0};
+
+    TpxlResult result = tpxl_retrieve_audio_thumbnail(audio);
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    if (!audio->has_attached_thumbnail) {
+        return TPXL_NOT_FOUND; 
+    }
+
+    size_t size = audio->attached_thumbnail.width * 
+        audio->attached_thumbnail.height * 
+        tpxl_format_to_channels(audio->attached_thumbnail.format);
+
+    image->pixels = malloc(size);
+
+    if (!image->pixels) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    image->width = audio->attached_thumbnail.width;
+    image->height = audio->attached_thumbnail.height;
+    image->format = audio->attached_thumbnail.format;
+
+    memcpy(image->pixels, audio->attached_thumbnail.pixels, size);
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_audio_view_attached_thumbnail(TpxlAudio* audio, const TpxlImage** image) {
+
+    if (!audio || !image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    *image = NULL;
+
+    TpxlResult result = tpxl_retrieve_audio_thumbnail(audio);
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    if (!audio->has_attached_thumbnail) {
+        return TPXL_NOT_FOUND; 
+    }
+
+    *image = &audio->attached_thumbnail;
 
     return TPXL_OK;
 }

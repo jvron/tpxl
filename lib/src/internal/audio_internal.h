@@ -1,7 +1,6 @@
 #ifndef TPXL_AUDIO_INTERNAL_H
 #define TPXL_AUDIO_INTERNAL_H
 
-
 #include <libswresample/swresample.h>
 
 #include <miniaudio/miniaudio.h>
