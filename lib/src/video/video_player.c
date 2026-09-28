@@ -1,22 +1,8 @@
-#include <stdlib.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <threads.h>
-#include <unistd.h>
-#include <stdatomic.h>
 #include <assert.h>
 
-#include <libavcodec/packet.h>
-#include <libavformat/avformat.h>
-
-#include "tpxl/audio.h"
-#include "tpxl/renderer.h"
-#include "tpxl/type.h"
-#include "tpxl/video.h"
 #include "tpxl/util.h"
+#include "tpxl/renderer.h"
 
-#include "util/queue.h"
-#include "internal/thread.h"
 #include "internal/video_internal.h"
 #include "internal/audio_internal.h"
 
@@ -388,7 +374,6 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         }
 
         if (result == TPXL_QUEUE_CLOSED) {
-
 
             if (player->has_last_frame) {
 

@@ -4,9 +4,7 @@
 #include <stb/stb_image_resize2.h>
 
 #include <stdio.h>
-#include <stdint.h>
 
-#include "tpxl/type.h"
 #include "tpxl/image.h"
 
 TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {

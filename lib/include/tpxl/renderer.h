@@ -1,7 +1,6 @@
 #ifndef TPXL_RENDERER_H
 #define TPXL_RENDERER_H
 
-#include "tpxl/type.h"
 #include "tpxl/terminal.h"
 
 typedef struct TpxlRendererImp TpxlRenderer;

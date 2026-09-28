@@ -1,9 +1,9 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <assert.h>
 
 #include <zlib.h>
 
-#include "tpxl/type.h"
 #include "tpxl/terminal.h"
 
 #include "util/base64.h"

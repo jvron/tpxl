@@ -4,12 +4,9 @@
 
 #include <sixel.h>
 
-#include "tpxl/image.h"
 #include "tpxl/renderer.h"
-#include "tpxl/type.h"
 
 #include "sixel_backend.h"
-#include "sixel_image_map.h"
 
 static int tpxl_write_stdout(char* data, int chunk_size, void* priv) {
 

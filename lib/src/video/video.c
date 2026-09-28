@@ -1,17 +1,9 @@
 #include <assert.h>
 
-
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 
-
-
-
-
-#include "tpxl/video.h"
-#include "tpxl/audio.h"
 #include "tpxl/image.h"
-#include "tpxl/type.h"
 
 #include "internal/audio_internal.h"
 #include "internal/video_internal.h"

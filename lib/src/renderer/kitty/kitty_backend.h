@@ -1,12 +1,8 @@
 #ifndef TPXL_KITTY_BACKEND_H
 #define TPXL_KITTY_BACKEND_H
 
-#include <stdint.h>
-#include <stdio.h>
 #include <pthread.h>
 
-#include "tpxl/terminal.h"
-#include "tpxl/type.h"
 #include "tpxl/renderer.h"
 
 typedef struct {

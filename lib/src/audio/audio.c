@@ -1,8 +1,6 @@
 #include <libswscale/swscale.h>
 
-#include "tpxl/audio.h"
 #include "tpxl/image.h"
-#include "tpxl/type.h"
 
 #include "internal/audio_internal.h"
 

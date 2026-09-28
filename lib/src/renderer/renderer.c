@@ -1,9 +1,6 @@
-#include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include "tpxl/type.h"
-#include "tpxl/terminal.h"
 #include "tpxl/renderer.h"
 
 #include "kitty/kitty_backend.h"

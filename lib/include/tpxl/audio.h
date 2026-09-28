@@ -2,8 +2,8 @@
 #define TPXL_AUDIO_H
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "tpxl/type.h"
 

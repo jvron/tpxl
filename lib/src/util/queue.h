@@ -1,7 +1,6 @@
 #ifndef TPXL_QUEUE_H
 #define TPXL_QUEUE_H
 
-#include <stdint.h>
 #include <pthread.h>
 #include <stdatomic.h>
 
@@ -9,7 +8,6 @@
 
 #include "tpxl/audio.h"
 #include "tpxl/video.h"
-#include "tpxl/type.h"
 
 #define MAX_VIDEO_FRAME_COUNT 16
 #define MAX_AUDIO_FRAME_COUNT 32
