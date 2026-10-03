@@ -38,6 +38,9 @@ typedef struct {
     int sixel_format;
     int sixel_diffuse;
     int sixel_quality;
+
+    char* clear_buffer;
+    size_t clear_buffer_capacity;
 } TpxlSixelContext;
 
 TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context);
