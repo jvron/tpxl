@@ -108,7 +108,7 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
             break;
         }
 
-        if (result == TPXL_AUDIO_NEED_PACKET) {
+        if (result == TPXL_NEED_PACKET) {
             continue;
         }
 
@@ -226,7 +226,7 @@ static TpxlResult tpxl_create_audio_player_internal(TpxlAudioPlayer** player, Tp
 
     if (result != MA_SUCCESS) {
         free(new_player);
-        return TPXL_AUDIO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     new_player->audio = audio;
@@ -239,7 +239,7 @@ static TpxlResult tpxl_create_audio_player_internal(TpxlAudioPlayer** player, Tp
     if (tpxl_init_audio_frame_queue(&new_player->frame_queue) != TPXL_OK) {
         ma_device_uninit(&new_player->device);
         free(new_player);
-        return TPXL_AUDIO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     *player = new_player;
@@ -310,7 +310,7 @@ TpxlResult tpxl_play_audio(TpxlAudioPlayer* player) {
     ma_result result = ma_device_start(&player->device);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_PLAYING_FAILED;
+        return TPXL_PLAYING_FAILED;
     }
 
     atomic_store(&player->playing, true);
@@ -327,7 +327,7 @@ TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player) {
     ma_result result = ma_device_stop(&player->device);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_PAUSING_FAILED;
+        return TPXL_PAUSING_FAILED;
     }
 
     atomic_store(&player->playing, false);
@@ -348,13 +348,13 @@ TpxlResult tpxl_mute_audio(TpxlAudioPlayer* player) {
     ma_result result = ma_device_get_master_volume(&player->device, &player->volume);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_MUTE_FAILED;
+        return TPXL_MUTE_FAILED;
     }
     
     result = ma_device_set_master_volume(&player->device, 0.0f);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_MUTE_FAILED;
+        return TPXL_MUTE_FAILED;
     }
 
     player->muted = true;
@@ -375,7 +375,7 @@ TpxlResult tpxl_unmute_audio(TpxlAudioPlayer* player) {
     ma_result result = ma_device_set_master_volume(&player->device, player->volume);
 
     if (result != MA_SUCCESS) {
-        return TPXL_AUDIO_UNMUTE_FAILED;
+        return TPXL_UNMUTE_FAILED;
     }
 
     player->muted = false;

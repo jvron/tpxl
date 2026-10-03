@@ -119,7 +119,7 @@ TpxlResult tpxl_create_animation_player(TpxlAnimationPlayer** player, TpxlRender
 
         if (result != TPXL_OK) {
             free(new_player);
-            return TPXL_ANIMATION_PLAYER_CREATION_FAILED;
+            return TPXL_PLAYER_CREATION_FAILED;
         }
 
         animation->frames[i].frame_id = id;

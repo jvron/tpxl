@@ -4,40 +4,48 @@
 
 static const char* result_to_string[] = {
     [TPXL_OK] = "success",
+
     [TPXL_INVALID_FILE] = "unsupported or invalid file format",
     [TPXL_INVALID_ARGUMENT] = "invalid argument",
     [TPXL_INVALID_FORMAT] = "invalid format",
-    [TPXL_NOT_FOUND] = "not found",
-    [TPXL_IMAGE_LOAD_FAILED] = "image loading failed",
-    [TPXL_IMAGE_RESIZE_FAILED] = "image resizing failed",
-    [TPXL_ANIMATION_LOAD_FAILED] = "animation loading failed",
-    [TPXL_VIDEO_LOAD_FAILED] = "video loading failed",
-    [TPXL_AUDIO_LOAD_FAILED] = "audio loading failed",
-    [TPXL_THUMBNAIL_LOAD_FAILED] = "thumbnail load failed",
-    [TPXL_SIXEL_BACKEND_CREATION_FAILED] = "renderer sixel backend creation failed",
-    [TPXL_KITTY_BACKEND_CREATION_FAILED] = "renderer kitty backend creation failed",
     [TPXL_INVALID_BACKEND] = "invalid renderer backend",
+    [TPXL_NOT_FOUND] = "not found",
+
+    [TPXL_LOAD_FAILED] = "loading failed",
+    [TPXL_RESIZE_FAILED] = "resizing failed",
+    [TPXL_DECODE_FAILED] = "decoding failed",
+
+    [TPXL_BACKEND_CREATION_FAILED] = "renderer backend creation failed",
+
     [TPXL_EOF] = "end of file",
-    [TPXL_VIDEO_DECODE_FAILED] = "video decoding failed",
-    [TPXL_VIDEO_NEED_PACKET] = "video decoder needs another packet",
-    [TPXL_VIDEO_PLAYER_CREATION_FAILED] = "video player creation failed",
-    [TPXL_VIDEO_PLAYING_FAILED] = "video playing failed",
-    [TPXL_VIDEO_PAUSING_FAILED] = "video pausing failed",
-    [TPXL_AUDIO_PLAYER_CREATION_FAILED] = "audio player creation failed",
-    [TPXL_AUDIO_DECODE_FAILED] = "audio decoding failed",
-    [TPXL_AUDIO_NEED_PACKET] = "audio decoder needs another packet",
-    [TPXL_AUDIO_PLAYING_FAILED] = "audio playing failed",
-    [TPXL_AUDIO_PAUSING_FAILED] = "audio pausing failed", 
-    [TPXL_AUDIO_MUTE_FAILED] = "audio muting failed",
-    [TPXL_AUDIO_UNMUTE_FAILED] = "audio unmuting failed",
+
+    [TPXL_NEED_PACKET] = "decoder needs another packet",
+
+    [TPXL_PLAYER_CREATION_FAILED] = "player creation failed",
+    [TPXL_PLAYING_FAILED] = "playing failed",
+    [TPXL_PAUSING_FAILED] = "pausing failed",
+    [TPXL_MUTE_FAILED] = "muting failed",
+    [TPXL_UNMUTE_FAILED] = "unmuting failed",
+
     [TPXL_THREAD_CREATION_ERROR] = "thread creation error",
+
     [TPXL_SHUTDOWN] = "player thread shutdown",
+
+    [TPXL_QUEUE_CLOSED] = "queue closed",
+    [TPXL_QUEUE_EMPTY] = "queue empty",
+
+    [TPXL_MAP_EMPTY] = "map empty",
+    [TPXL_MAP_FULL] = "map full",
+    [TPXL_MAP_NOT_FOUND] = "map entry not found",
+    [TPXL_MAP_INVALID_ID] = "invalid map ID",
+
     [TPXL_UNSUPPORTED_FORMAT] = "unsupported format",
     [TPXL_OUT_OF_MEMORY] = "out of memory",
     [TPXL_ENCODING_FAILED] = "encoding failed",
     [TPXL_COMPRESSION_FAILED] = "compression failed",
     [TPXL_RENDER_FAILED] = "rendering failed",
     [TPXL_IO_ERROR] = "I/O error",
+
     [TPXL_ERROR] = "internal error",
 };
 

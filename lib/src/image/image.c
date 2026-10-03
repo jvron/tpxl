@@ -20,7 +20,7 @@ TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {
 
     if (!pixels) {
         *image = (TpxlImage){0};
-        return TPXL_IMAGE_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     image->width = (uint32_t)width;
@@ -77,7 +77,7 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
         default:
             return TPXL_INVALID_FORMAT;
     }
-    
+
     size_t output_size = output_width * output_height * tpxl_format_to_channels(image->format);
     uint8_t* output_buffer = malloc(output_size);
 
@@ -102,7 +102,7 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
 
     if (!resized_pixels) {
         free(output_buffer);
-        return TPXL_IMAGE_RESIZE_FAILED;
+        return TPXL_RESIZE_FAILED;
     }
 
     stbi_image_free(image->pixels);

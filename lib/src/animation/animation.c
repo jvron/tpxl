@@ -108,13 +108,13 @@ TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
     GifFileType* gif = DGifOpenFileName(path, NULL);
 
     if (!gif) {
-        return TPXL_ANIMATION_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // decode gif
     if (DGifSlurp(gif) != GIF_OK) {
         DGifCloseFile(gif, NULL);
-        return TPXL_ANIMATION_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     animation->width = gif->SWidth;
@@ -130,7 +130,7 @@ TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
 
     if (!animation->frames) {
         DGifCloseFile(gif, NULL);
-        return TPXL_ANIMATION_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     TpxlImage canvas;
@@ -192,7 +192,7 @@ TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
 
             if (!palette) {
                 free(image.pixels);
-                result = TPXL_ANIMATION_LOAD_FAILED;
+                result = TPXL_LOAD_FAILED;
                 break;
             }
         }

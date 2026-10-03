@@ -81,18 +81,18 @@ TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context) {
 
     if (tpxl_init_sixel_image_map(&sixel_context->image_map) != TPXL_OK) {
         free(encoded_buffer);
-        return TPXL_SIXEL_BACKEND_CREATION_FAILED;
+        return TPXL_BACKEND_CREATION_FAILED;
     }
 
     if (sixel_output_new(&sixel_context->output_stdout, tpxl_write_stdout, NULL, NULL) != SIXEL_OK) {
         free(encoded_buffer);
-        return TPXL_SIXEL_BACKEND_CREATION_FAILED;
+        return TPXL_BACKEND_CREATION_FAILED;
     }
 
     if (sixel_output_new(&sixel_context->output_image_map, tpxl_write_image_map, sixel_context, NULL) != SIXEL_OK) {
         free(encoded_buffer);
         sixel_output_unref(sixel_context->output_stdout);
-        return TPXL_SIXEL_BACKEND_CREATION_FAILED;
+        return TPXL_BACKEND_CREATION_FAILED;
     }
 
     sixel_context->video_dither = sixel_dither_get(BUILTIN_XTERM256);

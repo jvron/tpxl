@@ -21,12 +21,12 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     AVFormatContext* format_context = NULL;
 
     if (avformat_open_input(&format_context, path, NULL, NULL) < 0) {
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     if (avformat_find_stream_info(format_context, NULL) < 0) {
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVStream* video_stream = NULL;
@@ -43,33 +43,33 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
 
     if (!video_stream) {
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     const AVCodec* codec = avcodec_find_decoder(video_stream->codecpar->codec_id);
 
     if (!codec) {
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVCodecContext* codec_context = avcodec_alloc_context3(codec);
 
     if (!codec_context) {
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     if (avcodec_parameters_to_context(codec_context, video_stream->codecpar) < 0) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     if (avcodec_open2(codec_context, codec, NULL) < 0) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     *video = malloc(sizeof(TpxlVideo));
@@ -113,7 +113,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         avformat_close_input(&format_context);
         free(*video);
         *video = NULL;
-        return TPXL_VIDEO_LOAD_FAILED; 
+        return TPXL_LOAD_FAILED; 
     }
 
     AVFrame* av_frame = av_frame_alloc();
@@ -125,7 +125,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
         avformat_close_input(&format_context);
         free(*video);
         *video = NULL;
-        return TPXL_VIDEO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     (*video)->sws_context = sws_ctx;
@@ -265,7 +265,7 @@ TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame,
 
     if (result < 0) {
         free(pixels);
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_DECODE_FAILED;
     }
 
     // convert to RGB
@@ -281,7 +281,7 @@ TpxlResult tpxl_convert_frame(struct SwsContext* sws_context, AVFrame* av_frame,
 
     if (result != (int)output_height) {
         free(pixels);
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_DECODE_FAILED;
     }
 
     frame->pixels = pixels;
@@ -311,14 +311,14 @@ static TpxlResult tpxl_receive_frame(struct SwsContext* sws_context, AVCodecCont
     }
     if (result == AVERROR(EAGAIN)) {
         // Decoder needs another packet
-        return TPXL_VIDEO_NEED_PACKET;
+        return TPXL_NEED_PACKET;
     }
     if (result == AVERROR_EOF) {
         // Decoder has been fully drained, no more frames will be produced.
         return TPXL_EOF;
     }
 
-    return TPXL_VIDEO_DECODE_FAILED;
+    return TPXL_DECODE_FAILED;
 }
 
 TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVideoFrame* out_frame) {
@@ -351,7 +351,7 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVide
         return TPXL_EOF;
     }
 
-    if (result != TPXL_VIDEO_NEED_PACKET) {
+    if (result != TPXL_NEED_PACKET) {
         return result;
     }
 
@@ -374,7 +374,7 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVide
                 return TPXL_EOF;
             }
 
-            return TPXL_VIDEO_DECODE_FAILED;
+            return TPXL_DECODE_FAILED;
         }
 
         video->drain_sent = true;
@@ -385,7 +385,7 @@ TpxlResult tpxl_decode_video_packet(TpxlVideo* video, AVPacket* packet, TpxlVide
     }
     
     if (ret < 0) {
-        return TPXL_VIDEO_DECODE_FAILED;
+        return TPXL_DECODE_FAILED;
     }
 
     // Try to receive the frame produced by that packet,
@@ -427,7 +427,7 @@ static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
     const AVCodec* codec = avcodec_find_decoder(thumbnail_stream->codecpar->codec_id);
 
     if (!codec) {
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVCodecContext* codec_context = avcodec_alloc_context3(codec);
@@ -440,14 +440,14 @@ static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
 
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     ret = avcodec_open2(codec_context, codec, NULL);
     
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVFrame* frame = av_frame_alloc();
@@ -462,7 +462,7 @@ static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     ret = avcodec_receive_frame(codec_context, frame);
@@ -470,7 +470,7 @@ static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     struct SwsContext* sws_ctx = sws_getContext(
@@ -489,7 +489,7 @@ static TpxlResult tpxl_retrieve_video_thumbnail(TpxlVideo* video) {
     if (!sws_ctx) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     TpxlResult result = tpxl_convert_frame(sws_ctx, frame, frame->width, frame->height, &video->attached_thumbnail);

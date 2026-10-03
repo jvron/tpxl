@@ -19,13 +19,13 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
     AVFormatContext* format_context = NULL;
 
     if (avformat_open_input(&format_context, path, NULL, NULL) < 0) {
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Read stream information.
     if (avformat_find_stream_info(format_context, NULL) < 0) {
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVStream* audio_stream = NULL;
@@ -42,7 +42,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
 
     if (!audio_stream) {
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Find the decoder for the audio stream.
@@ -50,7 +50,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
 
     if (!codec) {
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Create and configure the decoder context.
@@ -58,21 +58,21 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
 
     if (!codec_context) {
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Copy the stream's codec parameters into the decoder context
     if (avcodec_parameters_to_context(codec_context, audio_stream->codecpar) < 0) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Open the decoder.
     if (avcodec_open2(codec_context, codec, NULL) < 0) {
         avcodec_free_context(&codec_context);
         avformat_close_input(&format_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     *audio = calloc(1, sizeof(TpxlAudio));
@@ -105,7 +105,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avformat_close_input(&format_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;;
+        return TPXL_LOAD_FAILED;;
     }
 
     if (swr_init((*audio)->swr_context) < 0) {
@@ -114,7 +114,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avformat_close_input(&format_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     if (av_channel_layout_copy(&(*audio)->channel_layout, &codec_context->ch_layout) < 0) {
@@ -123,7 +123,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
         avformat_close_input(&format_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     (*audio)->audio_stream_index = audio_stream_index;
@@ -174,33 +174,33 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
     }
 
     if (!audio_stream) {
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Find the decoder for the audio stream.
     const AVCodec* codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
 
     if (!codec) {
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Create and configure the decoder context.
     AVCodecContext* codec_context = avcodec_alloc_context3(codec);
 
     if (!codec_context) {
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Copy the stream's codec parameters into the decoder context
     if (avcodec_parameters_to_context(codec_context, audio_stream->codecpar) < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     // Open the decoder.
     if (avcodec_open2(codec_context, codec, NULL) < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     *audio = calloc(1, sizeof(TpxlAudio));
@@ -231,7 +231,7 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
         avcodec_free_context(&codec_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;;
+        return TPXL_LOAD_FAILED;;
     }
 
     if (swr_init((*audio)->swr_context) < 0) {
@@ -239,7 +239,7 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
         avcodec_free_context(&codec_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     if (av_channel_layout_copy(&(*audio)->channel_layout, &codec_context->ch_layout) < 0) {
@@ -247,7 +247,7 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
         avcodec_free_context(&codec_context);
         free(*audio);
         *audio = NULL;
-        return TPXL_AUDIO_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     (*audio)->audio_stream_index = audio_stream_index;
@@ -313,7 +313,7 @@ static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
     const AVCodec* codec = avcodec_find_decoder(thumbnail_stream->codecpar->codec_id);
 
     if (!codec) {
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVCodecContext* codec_context = avcodec_alloc_context3(codec);
@@ -326,14 +326,14 @@ static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
 
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     ret = avcodec_open2(codec_context, codec, NULL);
     
     if (ret < 0) {
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     AVFrame* frame = av_frame_alloc();
@@ -348,7 +348,7 @@ static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     ret = avcodec_receive_frame(codec_context, frame);
@@ -356,7 +356,7 @@ static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
     if (ret < 0) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     struct SwsContext* sws_ctx = sws_getContext(
@@ -375,7 +375,7 @@ static TpxlResult tpxl_retrieve_audio_thumbnail(TpxlAudio* audio) {
     if (!sws_ctx) {
         av_frame_free(&frame);
         avcodec_free_context(&codec_context);
-        return TPXL_THUMBNAIL_LOAD_FAILED;
+        return TPXL_LOAD_FAILED;
     }
 
     TpxlResult result = tpxl_convert_frame(sws_ctx, frame, frame->width, frame->height, &audio->attached_thumbnail);
@@ -505,7 +505,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
         );
 
         if (size < 0) {
-            return TPXL_AUDIO_DECODE_FAILED;
+            return TPXL_DECODE_FAILED;
         }
 
         uint8_t* samples = malloc((size_t)size);
@@ -528,7 +528,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
 
         if (result < 0) {
             free(samples);
-            return TPXL_AUDIO_DECODE_FAILED;
+            return TPXL_DECODE_FAILED;
         }
 
         int converted_samples = swr_convert(
@@ -541,7 +541,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
 
         if (converted_samples < 0) {
             free(samples);
-            return TPXL_AUDIO_DECODE_FAILED;
+            return TPXL_DECODE_FAILED;
         }
 
         frame->samples = samples;
@@ -553,7 +553,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
     }
     if (result == AVERROR(EAGAIN)) {
         // decoder needs another packet
-        return TPXL_AUDIO_NEED_PACKET;
+        return TPXL_NEED_PACKET;
     }
     if (result == AVERROR_EOF) {
         // decoder has been fully drained; no more frames will be produced.
@@ -561,7 +561,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
     }
 
     // error
-    return TPXL_AUDIO_DECODE_FAILED;
+    return TPXL_DECODE_FAILED;
 }
 
 TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame) {
@@ -582,7 +582,7 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
         out_audio_frame
     );
 
-    if (frame_result != TPXL_AUDIO_NEED_PACKET) {
+    if (frame_result != TPXL_NEED_PACKET) {
         return frame_result;
     }
 
@@ -602,13 +602,13 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
 
                 if (result < 0) {
                     av_packet_unref(audio->av_packet);
-                    return TPXL_AUDIO_DECODE_FAILED;
+                    return TPXL_DECODE_FAILED;
                 }
                 continue;
             }
             if (result < 0) {
                 av_packet_unref(audio->av_packet);
-                return TPXL_AUDIO_DECODE_FAILED;
+                return TPXL_DECODE_FAILED;
             }
             if (audio->av_packet->stream_index != audio->audio_stream_index) {
                 av_packet_unref(audio->av_packet);
@@ -620,7 +620,7 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
     
             if (result < 0) {
                 av_packet_unref(audio->av_packet);
-                return TPXL_AUDIO_DECODE_FAILED;
+                return TPXL_DECODE_FAILED;
             }
             av_packet_unref(audio->av_packet);
         }
@@ -630,7 +630,7 @@ TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_f
             out_audio_frame
         );
 
-        if (frame_result != TPXL_AUDIO_NEED_PACKET) {
+        if (frame_result != TPXL_NEED_PACKET) {
             return frame_result;
         }
     }
@@ -664,7 +664,7 @@ TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudi
         return TPXL_EOF;
     }
 
-    if (result != TPXL_AUDIO_NEED_PACKET) {
+    if (result != TPXL_NEED_PACKET) {
         return result;
     }
     
@@ -687,7 +687,7 @@ TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudi
                 return TPXL_EOF;
             }
 
-            return TPXL_AUDIO_DECODE_FAILED;
+            return TPXL_DECODE_FAILED;
         }
 
         audio->drain_sent = true;
@@ -698,7 +698,7 @@ TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudi
     }
 
     if (ret < 0) {
-        return TPXL_AUDIO_DECODE_FAILED;
+        return TPXL_DECODE_FAILED;
     }
 
     // Try to receive the frame produced by that packet.

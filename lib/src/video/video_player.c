@@ -127,7 +127,7 @@ static void* tpxl_video_decode_worker(void* arg) {
             break;
         }
 
-        if (result == TPXL_VIDEO_NEED_PACKET) {
+        if (result == TPXL_NEED_PACKET) {
             continue;
         }
 
@@ -296,7 +296,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
 
         free(*player);
         *player = NULL;
-        return TPXL_VIDEO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     if (tpxl_init_video_frame_queue(&(*player)->upload_queue) != TPXL_OK) {
@@ -305,7 +305,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
 
         free(*player);
         *player = NULL;
-        return TPXL_VIDEO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     if (tpxl_init_video_frame_queue(&(*player)->display_queue) != TPXL_OK) {
@@ -316,7 +316,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
 
         free(*player);
         *player = NULL;
-        return TPXL_VIDEO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     if (pthread_create(&(*player)->demux_thread, NULL, tpxl_demux_worker, *player) != 0) {
@@ -346,7 +346,7 @@ TpxlResult tpxl_create_video_player(TpxlVideoPlayer** player, TpxlRenderer* rend
     if (tpxl_init_video_audio_player(*player, video->audio) != TPXL_OK) {
         tpxl_abort_video_player_creation(*player);
         *player = NULL;
-        return TPXL_VIDEO_PLAYER_CREATION_FAILED;
+        return TPXL_PLAYER_CREATION_FAILED;
     }
 
     atomic_store(&(*player)->active, true);
@@ -370,7 +370,7 @@ TpxlResult tpxl_update_video_player(TpxlVideoPlayer* player) {
         if (result == TPXL_QUEUE_CLOSED && player->upload_status == TPXL_THREAD_ERROR) {
             atomic_store(&player->playing, false);
             atomic_store(&player->active, false);
-            return TPXL_VIDEO_PLAYING_FAILED;
+            return TPXL_PLAYING_FAILED;
         }
 
         if (result == TPXL_QUEUE_CLOSED) {

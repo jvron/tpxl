@@ -21,7 +21,7 @@ TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context) {
     }
 
     if (pthread_mutex_init(&kitty_context->output_mutex, NULL) != 0) {
-        return TPXL_KITTY_BACKEND_CREATION_FAILED;
+        return TPXL_BACKEND_CREATION_FAILED;
     }
 
     kitty_context->output_mutex_initialized = true;
