@@ -78,6 +78,25 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal);
 TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column);
 
 /**
+ * Ensures that the terminal has enough rows available from the current
+ * cursor position.
+ *
+ * If fewer than required_rows are available, the terminal is scrolled
+ * upward and the cursor is restored to its original position.
+ *
+ * On success, the terminal's cursor position is updated.
+ *
+ * @param terminal Terminal whose available rows are checked.
+ * @param required_rows Number of rows required from the current cursor
+ *                      position.
+ *
+ * @return TPXL_OK on success.
+ * @return TPXL_IO_ERROR if the terminal cannot be scrolled or the cursor
+ *         position cannot be queried.
+ */
+TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_rows);
+
+/**
  * Restores the terminal settings saved by tpxl_init_terminal().
  *
  * Calling this function on an uninitialized terminal has

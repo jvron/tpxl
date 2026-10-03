@@ -333,3 +333,24 @@ TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column) {
 
     return TPXL_OK;
 }
+
+TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_rows) {
+
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    uint32_t available_rows = terminal->rows - terminal->cursor_row;
+
+    if (available_rows >= required_rows) {
+        return TPXL_OK;
+    }
+
+    uint32_t scroll_rows = required_rows - available_rows;
+
+    fprintf(stdout, "\033[%uS", scroll_rows);
+    fprintf(stdout, "\033[%uA", scroll_rows);
+    fflush(stdout);
+
+    return tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+}
