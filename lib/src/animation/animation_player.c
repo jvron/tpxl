@@ -159,7 +159,7 @@ TpxlResult tpxl_play_animation(TpxlAnimationPlayer* player, uint32_t row, uint32
 
 void tpxl_close_animation_player(TpxlAnimationPlayer** player) {
 
-    if (!*player) {
+    if (!player || !*player) {
         return;
     }
 
@@ -167,6 +167,10 @@ void tpxl_close_animation_player(TpxlAnimationPlayer** player) {
 
     if ((*player)->play_thread_created) {
         pthread_join((*player)->play_thread, NULL);
+    }
+
+    for (size_t i = 0; i < (*player)->animation->frame_count; i++) {
+        tpxl_renderer_delete_data((*player)->renderer, (*player)->animation->frames[i].frame_id);
     }
 
     free(*player);
