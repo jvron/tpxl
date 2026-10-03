@@ -55,6 +55,12 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     uint32_t video_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
     uint32_t video_cols = (output_width + terminal->cell_width - 1) / terminal->cell_width;
 
+    result = tpxl_terminal_ensure_rows(terminal, video_rows + 1);
+
+    if (result != TPXL_OK) {
+        goto error;
+    }
+
     TpxlRendererConfig config;
     config.backend = backend;
     config.terminal = terminal;
@@ -68,12 +74,14 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     if (result != TPXL_OK) {
         goto error;
     }
-    
+
     result = tpxl_create_video_player(&player, renderer, video);
     
     if (result != TPXL_OK) {
         goto error;
     }
+
+    tpxl_sleep_ms(500);
 
     result = tpxl_start_video(player, terminal->cursor_row, terminal->cursor_column);
 
@@ -166,11 +174,9 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     }
 
     fprintf(stdout, "\033[%uB", video_rows + 2);
-
     tpxl_close_video_player(&player);
     tpxl_destroy_renderer(&renderer);
     tpxl_close_video(&video);
-
     return EXIT_SUCCESS;
 
 error:

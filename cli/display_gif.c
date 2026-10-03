@@ -45,9 +45,14 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     result = tpxl_resize_animation(&animation, output_width, output_height);
     if (result != TPXL_OK) goto error;
 
+    uint32_t animation_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
+
+    result = tpxl_terminal_ensure_rows(terminal, animation_rows + 1);
+    if (result != TPXL_OK) goto error;
+
     TpxlRendererConfig config;
-    config.backend = backend;
     config.media_type = TPXL_MEDIA_ANIMATION;
+    config.backend = backend;
     config.terminal = terminal;
     config.render_width = output_width;
     config.render_height = output_height;
@@ -59,8 +64,6 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     result = tpxl_create_animation_player(&player, renderer, &animation);
     if (result != TPXL_OK) goto error;
 
-    uint32_t animation_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
-
     printf("\033[%uB", animation_rows);
     printf("\n[q] Quit");
     printf("\033[%uA", animation_rows);
@@ -68,8 +71,7 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
 
     result = tpxl_play_animation(player, terminal->cursor_row, terminal->cursor_column);
 
-    bool running = true;
-    while(running) {
+    while(true) {
 
         TpxlEvent event;
         result = tpxl_poll_event(&event);
@@ -81,13 +83,13 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
 
         if (event.type == TPXL_EVENT_KEY) {
             if (event.key == TPXL_KEY_Q) {
-                running = false;
+                break;
             }
         }
 
         tpxl_sleep_ms(100);
     }
-    
+
     tpxl_close_animation_player(&player);
 
     result = tpxl_renderer_direct_render(
