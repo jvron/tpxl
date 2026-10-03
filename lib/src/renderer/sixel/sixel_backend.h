@@ -34,8 +34,10 @@ typedef struct {
 
     sixel_output_t* output_stdout;
     sixel_output_t* output_image_map;
-    sixel_dither_t* dither;
+    sixel_dither_t* video_dither;
     int sixel_format;
+    int sixel_diffuse;
+    int sixel_quality;
 } TpxlSixelContext;
 
 TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context);
