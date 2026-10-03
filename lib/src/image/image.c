@@ -60,12 +60,16 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
     switch (image->format) {
         case TPXL_FORMAT_R:
             layout = STBIR_1CHANNEL;
+            break;
+
         case TPXL_FORMAT_RG:
             layout = STBIR_2CHANNEL;
             break;
+
         case TPXL_FORMAT_RGB:
             layout = STBIR_RGB;
             break;
+
         case TPXL_FORMAT_RGBA:
             layout = STBIR_RGBA;
             break;
@@ -73,7 +77,7 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
         default:
             return TPXL_INVALID_FORMAT;
     }
-
+    
     size_t output_size = output_width * output_height * tpxl_format_to_channels(image->format);
     uint8_t* output_buffer = malloc(output_size);
 
