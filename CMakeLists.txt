@@ -26,4 +26,7 @@ elseif(TPXL_TSAN)
 endif()
 
 add_subdirectory(lib)
-add_subdirectory(cli)
+
+if(NOT TPXL_BUILD_SHARED)
+    add_subdirectory(cli)
+endif()
