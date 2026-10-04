@@ -173,6 +173,24 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
         tpxl_sleep_ms(200);
     }
 
+    const TpxlImage* thumbnail = NULL;
+    result = tpxl_video_view_attached_thumbnail(video, &thumbnail);
+
+    if (result == TPXL_NOT_FOUND) {
+        goto cleanup;
+    } else if (result != TPXL_OK) {
+        fprintf(stdout, "\033[%uB", video_rows);
+        goto error;
+    }
+    TpxlImage* thumbnail_non_const = (TpxlImage*)thumbnail;
+    result = tpxl_renderer_direct_render(renderer, thumbnail_non_const, terminal->cursor_row, terminal->cursor_column);
+
+    if (result != TPXL_OK) {
+        fprintf(stdout, "\033[%uB", video_rows);
+        goto error;
+    }
+
+cleanup:
     fprintf(stdout, "\033[%uB", video_rows + 2);
     tpxl_close_video_player(&player);
     tpxl_destroy_renderer(&renderer);
