@@ -37,24 +37,24 @@ typedef struct {
     TpxlAudioFormat format;
 } TpxlAudioFrame;
 
-TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio);
-double tpxl_get_audio_duration(TpxlAudio* audio);
+TpxlResult tpxl_audio_open(const char* path, TpxlAudio** audio);
+double tpxl_audio_get_duration(TpxlAudio* audio);
 TpxlResult tpxl_audio_get_attached_thumbnail(TpxlAudio* audio, TpxlImage* image);
 TpxlResult tpxl_audio_view_attached_thumbnail(TpxlAudio* audio, const TpxlImage** image);
-TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
-void tpxl_free_audio_frame(TpxlAudioFrame* frame);
-void tpxl_close_audio(TpxlAudio** audio);
-void tpxl_close_video_audio(TpxlAudio** audio);
+TpxlResult tpxl_audio_decode_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame);
+void tpxl_audio_frame_free(TpxlAudioFrame* frame);
+void tpxl_audio_close(TpxlAudio** audio);
+void tpxl_video_audio_close(TpxlAudio** audio);
 
-TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio);
-TpxlResult tpxl_play_audio(TpxlAudioPlayer* player);
-TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player);
-TpxlResult tpxl_mute_audio(TpxlAudioPlayer* player);
-TpxlResult tpxl_unmute_audio(TpxlAudioPlayer* player);
-double tpxl_get_audio_clock(TpxlAudioPlayer* player);
+TpxlResult tpxl_audio_player_create(TpxlAudioPlayer** player, TpxlAudio* audio);
+TpxlResult tpxl_audio_play(TpxlAudioPlayer* player);
+TpxlResult tpxl_audio_pause(TpxlAudioPlayer* player);
+TpxlResult tpxl_audio_mute(TpxlAudioPlayer* player);
+TpxlResult tpxl_audio_unmute(TpxlAudioPlayer* player);
+double tpxl_audio_player_get_time(TpxlAudioPlayer* player);
 bool tpxl_audio_player_active(TpxlAudioPlayer* player);
 bool tpxl_audio_player_playing(TpxlAudioPlayer* player);
 bool tpxl_audio_player_muted(TpxlAudioPlayer* player);
-void tpxl_close_audio_player(TpxlAudioPlayer** player);
+void tpxl_audio_player_destroy(TpxlAudioPlayer** player);
 
 #endif

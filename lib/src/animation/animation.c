@@ -99,7 +99,7 @@ static void tpxl_apply_disposal(TpxlImage* canvas, const SavedImage* frame, GifG
     }
 }
 
-TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
+TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation) {
 
     if (!path || !animation) {
         return TPXL_INVALID_ARGUMENT;
@@ -249,7 +249,7 @@ TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
     if (result != TPXL_OK) {
 
         for (size_t i = 0; i < animation->frame_count; i++) {
-            tpxl_free_frame(&animation->frames[i].frame);
+            tpxl_frame_free(&animation->frames[i].frame);
         }
 
         free(animation->frames);
@@ -264,7 +264,7 @@ TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation) {
     return result;
 }
 
-TpxlResult tpxl_resize_animation(TpxlAnimation* animation, uint32_t output_width, uint32_t output_height) {
+TpxlResult tpxl_animation_resize(TpxlAnimation* animation, uint32_t output_width, uint32_t output_height) {
 
     if (!animation) {
         return TPXL_INVALID_ARGUMENT;
@@ -274,7 +274,7 @@ TpxlResult tpxl_resize_animation(TpxlAnimation* animation, uint32_t output_width
 
     for (size_t i = 0; i < animation->frame_count; i++) {
         
-        result = tpxl_resize_image(&animation->frames[i].frame, output_width, output_height);
+        result = tpxl_image_resize(&animation->frames[i].frame, output_width, output_height);
 
         if (result != TPXL_OK) {
             return result;
@@ -287,14 +287,14 @@ TpxlResult tpxl_resize_animation(TpxlAnimation* animation, uint32_t output_width
     return result;
 }
 
-void tpxl_free_animation(TpxlAnimation* animation) {
+void tpxl_animation_free(TpxlAnimation* animation) {
 
     if (!animation) {
         return;
     }
 
     for (size_t i = 0; i < animation->frame_count; i++) {
-        tpxl_free_frame(&animation->frames[i].frame);
+        tpxl_frame_free(&animation->frames[i].frame);
     }
 
     free(animation->frames);
@@ -302,7 +302,7 @@ void tpxl_free_animation(TpxlAnimation* animation) {
     *animation = (TpxlAnimation){0};
 }
 
-TpxlResult tpxl_print_animation_info(TpxlAnimation* animation) {
+TpxlResult tpxl_animation_print_info(const TpxlAnimation* animation) {
 
     if (!animation) {
         return TPXL_INVALID_ARGUMENT;

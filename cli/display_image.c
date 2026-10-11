@@ -17,11 +17,11 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
     TpxlImage image = {0};
     TpxlRenderer* renderer = NULL;
 
-    result = tpxl_load_image(file, &image);
+    result = tpxl_image_load(file, &image);
     if (result != TPXL_OK) goto error;
 
     if (print_info) {
-        result = tpxl_print_image_info(&image);
+        result = tpxl_image_print_info(&image);
         if (result != TPXL_OK) goto error;
 
         goto cleanup;
@@ -41,7 +41,7 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
     );
     if (result != TPXL_OK) goto error;
 
-    result = tpxl_resize_image(&image, output_width, output_height);
+    result = tpxl_image_resize(&image, output_width, output_height);
     if (result != TPXL_OK) goto error;
 
     TpxlRendererConfig config;
@@ -52,7 +52,7 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
     config.render_height = output_height;
     config.format = image.format;
     
-    result = tpxl_create_renderer(&renderer, &config);
+    result = tpxl_renderer_create(&renderer, &config);
     if (result != TPXL_OK) goto error;
 
     result = tpxl_renderer_direct_render(renderer, &image, terminal->cursor_row, terminal->cursor_column);
@@ -65,8 +65,8 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
         exit_code = EXIT_FAILURE;
 
     cleanup:
-        tpxl_free_image(&image);
-        tpxl_destroy_renderer(&renderer);
+        tpxl_image_free(&image);
+        tpxl_renderer_destroy(&renderer);
 
     return exit_code;
 }

@@ -24,7 +24,7 @@ static void* tpxl_audio_decode_worker(void* arg) {
     while (!atomic_load(&player->shutdown)) {
 
         TpxlAudioFrame frame = {0};
-        TpxlResult result = tpxl_decode_audio_frame(player->audio, &frame);
+        TpxlResult result = tpxl_audio_decode_frame(player->audio, &frame);
 
         if (result == TPXL_EOF) {
             tpxl_audio_frame_queue_close(&player->frame_queue);
@@ -40,13 +40,13 @@ static void* tpxl_audio_decode_worker(void* arg) {
         result = tpxl_audio_frame_queue_push(&player->frame_queue, &frame, &player->shutdown);
 
         if (result == TPXL_SHUTDOWN) {
-            tpxl_free_audio_frame(&frame);
+            tpxl_audio_frame_free(&frame);
             player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
-            tpxl_free_audio_frame(&frame);
+            tpxl_audio_frame_free(&frame);
             tpxl_audio_frame_queue_close(&player->frame_queue);
             player->decode_status = TPXL_THREAD_ERROR;
             break;
@@ -121,13 +121,13 @@ static void* tpxl_video_audio_decode_worker(void* arg) {
         result = tpxl_audio_frame_queue_push(&audio_player->frame_queue, &frame, &audio_player->shutdown);
 
         if (result == TPXL_SHUTDOWN) {
-            tpxl_free_audio_frame(&frame);
+            tpxl_audio_frame_free(&frame);
             audio_player->decode_status = TPXL_THREAD_FINISHED;
             break;
         }
 
         if (result != TPXL_OK) {
-            tpxl_free_audio_frame(&frame);
+            tpxl_audio_frame_free(&frame);
             tpxl_audio_frame_queue_close(&audio_player->frame_queue);
             audio_player->decode_status = TPXL_THREAD_ERROR;
             break;
@@ -195,7 +195,7 @@ static void audio_callback(ma_device* device, void* output, const void* input, m
 
             // The frame is completely consumed.
 
-            tpxl_free_audio_frame(&player->current_frame);
+            tpxl_audio_frame_free(&player->current_frame);
             player->current_frame_position = 0;
         }
     }
@@ -247,7 +247,7 @@ static TpxlResult tpxl_create_audio_player_internal(TpxlAudioPlayer** player, Tp
     return TPXL_OK;
 }
 
-TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) {
+TpxlResult tpxl_audio_player_create(TpxlAudioPlayer** player, TpxlAudio* audio) {
 
     if (!player || !audio) {
         return TPXL_INVALID_ARGUMENT;
@@ -272,7 +272,7 @@ TpxlResult tpxl_create_audio_player(TpxlAudioPlayer** player, TpxlAudio* audio) 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio* audio) {
+TpxlResult tpxl_video_audio_player_init(TpxlVideoPlayer* video_player, TpxlAudio* audio) {
 
     if (!video_player || !audio) {
         return TPXL_INVALID_ARGUMENT;
@@ -301,7 +301,7 @@ TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio
     return TPXL_OK;
 }
 
-TpxlResult tpxl_play_audio(TpxlAudioPlayer* player) {
+TpxlResult tpxl_audio_play(TpxlAudioPlayer* player) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -318,7 +318,7 @@ TpxlResult tpxl_play_audio(TpxlAudioPlayer* player) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player) {
+TpxlResult tpxl_audio_pause(TpxlAudioPlayer* player) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -335,7 +335,7 @@ TpxlResult tpxl_pause_audio(TpxlAudioPlayer* player) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_mute_audio(TpxlAudioPlayer* player) {
+TpxlResult tpxl_audio_mute(TpxlAudioPlayer* player) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -362,7 +362,7 @@ TpxlResult tpxl_mute_audio(TpxlAudioPlayer* player) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_unmute_audio(TpxlAudioPlayer* player) {
+TpxlResult tpxl_audio_unmute(TpxlAudioPlayer* player) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -383,7 +383,7 @@ TpxlResult tpxl_unmute_audio(TpxlAudioPlayer* player) {
     return TPXL_OK;
 }
 
-double tpxl_get_audio_clock(TpxlAudioPlayer* player) {
+double tpxl_audio_player_get_time(TpxlAudioPlayer* player) {
     
     assert(player);
 
@@ -415,7 +415,7 @@ bool tpxl_audio_player_muted(TpxlAudioPlayer* player) {
     return player->muted;
 }
 
-void tpxl_close_audio_player(TpxlAudioPlayer** player) {
+void tpxl_audio_player_destroy(TpxlAudioPlayer** player) {
 
     if (!player || !*player) {
         return;

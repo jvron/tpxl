@@ -9,7 +9,7 @@
 
 static DWORD original_console_mode;
 
-TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_init(TpxlTerminal* terminal) {
 
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -52,7 +52,7 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
+TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column) {
 
     if (!row || !column) {
         return TPXL_INVALID_ARGUMENT;
@@ -76,7 +76,8 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
+
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
     }
@@ -122,10 +123,10 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     terminal->cell_width = terminal->pixel_width / terminal->columns;
     terminal->cell_height = terminal->pixel_height / terminal->rows;
 
-    return tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+    return tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
 }
 
-TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal) {
 
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -158,7 +159,7 @@ TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
 
 static struct termios original_termios;
 
-TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_init(TpxlTerminal* terminal) {
 
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -186,7 +187,7 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
+TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column) {
 
     if (!row || !column) {
         return TPXL_INVALID_ARGUMENT;
@@ -231,7 +232,7 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
 
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -294,7 +295,7 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     terminal->cell_width = terminal->pixel_width / terminal->columns;
     terminal->cell_height = terminal->pixel_height / terminal->rows;
     
-   TpxlResult result = tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+   TpxlResult result = tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
    
     if (result != TPXL_OK) {
         return result;
@@ -303,7 +304,7 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal) {
 
     if (!terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -325,7 +326,7 @@ TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal) {
 
 #endif
 
-TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column) {
+TpxlResult tpxl_terminal_move_cursor(uint32_t row, uint32_t column) {
 
     if(fprintf(stdout, "\033[%u;%uH", row, column) < 0) {
         return TPXL_IO_ERROR;
@@ -352,5 +353,5 @@ TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_r
     fprintf(stdout, "\033[%uA", scroll_rows);
     fflush(stdout);
 
-    return tpxl_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+    return tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
 }

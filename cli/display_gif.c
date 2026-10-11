@@ -19,12 +19,12 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
 
     TpxlAnimation animation; 
 
-    result = tpxl_load_animation(path, &animation);
+    result = tpxl_animation_load(path, &animation);
     if (result != TPXL_OK) goto error;
 
     if (print_info) {
-        tpxl_print_animation_info(&animation);
-        tpxl_free_animation(&animation);
+        tpxl_animation_print_info(&animation);
+        tpxl_animation_free(&animation);
         return EXIT_SUCCESS;
     }
 
@@ -42,7 +42,7 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     );
     if (result != TPXL_OK) goto error;
 
-    result = tpxl_resize_animation(&animation, output_width, output_height);
+    result = tpxl_animation_resize(&animation, output_width, output_height);
     if (result != TPXL_OK) goto error;
 
     uint32_t animation_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
@@ -58,10 +58,10 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     config.render_height = output_height;
     config.format = animation.format;
 
-    result = tpxl_create_renderer(&renderer, &config);
+    result = tpxl_renderer_create(&renderer, &config);
     if (result != TPXL_OK) goto error;
     
-    result = tpxl_create_animation_player(&player, renderer, &animation);
+    result = tpxl_animation_player_create(&player, renderer, &animation);
     if (result != TPXL_OK) goto error;
 
     printf("\033[%uB", animation_rows);
@@ -69,7 +69,7 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     printf("\033[%uA", animation_rows);
     fflush(stdout);
 
-    result = tpxl_play_animation(player, terminal->cursor_row, terminal->cursor_column);
+    result = tpxl_animation_play(player, terminal->cursor_row, terminal->cursor_column);
 
     while(true) {
 
@@ -90,7 +90,7 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
         tpxl_sleep_ms(100);
     }
 
-    tpxl_close_animation_player(&player);
+    tpxl_animation_player_destroy(&player);
 
     result = tpxl_renderer_direct_render(
         renderer, 
@@ -105,14 +105,14 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
 
     printf("\033[%uB", animation_rows + 1);
 
-    tpxl_destroy_renderer(&renderer);
-    tpxl_free_animation(&animation);
+    tpxl_renderer_destroy(&renderer);
+    tpxl_animation_free(&animation);
     return EXIT_SUCCESS;
 
 error:
     printf("Error: %s\n", tpxl_result_to_string(result));
-    tpxl_close_animation_player(&player);
-    tpxl_destroy_renderer(&renderer);
-    tpxl_free_animation(&animation);
+    tpxl_animation_player_destroy(&player);
+    tpxl_renderer_destroy(&renderer);
+    tpxl_animation_free(&animation);
     return EXIT_FAILURE;
 }

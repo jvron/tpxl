@@ -34,7 +34,7 @@ typedef struct {
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the terminal cannot be configured.
  */
-TpxlResult tpxl_init_terminal(TpxlTerminal* terminal);
+TpxlResult tpxl_terminal_init(TpxlTerminal* terminal);
 
 /**
  * Gets the current terminal cursor position.
@@ -47,7 +47,7 @@ TpxlResult tpxl_init_terminal(TpxlTerminal* terminal);
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the cursor position cannot be queried.
  */
-TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column);
+TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column);
 
 /**
  * Queries the current terminal dimensions and cursor position.
@@ -62,7 +62,7 @@ TpxlResult tpxl_get_cursor_position(uint32_t* row, uint32_t* column);
  * @return TPXL_IO_ERROR if the terminal dimensions or cursor position
  *         cannot be queried.
  */
-TpxlResult tpxl_query_terminal(TpxlTerminal* terminal);
+TpxlResult tpxl_terminal_query(TpxlTerminal* terminal);
 
 /**
  * Moves the terminal cursor to the specified position.
@@ -75,7 +75,7 @@ TpxlResult tpxl_query_terminal(TpxlTerminal* terminal);
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the cursor movement cannot be written.
  */
-TpxlResult tpxl_move_cursor(uint32_t row, uint32_t column);
+TpxlResult tpxl_terminal_move_cursor(uint32_t row, uint32_t column);
 
 /**
  * Ensures that the terminal has enough rows available from the current
@@ -107,6 +107,6 @@ TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_r
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the original terminal settings cannot be restored.
  */
-TpxlResult tpxl_shutdown_terminal(TpxlTerminal* terminal);
+TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal);
 
 #endif

@@ -81,7 +81,7 @@ static void* tpxl_animation_play_worker(void* arg) {
     return NULL;
 }
 
-TpxlResult tpxl_create_animation_player(TpxlAnimationPlayer** player, TpxlRenderer* renderer, TpxlAnimation* animation) {
+TpxlResult tpxl_animation_player_create(TpxlAnimationPlayer** player, TpxlRenderer* renderer, TpxlAnimation* animation) {
     
     if (!player || !renderer || !animation) {
         return TPXL_INVALID_ARGUMENT;
@@ -96,7 +96,7 @@ TpxlResult tpxl_create_animation_player(TpxlAnimationPlayer** player, TpxlRender
     }
 
     new_player->renderer = renderer;
-    new_player->backend = tpxl_get_renderer_backend(renderer);
+    new_player->backend = tpxl_renderer_get_backend(renderer);
 
     new_player->animation = animation;
 
@@ -132,7 +132,7 @@ TpxlResult tpxl_create_animation_player(TpxlAnimationPlayer** player, TpxlRender
     return TPXL_OK;
 }
 
-TpxlResult tpxl_play_animation(TpxlAnimationPlayer* player, uint32_t row, uint32_t column) {
+TpxlResult tpxl_animation_play(TpxlAnimationPlayer* player, uint32_t row, uint32_t column) {
 
     if (!player) {
         return TPXL_INVALID_ARGUMENT;
@@ -157,7 +157,7 @@ TpxlResult tpxl_play_animation(TpxlAnimationPlayer* player, uint32_t row, uint32
     return TPXL_OK;
 }
 
-void tpxl_close_animation_player(TpxlAnimationPlayer** player) {
+void tpxl_animation_player_destroy(TpxlAnimationPlayer** player) {
 
     if (!player || !*player) {
         return;

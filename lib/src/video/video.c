@@ -8,7 +8,7 @@
 #include "internal/audio_internal.h"
 #include "internal/video_internal.h"
 
-TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
+TpxlResult tpxl_video_open(const char* path, TpxlVideo** video) {
 
     if (!path || !video) {
         return TPXL_INVALID_ARGUMENT;
@@ -132,7 +132,7 @@ TpxlResult tpxl_open_video(const char* path, TpxlVideo** video) {
     (*video)->av_frame = av_frame;
 
     TpxlAudio* audio = NULL;
-    TpxlResult result = tpxl_init_video_audio(&audio, format_context);
+    TpxlResult result = tpxl_video_audio_init(&audio, format_context);
 
     if (result != TPXL_OK) {
         sws_freeContext(sws_ctx);
@@ -184,7 +184,7 @@ TpxlResult tpxl_video_set_output_size(TpxlVideo* video, uint32_t width, uint32_t
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_video_source_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
+TpxlResult tpxl_video_get_source_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
 
     if (!video || !width || !height) {
         return TPXL_INVALID_ARGUMENT;
@@ -196,7 +196,7 @@ TpxlResult tpxl_get_video_source_dimensions(TpxlVideo* video, uint32_t* width, u
     return TPXL_OK;
 }
 
-TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
+TpxlResult tpxl_video_get_output_dimensions(TpxlVideo* video, uint32_t* width, uint32_t* height) {
 
     if (!video || !width || !height) {
         return TPXL_INVALID_ARGUMENT;
@@ -208,7 +208,7 @@ TpxlResult tpxl_get_video_output_dimensions(TpxlVideo* video, uint32_t* width, u
     return TPXL_OK;
 }
 
-TpxlFormat tpxl_get_video_format(TpxlVideo* video) {
+TpxlFormat tpxl_video_get_format(TpxlVideo* video) {
 
     if (!video) {
         return TPXL_FORMAT_UNKNOWN;
@@ -217,21 +217,21 @@ TpxlFormat tpxl_get_video_format(TpxlVideo* video) {
     return video->format;
 }
 
-uint32_t tpxl_get_video_frame_count(TpxlVideo* video) {
+uint32_t tpxl_video_get_frame_count(TpxlVideo* video) {
 
     assert(video);
     
     return video->frame_count;
 }
 
-double tpxl_get_video_frame_rate(TpxlVideo* video) {
+double tpxl_video_get_frame_rate(TpxlVideo* video) {
 
     assert(video);
 
     return av_q2d(video->format_context->streams[video->video_stream_index]->avg_frame_rate);
 }
 
-double tpxl_get_video_duration(TpxlVideo* video) {
+double tpxl_video_get_duration(TpxlVideo* video) {
 
     assert(video);
 
@@ -568,23 +568,23 @@ TpxlResult tpxl_video_view_attached_thumbnail(TpxlVideo* video, const TpxlImage*
     return TPXL_OK;
 }
 
-void tpxl_free_video_frame(TpxlVideoFrame* video_frame) {
+void tpxl_video_frame_free(TpxlVideoFrame* video_frame) {
 
     if (!video_frame) {
         return;
     }
 
-    tpxl_free_frame(&video_frame->frame);
+    tpxl_frame_free(&video_frame->frame);
     *video_frame = (TpxlVideoFrame){0};
 }
 
-void tpxl_close_video(TpxlVideo** video) {
+void tpxl_video_close(TpxlVideo** video) {
 
     if (!*video) {
         return;
     }
 
-    tpxl_close_video_audio(&(*video)->audio);
+    tpxl_video_audio_close(&(*video)->audio);
 
     av_frame_free(&(*video)->av_frame);
 
@@ -593,7 +593,7 @@ void tpxl_close_video(TpxlVideo** video) {
     sws_freeContext((*video)->sws_context);
 
     if ((*video)->has_attached_thumbnail) {
-        tpxl_free_frame(&(*video)->attached_thumbnail);
+        tpxl_frame_free(&(*video)->attached_thumbnail);
     }
 
     free(*video);

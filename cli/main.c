@@ -91,10 +91,10 @@ int main(int argc, char* argv[]) {
     
     TpxlTerminal terminal = {0};
 
-    TpxlResult result = tpxl_init_terminal(&terminal);
+    TpxlResult result = tpxl_terminal_init(&terminal);
     if (result != TPXL_OK) goto error;
 
-    result = tpxl_query_terminal(&terminal);
+    result = tpxl_terminal_query(&terminal);
     if (result != TPXL_OK) goto error;
 
     printf("\033[?25l");
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
 
     printf("\033[?25h");
 
-    result = tpxl_shutdown_terminal(&terminal);
+    result = tpxl_terminal_shutdown(&terminal);
     if (result != TPXL_OK) goto error;
 
     return exit_code;

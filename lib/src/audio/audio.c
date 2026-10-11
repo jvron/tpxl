@@ -6,7 +6,7 @@
 
 #define AUDIO_SAMPLE_RATE 48000
 
-TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
+TpxlResult tpxl_audio_open(const char* path, TpxlAudio** audio) {
 
     if (!path || !audio) {
         return TPXL_INVALID_ARGUMENT;
@@ -153,7 +153,7 @@ TpxlResult tpxl_open_audio(const char* path, TpxlAudio** audio) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context) {
+TpxlResult tpxl_video_audio_init(TpxlAudio** audio, AVFormatContext* format_context) {
 
     if (!audio || !format_context) {
         return TPXL_INVALID_ARGUMENT;
@@ -275,7 +275,7 @@ TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_cont
     return TPXL_OK;
 }
 
-double tpxl_get_audio_duration(TpxlAudio* audio) {
+double tpxl_audio_get_duration(TpxlAudio* audio) {
 
     if (!audio) {
         return 0.0;
@@ -564,7 +564,7 @@ static TpxlResult tpxl_receive_audio_frame(TpxlAudio* audio, TpxlAudioFrame* fra
     return TPXL_DECODE_FAILED;
 }
 
-TpxlResult tpxl_decode_audio_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame) {
+TpxlResult tpxl_audio_decode_frame(TpxlAudio* audio, TpxlAudioFrame* out_audio_frame) {
 
     if (!audio || !out_audio_frame) {
         return TPXL_INVALID_ARGUMENT;
@@ -710,7 +710,7 @@ TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudi
     return result;
 }
 
-void tpxl_free_audio_frame(TpxlAudioFrame* frame) {
+void tpxl_audio_frame_free(TpxlAudioFrame* frame) {
     
     if (!frame) {
         return;
@@ -737,7 +737,7 @@ static void tpxl_destroy_audio_resources(TpxlAudio* audio) {
     av_channel_layout_uninit(&audio->output_channel_layout);
 }
 
-void tpxl_close_audio(TpxlAudio** audio) {
+void tpxl_audio_close(TpxlAudio** audio) {
 
     if (!*audio) {
         return;
@@ -751,14 +751,14 @@ void tpxl_close_audio(TpxlAudio** audio) {
     *audio = NULL;
 }
 
-void tpxl_close_video_audio(TpxlAudio** audio) {
+void tpxl_video_audio_close(TpxlAudio** audio) {
 
     if (!*audio) {
         return;
     }
 
     if ((*audio)->has_attached_thumbnail) {
-        tpxl_free_frame(&(*audio)->attached_thumbnail);
+        tpxl_frame_free(&(*audio)->attached_thumbnail);
     }
 
     tpxl_destroy_audio_resources(*audio);

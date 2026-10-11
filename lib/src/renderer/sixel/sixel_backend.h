@@ -43,16 +43,16 @@ typedef struct {
     size_t clear_buffer_capacity;
 } TpxlSixelContext;
 
-TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context);
-TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
-TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type);
+TpxlResult tpxl_sixel_context_init(TpxlSixelContext* sixel_context);
+TpxlResult tpxl_sixel_set_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_sixel_set_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t row, uint32_t column);
 TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id, uint32_t row, uint32_t column);
 void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame_id);
 void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id);
-void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context);
+void tpxl_sixel_context_destroy(TpxlSixelContext* sixel_context);
 
 #endif
 

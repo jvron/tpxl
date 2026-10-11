@@ -29,13 +29,13 @@ typedef struct {
     size_t frame_capacity;
 }  TpxlAnimation;
 
-TpxlResult tpxl_load_animation(const char* path, TpxlAnimation* animation);
-TpxlResult tpxl_resize_animation(TpxlAnimation* animation, uint32_t output_width, uint32_t output_height);
-void tpxl_free_animation(TpxlAnimation* animation);
-TpxlResult tpxl_print_animation_info(TpxlAnimation* animation);
+TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation);
+TpxlResult tpxl_animation_resize(TpxlAnimation* animation, uint32_t output_width, uint32_t output_height);
+void tpxl_animation_free(TpxlAnimation* animation);
+TpxlResult tpxl_animation_print_info(const TpxlAnimation* animation);
 
-TpxlResult tpxl_create_animation_player(TpxlAnimationPlayer** player, TpxlRenderer* renderer, TpxlAnimation* animation);
-TpxlResult tpxl_play_animation(TpxlAnimationPlayer* player, uint32_t row, uint32_t column);
-void tpxl_close_animation_player(TpxlAnimationPlayer** player);
+TpxlResult tpxl_animation_player_create(TpxlAnimationPlayer** player, TpxlRenderer* renderer, TpxlAnimation* animation);
+TpxlResult tpxl_animation_play(TpxlAnimationPlayer* player, uint32_t row, uint32_t column);
+void tpxl_animation_player_destroy(TpxlAnimationPlayer** player);
 
 #endif

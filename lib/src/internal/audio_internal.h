@@ -56,8 +56,8 @@ struct TpxlAudioPlayerImp {
     TpxlThreadStatus decode_status;
 };
 
-TpxlResult tpxl_init_video_audio(TpxlAudio** audio, AVFormatContext* format_context);
+TpxlResult tpxl_video_audio_init(TpxlAudio** audio, AVFormatContext* format_context);
 TpxlResult tpxl_decode_audio_packet(TpxlAudio* audio, AVPacket* packet, TpxlAudioFrame* out_audio_frame);
-TpxlResult tpxl_init_video_audio_player(TpxlVideoPlayer* video_player, TpxlAudio* audio);
+TpxlResult tpxl_video_audio_player_init(TpxlVideoPlayer* video_player, TpxlAudio* audio);
 
 #endif

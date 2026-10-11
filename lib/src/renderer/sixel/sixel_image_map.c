@@ -7,7 +7,7 @@
 
 #include "sixel_image_map.h"
 
-TpxlResult tpxl_init_sixel_image_map(TpxlSixelImageMap* image_map) {
+TpxlResult tpxl_sixel_image_map_init(TpxlSixelImageMap* image_map) {
 
     assert(image_map);
 
@@ -95,7 +95,7 @@ TpxlResult tpxl_sixel_image_map_remove(TpxlSixelImageMap* image_map, uint32_t fr
     return TPXL_MAP_NOT_FOUND;
 }
 
-TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage** out_sixel_image) {
+TpxlResult tpxl_sixel_image_map_get(TpxlSixelImageMap* image_map, uint32_t frame_id, TpxlSixelImage** out_sixel_image) {
 
     assert(image_map && out_sixel_image);
 
@@ -122,7 +122,7 @@ TpxlResult tpxl_get_sixel_image(TpxlSixelImageMap* image_map, uint32_t frame_id,
     return TPXL_MAP_NOT_FOUND;
 }
 
-void tpxl_destroy_sixel_image_map(TpxlSixelImageMap* image_map) {
+void tpxl_sixel_image_map_destroy(TpxlSixelImageMap* image_map) {
 
     assert(image_map);
 

@@ -29,7 +29,7 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     TpxlAudio* audio = NULL;
     TpxlAudioPlayer* player = NULL;
 
-    result = tpxl_open_audio(path, &audio);
+    result = tpxl_audio_open(path, &audio);
 
     if (result != TPXL_OK) {
         goto error;
@@ -61,14 +61,14 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
         );
 
         if (result != TPXL_OK) {
-            tpxl_free_frame(&thumbnail);
+            tpxl_frame_free(&thumbnail);
             goto error;
         }
 
-        result = tpxl_resize_image(&thumbnail, output_width, output_height);
+        result = tpxl_image_resize(&thumbnail, output_width, output_height);
         
         if (result != TPXL_OK) {
-            tpxl_free_frame(&thumbnail);
+            tpxl_frame_free(&thumbnail);
             goto error;
         }
 
@@ -81,38 +81,38 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
         config.format = thumbnail.format;
         
         TpxlRenderer* renderer = NULL;
-        result = tpxl_create_renderer(&renderer, &config);
+        result = tpxl_renderer_create(&renderer, &config);
 
         if (result != TPXL_OK) {
-            tpxl_free_frame(&thumbnail);
+            tpxl_frame_free(&thumbnail);
             goto error;
         }
 
         result = tpxl_renderer_direct_render(renderer, &thumbnail, terminal->cursor_row, terminal->cursor_column);
 
         if (result != TPXL_OK) {
-            tpxl_free_frame(&thumbnail);
-            tpxl_destroy_renderer(&renderer);
+            tpxl_frame_free(&thumbnail);
+            tpxl_renderer_destroy(&renderer);
             goto error;
         }
 
-        tpxl_free_frame(&thumbnail);
-        tpxl_destroy_renderer(&renderer);
+        tpxl_frame_free(&thumbnail);
+        tpxl_renderer_destroy(&renderer);
     }
 
-    result = tpxl_create_audio_player(&player, audio);
+    result = tpxl_audio_player_create(&player, audio);
 
     if (result != TPXL_OK) {
         goto error;
     }
 
-    result = tpxl_play_audio(player);
+    result = tpxl_audio_play(player);
 
     if (result != TPXL_OK) {
         goto error;
     }
 
-    double duration = tpxl_get_audio_duration(audio);
+    double duration = tpxl_audio_get_duration(audio);
 
     printf("\n\n%s\n\n", get_filename(path));
 
@@ -134,20 +134,20 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
             }
             if (event.key == TPXL_KEY_P) {
                 if (playing) {
-                    tpxl_pause_audio(player);
+                    tpxl_audio_pause(player);
                 } else {
-                    tpxl_play_audio(player);
+                    tpxl_audio_play(player);
                 }
             } else if (event.key == TPXL_KEY_M) {
                 if (muted) {
-                    tpxl_unmute_audio(player);
+                    tpxl_audio_unmute(player);
                 } else {
-                    tpxl_mute_audio(player);
+                    tpxl_audio_mute(player);
                 }
             }
         }
 
-        double played = tpxl_get_audio_clock(player);
+        double played = tpxl_audio_player_get_time(player);
 
         int played_sec = (int)played;
         int duration_sec = (int)duration;
@@ -171,14 +171,14 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
 
     printf("\n");
 
-    tpxl_close_audio_player(&player);
-    tpxl_close_audio(&audio);
+    tpxl_audio_player_destroy(&player);
+    tpxl_audio_close(&audio);
 
     return EXIT_SUCCESS;
 
 error:
     printf("\nError: %s\n", tpxl_result_to_string(result));
-    tpxl_close_audio_player(&player);
-    tpxl_close_audio(&audio);
+    tpxl_audio_player_destroy(&player);
+    tpxl_audio_close(&audio);
     return EXIT_FAILURE;
 }

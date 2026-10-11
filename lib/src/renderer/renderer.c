@@ -16,7 +16,7 @@ struct TpxlRendererImp {
     };
 };
 
-TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* config) {
+TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* config) {
 
     if (!renderer || !config || !config->terminal) {
         return TPXL_INVALID_ARGUMENT;
@@ -36,7 +36,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
             (*renderer)->backend = TPXL_BACKEND_KITTY;
             (*renderer)->kitty_context = (TpxlKittyContext){0};
 
-            result = tpxl_init_kitty_context(&(*renderer)->kitty_context);
+            result = tpxl_kitty_context_init(&(*renderer)->kitty_context);
 
             if (result != TPXL_OK) {
                 free(*renderer);
@@ -44,16 +44,16 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
                 return result;
             }
 
-            result = tpxl_set_kitty_media_policy(&(*renderer)->kitty_context, config->media_type);
+            result = tpxl_kitty_set_media_policy(&(*renderer)->kitty_context, config->media_type);
 
             if (result != TPXL_OK) {
-                tpxl_destroy_kitty_context(&(*renderer)->kitty_context);
+                tpxl_kitty_context_destroy(&(*renderer)->kitty_context);
                 free(*renderer);
                 *renderer = NULL;
                 return result;
             }
 
-            result = tpxl_set_kitty_frame(
+            result = tpxl_kitty_set_frame(
                 &(*renderer)->kitty_context, 
                 config->terminal, 
                 config->render_width, 
@@ -62,7 +62,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
             );
 
             if (result != TPXL_OK) {
-                tpxl_destroy_kitty_context(&(*renderer)->kitty_context);
+                tpxl_kitty_context_destroy(&(*renderer)->kitty_context);
                 free(*renderer);
                 *renderer = NULL;
                 return result;
@@ -74,7 +74,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
             (*renderer)->backend = TPXL_BACKEND_SIXEL;
             (*renderer)->sixel_context = (TpxlSixelContext){0};
 
-            result = tpxl_init_sixel_context(&(*renderer)->sixel_context);
+            result = tpxl_sixel_context_init(&(*renderer)->sixel_context);
 
             if (result != TPXL_OK) {
                 free(*renderer);
@@ -82,16 +82,16 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
                 return result;
             }
 
-            result = tpxl_set_sixel_media_policy(&(*renderer)->sixel_context, config->media_type);
+            result = tpxl_sixel_set_media_policy(&(*renderer)->sixel_context, config->media_type);
 
             if (result != TPXL_OK) {
-                tpxl_destroy_sixel_context(&(*renderer)->sixel_context);
+                tpxl_sixel_context_destroy(&(*renderer)->sixel_context);
                 free(*renderer);
                 *renderer = NULL;
                 return result;
             }
 
-            result = tpxl_set_sixel_frame(&(*renderer)->sixel_context, 
+            result = tpxl_sixel_set_frame(&(*renderer)->sixel_context, 
                 config->terminal, 
                 config->render_width, 
                 config->render_height, 
@@ -99,7 +99,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
             );
 
             if (result != TPXL_OK) {
-                tpxl_destroy_sixel_context(&(*renderer)->sixel_context);
+                tpxl_sixel_context_destroy(&(*renderer)->sixel_context);
                 free(*renderer);
                 *renderer = NULL;
                 return result;
@@ -116,7 +116,7 @@ TpxlResult tpxl_create_renderer(TpxlRenderer** renderer, TpxlRendererConfig* con
     return TPXL_OK;
 }
 
-TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format) {
+TpxlResult tpxl_renderer_update_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format) {
 
     if (!renderer) {
         return TPXL_INVALID_ARGUMENT;
@@ -124,16 +124,16 @@ TpxlResult tpxl_update_renderer_frame(TpxlRenderer* renderer, uint32_t width, ui
 
     switch (renderer->backend) {
         case TPXL_BACKEND_KITTY:
-            return tpxl_set_kitty_frame(&renderer->kitty_context, renderer->terminal, width, height, format);
+            return tpxl_kitty_set_frame(&renderer->kitty_context, renderer->terminal, width, height, format);
         case TPXL_BACKEND_SIXEL:
-            return tpxl_set_sixel_frame(&renderer->sixel_context, renderer->terminal, width, height, format);
+            return tpxl_sixel_set_frame(&renderer->sixel_context, renderer->terminal, width, height, format);
 
         default:
             return TPXL_INVALID_BACKEND;
     } 
 }
 
-TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type) {
+TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type) {
 
     if (!renderer) {
         return TPXL_INVALID_ARGUMENT;
@@ -141,9 +141,9 @@ TpxlResult tpxl_update_renderer_media_policy(TpxlRenderer* renderer, TpxlMediaTy
 
     switch (renderer->backend) {
         case TPXL_BACKEND_KITTY:
-            return tpxl_set_kitty_media_policy(&renderer->kitty_context, media_type);
+            return tpxl_kitty_set_media_policy(&renderer->kitty_context, media_type);
         case TPXL_BACKEND_SIXEL:
-            return tpxl_set_sixel_media_policy(&renderer->sixel_context, media_type);
+            return tpxl_sixel_set_media_policy(&renderer->sixel_context, media_type);
 
         default:
             return TPXL_INVALID_BACKEND;
@@ -201,7 +201,7 @@ TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id, uint
     } 
 }
 
-TpxlBackend tpxl_get_renderer_backend(TpxlRenderer* renderer) {
+TpxlBackend tpxl_renderer_get_backend(TpxlRenderer* renderer) {
 
     assert(renderer);
 
@@ -234,16 +234,16 @@ void tpxl_renderer_delete_data(TpxlRenderer* renderer, uint32_t frame_id) {
     }
 }
 
-void tpxl_destroy_renderer(TpxlRenderer** renderer) {
+void tpxl_renderer_destroy(TpxlRenderer** renderer) {
 
     if (!renderer || !*renderer) {
         return;
     }
 
     if ((*renderer)->backend == TPXL_BACKEND_KITTY) {
-        tpxl_destroy_kitty_context(&(*renderer)->kitty_context);
+        tpxl_kitty_context_destroy(&(*renderer)->kitty_context);
     } else if ((*renderer)->backend == TPXL_BACKEND_SIXEL) {
-        tpxl_destroy_sixel_context(&(*renderer)->sixel_context);
+        tpxl_sixel_context_destroy(&(*renderer)->sixel_context);
     }
     
     free(*renderer);

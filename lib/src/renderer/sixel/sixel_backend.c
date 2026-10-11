@@ -61,7 +61,7 @@ static int tpxl_write_image_map(char* data, int chunk_size, void* priv) {
     return 0;
 }
 
-TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context) {
+TpxlResult tpxl_sixel_context_init(TpxlSixelContext* sixel_context) {
 
     assert(sixel_context);
 
@@ -79,7 +79,7 @@ TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context) {
     sixel_context->clear_buffer = NULL;
     sixel_context->clear_buffer_capacity = 0;
 
-    if (tpxl_init_sixel_image_map(&sixel_context->image_map) != TPXL_OK) {
+    if (tpxl_sixel_image_map_init(&sixel_context->image_map) != TPXL_OK) {
         free(encoded_buffer);
         return TPXL_BACKEND_CREATION_FAILED;
     }
@@ -100,7 +100,7 @@ TpxlResult tpxl_init_sixel_context(TpxlSixelContext* sixel_context) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
+TpxlResult tpxl_sixel_set_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
 
     assert(sixel_context && terminal);
 
@@ -131,7 +131,7 @@ TpxlResult tpxl_set_sixel_frame(TpxlSixelContext* sixel_context, const TpxlTermi
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_sixel_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type) {
+TpxlResult tpxl_sixel_set_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type) {
 
     if (!sixel_context) {
         return TPXL_INVALID_ARGUMENT;
@@ -330,7 +330,7 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
     assert(sixel_context);
 
     TpxlSixelImage* sixel_image = NULL;
-    TpxlResult result = tpxl_get_sixel_image(&sixel_context->image_map, frame_id,  &sixel_image);
+    TpxlResult result = tpxl_sixel_image_map_get(&sixel_context->image_map, frame_id,  &sixel_image);
 
     if (result != TPXL_OK) {
         return result;
@@ -359,7 +359,7 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
     assert(sixel_context);
 
     TpxlSixelImage* sixel_image = NULL;
-    if (tpxl_get_sixel_image(&sixel_context->image_map, frame_id, &sixel_image) != TPXL_OK) {
+    if (tpxl_sixel_image_map_get(&sixel_context->image_map, frame_id, &sixel_image) != TPXL_OK) {
         return;
     }
 
@@ -408,13 +408,13 @@ void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) 
     tpxl_sixel_image_map_remove(&sixel_context->image_map, frame_id);
 }
 
-void tpxl_destroy_sixel_context(TpxlSixelContext* sixel_context) {
+void tpxl_sixel_context_destroy(TpxlSixelContext* sixel_context) {
 
     if (!sixel_context) {
         return;
     }
 
-    tpxl_destroy_sixel_image_map(&sixel_context->image_map);
+    tpxl_sixel_image_map_destroy(&sixel_context->image_map);
 
     free(sixel_context->encoded_buffer);
     sixel_context->encoded_buffer = NULL;

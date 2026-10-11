@@ -3,10 +3,10 @@
 
 #include "type.h"
 
-TpxlResult tpxl_load_image(const char* file, TpxlImage* image);
-TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t output_height);
-void tpxl_free_image(TpxlImage* image);
-void tpxl_free_frame(TpxlImage* frame);
-TpxlResult tpxl_print_image_info(TpxlImage* image);
+TpxlResult tpxl_image_load(const char* file, TpxlImage* image);
+TpxlResult tpxl_image_resize(TpxlImage* image, uint32_t output_width, uint32_t output_height);
+void tpxl_image_free(TpxlImage* image);
+void tpxl_frame_free(TpxlImage* frame);
+TpxlResult tpxl_image_print_info(const TpxlImage* image);
 
 #endif

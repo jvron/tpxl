@@ -19,14 +19,14 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     TpxlRenderer* renderer = NULL;
     TpxlVideoPlayer* player = NULL;
 
-    result = tpxl_open_video(path, &video);
+    result = tpxl_video_open(path, &video);
 
     if (result != TPXL_OK) {
         goto error;
     }
 
     uint32_t width, height;
-    result = tpxl_get_video_source_dimensions(video, &width, &height);
+    result = tpxl_video_get_source_dimensions(video, &width, &height);
 
     if (result != TPXL_OK) {
         goto error;
@@ -67,15 +67,15 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
     config.media_type = TPXL_MEDIA_VIDEO;
     config.render_width = output_width;
     config.render_height = output_height;
-    config.format = tpxl_get_video_format(video);
+    config.format = tpxl_video_get_format(video);
     
-    result = tpxl_create_renderer(&renderer, &config);
+    result = tpxl_renderer_create(&renderer, &config);
 
     if (result != TPXL_OK) {
         goto error;
     }
 
-    result = tpxl_create_video_player(&player, renderer, video);
+    result = tpxl_video_player_create(&player, renderer, video);
     
     if (result != TPXL_OK) {
         goto error;
@@ -83,15 +83,15 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
 
     tpxl_sleep_ms(500);
 
-    result = tpxl_start_video(player, terminal->cursor_row, terminal->cursor_column);
+    result = tpxl_video_player_start(player, terminal->cursor_row, terminal->cursor_column);
 
     if (result != TPXL_OK) {
         fprintf(stdout, "\033[%uB", video_rows);
         goto error;
     }
 
-    double fps = tpxl_get_video_frame_rate(video);
-    double duration = tpxl_get_video_duration(video);
+    double fps = tpxl_video_get_frame_rate(video);
+    double duration = tpxl_video_get_duration(video);
 
     bool display_status_bar = true;
 
@@ -121,21 +121,21 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
                 }
             } else if (event.key == TPXL_KEY_P) {
                 if (playing) {
-                    tpxl_pause_video(player);
+                    tpxl_video_pause(player);
                 } else {
-                    tpxl_play_video(player);
+                    tpxl_video_play(player);
                 }
             } else if (event.key == TPXL_KEY_M) {
                 if (muted) {
-                    tpxl_unmute_video(player);
+                    tpxl_video_unmute(player);
                 } else {
-                    tpxl_mute_video(player);
+                    tpxl_video_mute(player);
                 }
             }
         }
 
         if (display_status_bar) {
-            double current = tpxl_get_video_time(player);
+            double current = tpxl_video_player_get_time(player);
 
             fprintf(stdout, "\033[%uB", video_rows + 1);
             fprintf(stdout, "\r\033[K");
@@ -160,7 +160,7 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
             fprintf(
                 stdout,
                 "frame=%u fps=%.1f  [p] %s [m] %s [h] hide [q] quit", 
-                tpxl_get_frames_played(player), 
+                tpxl_video_player_get_frames_played(player), 
                 fps, 
                 playing ? "pause" : "play",
                 muted ? "unmute" : "mute"
@@ -192,15 +192,15 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
 
 cleanup:
     fprintf(stdout, "\033[%uB", video_rows + 2);
-    tpxl_close_video_player(&player);
-    tpxl_destroy_renderer(&renderer);
-    tpxl_close_video(&video);
+    tpxl_video_player_destroy(&player);
+    tpxl_renderer_destroy(&renderer);
+    tpxl_video_close(&video);
     return EXIT_SUCCESS;
 
 error:
     fprintf(stderr, "Error: %s\n", tpxl_result_to_string(result));
-    tpxl_close_video_player(&player);
-    tpxl_destroy_renderer(&renderer);
-    tpxl_close_video(&video);
+    tpxl_video_player_destroy(&player);
+    tpxl_renderer_destroy(&renderer);
+    tpxl_video_close(&video);
     return EXIT_FAILURE;
 }

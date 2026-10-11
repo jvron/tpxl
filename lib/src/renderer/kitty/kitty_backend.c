@@ -11,7 +11,7 @@
 
 #define TPXL_KITTY_CHUNK_SIZE 4096
 
-TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context) {
+TpxlResult tpxl_kitty_context_init(TpxlKittyContext* kitty_context) {
 
     assert(kitty_context);
 
@@ -29,7 +29,7 @@ TpxlResult tpxl_init_kitty_context(TpxlKittyContext* kitty_context) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
+TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
 
     assert(kitty_context && terminal);
 
@@ -87,7 +87,7 @@ TpxlResult tpxl_set_kitty_frame(TpxlKittyContext* kitty_context, const TpxlTermi
     return TPXL_OK;
 }
 
-TpxlResult tpxl_set_kitty_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type) {
+TpxlResult tpxl_kitty_set_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type) {
 
     assert(kitty_context);
 
@@ -318,7 +318,7 @@ void tpxl_kitty_delete_data(TpxlKittyContext* kitty_context, uint32_t frame_id) 
     pthread_mutex_unlock(&kitty_context->output_mutex);
 }
 
-void tpxl_destroy_kitty_context(TpxlKittyContext* kitty_context) {
+void tpxl_kitty_context_destroy(TpxlKittyContext* kitty_context) {
 
     if (!kitty_context) {
         return;

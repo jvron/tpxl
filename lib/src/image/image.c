@@ -7,7 +7,7 @@
 
 #include "tpxl/image.h"
 
-TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {
+TpxlResult tpxl_image_load(const char* file, TpxlImage* image) {
 
     if (!file || !image) {
         return TPXL_INVALID_ARGUMENT;
@@ -42,14 +42,14 @@ TpxlResult tpxl_load_image(const char* file, TpxlImage* image) {
             break;
 
         default:
-            tpxl_free_image(image);
+            tpxl_image_free(image);
             return TPXL_UNSUPPORTED_FORMAT;
     }
 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t output_height) {
+TpxlResult tpxl_image_resize(TpxlImage* image, uint32_t output_width, uint32_t output_height) {
 
     if (!image) {
         return TPXL_INVALID_ARGUMENT;
@@ -114,7 +114,7 @@ TpxlResult tpxl_resize_image(TpxlImage* image, uint32_t output_width, uint32_t o
     return TPXL_OK;
 }
 
-void tpxl_free_image(TpxlImage* image) {
+void tpxl_image_free(TpxlImage* image) {
 
     if (!image) {
         return;
@@ -125,7 +125,7 @@ void tpxl_free_image(TpxlImage* image) {
     *image = (TpxlImage){0};
 }
 
-void tpxl_free_frame(TpxlImage* frame) {
+void tpxl_frame_free(TpxlImage* frame) {
 
     if (!frame) {
         return;
@@ -136,7 +136,7 @@ void tpxl_free_frame(TpxlImage* frame) {
     *frame = (TpxlImage){0};
 }
 
-TpxlResult tpxl_print_image_info(TpxlImage* image) {
+TpxlResult tpxl_image_print_info(const TpxlImage* image) {
    
     if (!image) {
         return TPXL_INVALID_ARGUMENT;
