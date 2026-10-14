@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
 
 #include <zlib.h>
@@ -7,6 +6,7 @@
 #include "tpxl/terminal.h"
 
 #include "util/base64.h"
+#include "util/thread.h"
 #include "kitty_backend.h"
 
 #define TPXL_KITTY_CHUNK_SIZE 4096
@@ -20,7 +20,7 @@ TpxlResult tpxl_kitty_context_init(TpxlKittyContext* kitty_context) {
         return TPXL_OK;
     }
 
-    if (pthread_mutex_init(&kitty_context->output_mutex, NULL) != 0) {
+    if (tpxl_mutex_init(&kitty_context->output_mutex) != 0) {
         return TPXL_BACKEND_CREATION_FAILED;
     }
 
@@ -119,7 +119,7 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
         return TPXL_ENCODING_FAILED;
     }
 
-    pthread_mutex_lock(&kitty_context->output_mutex);
+    tpxl_mutex_lock(&kitty_context->output_mutex);
 
     // move cursor
     fprintf(stdout,"\033[%u;%uH", row, column);
@@ -167,7 +167,7 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
     }
     fflush(stdout);
 
-    pthread_mutex_unlock(&kitty_context->output_mutex);
+    tpxl_mutex_unlock(&kitty_context->output_mutex);
 
     return TPXL_OK;
 }
@@ -199,7 +199,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
         return TPXL_ENCODING_FAILED;
     }
 
-    pthread_mutex_lock(&kitty_context->output_mutex);
+    tpxl_mutex_lock(&kitty_context->output_mutex);
 
     for (size_t i = 0; i < output_length; i += TPXL_KITTY_CHUNK_SIZE) {
 
@@ -248,7 +248,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     }
     fflush(stdout);
 
-    pthread_mutex_unlock(&kitty_context->output_mutex);
+    tpxl_mutex_unlock(&kitty_context->output_mutex);
 
     return TPXL_OK;
 }
@@ -257,7 +257,7 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
 
     assert(kitty_context);
     
-    pthread_mutex_lock(&kitty_context->output_mutex);
+    tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(stdout,"\033[%u;%uH", row, column);
 
@@ -277,7 +277,7 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
 
     fflush(stdout);
 
-    pthread_mutex_unlock(&kitty_context->output_mutex);
+    tpxl_mutex_unlock(&kitty_context->output_mutex);
 
     return TPXL_OK;
 }
@@ -286,7 +286,7 @@ void tpxl_kitty_delete_placement(TpxlKittyContext* kitty_context, uint32_t frame
 
     assert(kitty_context);
 
-    pthread_mutex_lock(&kitty_context->output_mutex);
+    tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(
         stdout,
@@ -297,14 +297,14 @@ void tpxl_kitty_delete_placement(TpxlKittyContext* kitty_context, uint32_t frame
     );
     fflush(stdout);
 
-    pthread_mutex_unlock(&kitty_context->output_mutex);
+    tpxl_mutex_unlock(&kitty_context->output_mutex);
 }
 
 void tpxl_kitty_delete_data(TpxlKittyContext* kitty_context, uint32_t frame_id) {
 
     assert(kitty_context);
 
-    pthread_mutex_lock(&kitty_context->output_mutex);
+    tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(
         stdout,
@@ -315,7 +315,7 @@ void tpxl_kitty_delete_data(TpxlKittyContext* kitty_context, uint32_t frame_id) 
     );
     fflush(stdout);
 
-    pthread_mutex_unlock(&kitty_context->output_mutex);
+    tpxl_mutex_unlock(&kitty_context->output_mutex);
 }
 
 void tpxl_kitty_context_destroy(TpxlKittyContext* kitty_context) {
@@ -325,7 +325,7 @@ void tpxl_kitty_context_destroy(TpxlKittyContext* kitty_context) {
     }
 
     if (kitty_context->output_mutex_initialized) {
-        pthread_mutex_destroy(&kitty_context->output_mutex);
+        tpxl_mutex_destroy(&kitty_context->output_mutex);
         kitty_context->output_mutex_initialized = false;
     }
 

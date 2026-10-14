@@ -7,10 +7,10 @@
 
 #include "tpxl/audio.h"
 #include "tpxl/video.h"
-#include "util/queue.h"
 #include "tpxl/renderer.h"
 
-#include "thread.h"
+#include "util/queue.h"
+#include "util/thread.h"
 
 struct TpxlVideoImp {
     uint32_t width;
@@ -73,10 +73,10 @@ struct TpxlVideoPlayerImp {
     TpxlThreadStatus upload_status;
     TpxlThreadStatus play_status;
 
-    pthread_t demux_thread;
-    pthread_t decode_thread;
-    pthread_t upload_thread;
-    pthread_t play_thread;
+    TpxlThread demux_thread;
+    TpxlThread decode_thread;
+    TpxlThread upload_thread;
+    TpxlThread play_thread;
 
     bool demux_thread_created;
     bool decode_thread_created;

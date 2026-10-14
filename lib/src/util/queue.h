@@ -1,13 +1,14 @@
 #ifndef TPXL_QUEUE_H
 #define TPXL_QUEUE_H
 
-#include <pthread.h>
 #include <stdatomic.h>
 
 #include <libavcodec/packet.h>
 
 #include "tpxl/audio.h"
 #include "tpxl/video.h"
+
+#include "util/thread.h"
 
 #define MAX_VIDEO_FRAME_COUNT 16
 #define MAX_AUDIO_FRAME_COUNT 32
@@ -21,10 +22,9 @@ typedef struct {
     uint32_t read_idx;
     bool closed;
 
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
-
+    TpxlMutex mutex;
+    TpxlCond not_empty;
+    TpxlCond not_full;
 } TpxlAudioFrameQueue;
 
 typedef struct {
@@ -35,10 +35,9 @@ typedef struct {
     uint32_t read_idx;
     bool closed;
 
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
-
+    TpxlMutex mutex;
+    TpxlCond not_empty;
+    TpxlCond not_full;
 } TpxlVideoFrameQueue;
 
 
@@ -51,10 +50,9 @@ typedef struct {
     size_t read_idx;
     size_t write_idx;
 
-    pthread_mutex_t mutex;
-    pthread_cond_t not_empty;
-    pthread_cond_t not_full;
-    
+    TpxlMutex mutex;
+    TpxlCond not_empty;
+    TpxlCond not_full;
 } TpxlPacketQueue;
 
 TpxlResult tpxl_init_audio_frame_queue(TpxlAudioFrameQueue* queue);

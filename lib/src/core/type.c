@@ -27,7 +27,7 @@ static const char* result_to_string[] = {
     [TPXL_MUTE_FAILED] = "muting failed",
     [TPXL_UNMUTE_FAILED] = "unmuting failed",
 
-    [TPXL_THREAD_CREATION_ERROR] = "thread creation error",
+    [TPXL_THREAD_ERROR] = "thread error",
 
     [TPXL_SHUTDOWN] = "player thread shutdown",
 

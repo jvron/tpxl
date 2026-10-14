@@ -1,4 +1,3 @@
-#include <pthread.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 
@@ -7,7 +6,7 @@
 #include "tpxl/type.h"
 #include "tpxl/util.h"
 
-#include "internal/thread.h"
+#include "util/thread.h"
 
 struct TpxlAnimationPlayerImp {
     TpxlAnimation* animation;
@@ -33,7 +32,7 @@ static void* tpxl_animation_play_worker(void* arg) {
 
     TpxlAnimationPlayer* player = arg;
     
-    player->play_status = TPXL_THREAD_RUNNING;
+    player->play_status = TPXL_THREAD_STATUS_RUNNING;
 
     TpxlAnimation* animation = player->animation;
 
@@ -75,7 +74,7 @@ static void* tpxl_animation_play_worker(void* arg) {
     }
 
     if (player->play_status != TPXL_THREAD_ERROR) {
-        player->play_status = TPXL_THREAD_FINISHED;
+        player->play_status = TPXL_THREAD_STATUS_FINISHED;
     }
 
     return NULL;
@@ -147,9 +146,9 @@ TpxlResult tpxl_animation_play(TpxlAnimationPlayer* player, uint32_t row, uint32
 
     atomic_store(&player->playing, true);
 
-    if (pthread_create(&player->play_thread, NULL, tpxl_animation_play_worker, player) != 0) {
+    if (tpxl_thread_create(&player->play_thread, tpxl_animation_play_worker, player) != TPXL_OK) {
         atomic_store(&player->playing, false);
-        return TPXL_THREAD_CREATION_ERROR;
+        return TPXL_THREAD_ERROR;
     }
 
     player->play_thread_created = true;
@@ -166,7 +165,7 @@ void tpxl_animation_player_destroy(TpxlAnimationPlayer** player) {
     atomic_store(&(*player)->active, false);
 
     if ((*player)->play_thread_created) {
-        pthread_join((*player)->play_thread, NULL);
+        tpxl_thread_join(&(*player)->play_thread, NULL);
     }
 
     for (size_t i = 0; i < (*player)->animation->frame_count; i++) {

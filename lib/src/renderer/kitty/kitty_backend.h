@@ -1,9 +1,11 @@
 #ifndef TPXL_KITTY_BACKEND_H
 #define TPXL_KITTY_BACKEND_H
 
-#include <pthread.h>
+#include <stdio.h>
 
 #include "tpxl/renderer.h"
+
+#include "util/thread.h"
 
 typedef struct {
     size_t frame_size;

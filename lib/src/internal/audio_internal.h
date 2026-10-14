@@ -1,14 +1,13 @@
 #ifndef TPXL_AUDIO_INTERNAL_H
 #define TPXL_AUDIO_INTERNAL_H
 
+#include <miniaudio/miniaudio.h>
 #include <libswresample/swresample.h>
 
-#include <miniaudio/miniaudio.h>
-
 #include "tpxl/audio.h"
-#include "util/queue.h"
 
-#include "thread.h"
+#include "util/queue.h"
+#include "util/thread.h"
 #include "video_internal.h"
 
 struct TpxlAudioImp {
@@ -52,7 +51,7 @@ struct TpxlAudioPlayerImp {
     TpxlAudioFrameQueue frame_queue;
 
     atomic_bool shutdown;
-    pthread_t decode_thread;
+    TpxlThread decode_thread;
     TpxlThreadStatus decode_status;
 };
 
