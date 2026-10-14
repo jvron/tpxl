@@ -4,16 +4,18 @@ TPXL is a C11 terminal media project for displaying images and playing animation
 
 TPXL uses terminal graphics protocols such as Kitty Graphics and SIXEL, with the goal of making media practical to work with directly in the terminal.
 
+**Platform support:** TPXL currently supports Linux only. Windows builds are not yet supported, and macOS support has not been tested. Cross-platform support for Windows and macOS is planned for future releases.
+
 ## Terminal Support
 
-| Terminal       | Minimum Version | Kitty Backend | SIXEL Backend |
+| Terminal       | Minimum Version | Kitty Graphics| SIXEL         |
 | -------------- | --------------: | :-----------: | :-----------: |
 | Kitty          |          0.39.0 |       ✓       |       x       |
 | WezTerm        |      2024-02-03 |       ✓       |       ✓       |
 | Ghostty        |           1.3.1 |       ✓       |       x       |
 | Rio            |          0.5.27 |       ✓       |       ✓       |
-| Contour        |      0.5.0.7168 |       ✓       |       ✓       |
-| foot           |Testing required |       x       |Testing required|
+| Contour        |      0.6.2.8008 |       ✓       |       ✓       |
+| foot           |Testing required |       x       |       ✓       |
 | Konsole        |         23.08.5 |       ✓       |       ✓       |
 | mlterm         |           3.9.3 |       x       |       ✓       |
 | Alacritty      |               — |       x       |       x       |
@@ -27,19 +29,29 @@ Terminal support depends on the graphics protocols provided by the terminal. TPX
 
 TPXL uses CMake for its build system.
 
-Debug build:
-
 ```bash
+# Debug
 cmake -S . -B build/debug -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/debug
-```
 
-Release build:
-
-```bash
+# Release
 cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release
 cmake --build build/release
 ```
+
+**CMake options:**
+- `TPXL_ASAN=ON` — Enable AddressSanitizer.
+- `TPXL_TSAN=ON` — Enable ThreadSanitizer.
+- `TPXL_BUILD_SHARED=ON` —  Build `libtpxl` as a shared library; disables the CLI build. (`OFF` by default)
+
+AddressSanitizer and ThreadSanitizer cannot be enabled simultaneously.
+
+## Planned Features
+
+- Windows support.
+- macOS support.
+- Expanded media playback controls.
+- Performance improvements.
 
 ## Contributing
 
@@ -47,4 +59,4 @@ Contributions are welcome. Feel free to add features, share ideas, report bugs, 
 
 ## License
 
-TPXL is licensed under the MIT License. See LICENSE for details.
+TPXL is licensed under the MIT License. See [LICENSE](LICENSE) for details.
