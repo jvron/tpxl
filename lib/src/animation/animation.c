@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,21 +16,28 @@ typedef struct {
 
 static void tpxl_blit(TpxlImage* dst, const TpxlImage* src, uint32_t left, uint32_t top) {
 
+    assert(dst->format == src->format);
+
+    int channels = tpxl_format_to_channels(dst->format);
+
     for (uint32_t y = 0; y < src->height; y++) {
         for (uint32_t x = 0; x < src->width; x++) {
 
-            size_t src_pixel = (y * src->width + x) * 4;
+            size_t src_pixel = (y * src->width + x) * channels;
 
-            size_t dst_pixel = ((top + y) * dst->width + (left + x)) * 4;
+            size_t dst_pixel = ((top + y) * dst->width + (left + x)) * channels;
 
-            if (src->pixels[src_pixel + 3] == 0) {
+            if (channels == 4 && src->pixels[src_pixel + 3] == 0) {
                 continue; // skip transparent pixels
             }
 
             dst->pixels[dst_pixel + 0] = src->pixels[src_pixel + 0];
             dst->pixels[dst_pixel + 1] = src->pixels[src_pixel + 1];
             dst->pixels[dst_pixel + 2] = src->pixels[src_pixel + 2];
-            dst->pixels[dst_pixel + 3] = src->pixels[src_pixel + 3];
+
+            if (channels == 4) {
+                dst->pixels[dst_pixel + 3] = src->pixels[src_pixel + 3];
+            }
         }
     }
 }
@@ -73,6 +80,8 @@ static void tpxl_parse_graphics_control(const SavedImage* frame, GifGraphicsCont
 
 static void tpxl_apply_disposal(TpxlImage* canvas, const SavedImage* frame, GifGraphicsControl gce, const uint8_t* previous_canvas) {
 
+    int channels = tpxl_format_to_channels(canvas->format);
+
     switch (gce.disposal) {
         case 0:
         case 1:
@@ -82,18 +91,22 @@ static void tpxl_apply_disposal(TpxlImage* canvas, const SavedImage* frame, GifG
             for (int y = 0; y < frame->ImageDesc.Height; y++) {
                 for (int x = 0; x < frame->ImageDesc.Width; x++) {
                     
-                    size_t pixel = ((frame->ImageDesc.Top + y) * canvas->width + (frame->ImageDesc.Left + x)) * 4;
+                    size_t pixel = ((frame->ImageDesc.Top + y) * canvas->width + (frame->ImageDesc.Left + x)) * channels;
                     
                     canvas->pixels[pixel + 0] = 0;
                     canvas->pixels[pixel + 1] = 0;
                     canvas->pixels[pixel + 2] = 0;
-                    canvas->pixels[pixel + 3] = 0;
+
+                    if (channels == 4) {
+                        canvas->pixels[pixel + 3] = 0;
+                    }
                 }
             }
             break;
         case 3:
+            // Restore the canvas to its state before the current frame.
             if (previous_canvas) {
-                memcpy(canvas->pixels, previous_canvas, canvas->width * canvas->height * 4);
+                memcpy(canvas->pixels, previous_canvas, canvas->width * canvas->height * channels);
             }
             break;
     }
@@ -114,35 +127,67 @@ TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation) {
     // decode gif
     if (DGifSlurp(gif) != GIF_OK) {
         DGifCloseFile(gif, NULL);
-        return TPXL_LOAD_FAILED;
+        return TPXL_DECODE_FAILED;
     }
 
     animation->width = gif->SWidth;
     animation->height = gif->SHeight;
     animation->output_width = animation->width;
     animation->output_height = animation->height;
-    animation->format = TPXL_FORMAT_RGBA;
 
     animation->frame_count = gif->ImageCount;
     animation->frame_capacity = gif->ImageCount;
+
+    bool has_transparency = false;
+
+    for (size_t i = 0; i < gif->ImageCount; i++) {
+
+        SavedImage* frame = &gif->SavedImages[i];
+
+        GifGraphicsControl gce;
+        tpxl_parse_graphics_control(frame, &gce);
+
+        if (gce.transparent_index < 0) {
+            continue;
+        }
+
+        size_t pixel_count = (size_t)frame->ImageDesc.Width * frame->ImageDesc.Height;
+
+        for (size_t j = 0; j < pixel_count; j++) {
+            if (frame->RasterBits[j] == gce.transparent_index) {
+                has_transparency = true;
+                break;
+            }
+        }
+
+        if (has_transparency) {
+            break;
+        }
+    }
+
+    TpxlFormat format = has_transparency ? TPXL_FORMAT_RGBA : TPXL_FORMAT_RGB;
+    int channels = tpxl_format_to_channels(format);
+
+    animation->format = format;
     
     animation->frames = calloc(animation->frame_capacity, sizeof(TpxlAnimationFrame));
 
     if (!animation->frames) {
         DGifCloseFile(gif, NULL);
-        return TPXL_LOAD_FAILED;
+        return TPXL_OUT_OF_MEMORY;
     }
 
     TpxlImage canvas;
     canvas.width = gif->SWidth;
     canvas.height = gif->SHeight;
-    canvas.format = TPXL_FORMAT_RGBA;
+    canvas.format = format;
 
-    size_t canvas_size = canvas.width * canvas.height * 4;
+    size_t canvas_size = canvas.width * canvas.height * channels;
 
     canvas.pixels = malloc(canvas_size);
 
     if (!canvas.pixels) {
+        free(animation->frames);
         DGifCloseFile(gif, NULL);
         return TPXL_OUT_OF_MEMORY;
     }
@@ -151,6 +196,7 @@ TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation) {
     uint8_t* previous_canvas = malloc(canvas_size);
 
     if (!previous_canvas) {
+        free(animation->frames);
         free(canvas.pixels);
         DGifCloseFile(gif, NULL);
         return TPXL_OUT_OF_MEMORY;
@@ -173,11 +219,11 @@ TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation) {
         TpxlImage image = {
             .width = frame->ImageDesc.Width,
             .height = frame->ImageDesc.Height,
-            .format = TPXL_FORMAT_RGBA,
+            .format = format,
             .pixels = NULL
         };
 
-        size_t image_size = image.width * image.height * 4;
+        size_t image_size = image.width * image.height * channels;
         image.pixels = malloc(image_size);
 
         if (!image.pixels) {
@@ -204,16 +250,18 @@ TpxlResult tpxl_animation_load(const char* path, TpxlAnimation* animation) {
 
                 GifColorType color = palette->Colors[index];
 
-                size_t pixel = (y * image.width + x) * 4;
+                size_t pixel = (y * image.width + x) * channels;
 
                 image.pixels[pixel + 0] = color.Red;
                 image.pixels[pixel + 1] = color.Green;
                 image.pixels[pixel + 2] = color.Blue;
 
-                if (index == gce.transparent_index && gce.transparent_index >= 0) {
-                    image.pixels[pixel + 3] = 0;
-                } else {                
-                    image.pixels[pixel + 3] = 255;
+                if (channels == 4) {
+                    if (index == gce.transparent_index && gce.transparent_index >= 0) {
+                        image.pixels[pixel + 3] = 0;
+                    } else {                
+                        image.pixels[pixel + 3] = 255;
+                    }
                 }
             }
         }
@@ -287,6 +335,29 @@ TpxlResult tpxl_animation_resize(TpxlAnimation* animation, uint32_t output_width
     return result;
 }
 
+TpxlResult tpxl_animation_print_info(const TpxlAnimation* animation) {
+
+    if (!animation) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    fprintf(
+        stdout,
+        "Width: %d\n"
+        "Height: %d\n"
+        "Format: %s\n"
+        "Channels: %d\n"
+        "Frame count: %lu\n",
+        animation->width,
+        animation->height,
+        tpxl_format_to_string(animation->format),
+        tpxl_format_to_channels(animation->format),
+        animation->frame_count
+    );
+
+    return TPXL_OK;
+}
+
 void tpxl_animation_free(TpxlAnimation* animation) {
 
     if (!animation) {
@@ -300,18 +371,4 @@ void tpxl_animation_free(TpxlAnimation* animation) {
     free(animation->frames);
 
     *animation = (TpxlAnimation){0};
-}
-
-TpxlResult tpxl_animation_print_info(const TpxlAnimation* animation) {
-
-    if (!animation) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    printf("Width: %d\n", animation->width);
-    printf("Height: %d\n", animation->height);
-    printf("Format: %s\n", tpxl_format_to_string(animation->format));
-    printf("Frame count: %lu\n", animation->frame_count);
-
-    return TPXL_OK;
 }
