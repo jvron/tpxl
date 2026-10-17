@@ -6,8 +6,9 @@
 
 #include "tpxl/type.h"
 
-#include "util/base64.h"
 #include "iterm2_backend.h"
+#include "renderer/image_map.h"
+#include "util/base64.h"
 
 static TpxlResult tpxl_encode_png(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint8_t** png_data, size_t* png_size) {
 
@@ -57,6 +58,10 @@ static TpxlResult tpxl_encode_png(TpxlIterm2Context* iterm2_context, const TpxlI
 TpxlResult tpxl_iterm2_context_init(TpxlIterm2Context* iterm2_context) {
 
     assert(iterm2_context);
+
+    if (tpxl_image_map_init(&iterm2_context->image_map) != TPXL_OK) {
+        return TPXL_BACKEND_CREATION_FAILED;
+    }
 
     // output_mutex_initialized will be false initially
     if (!iterm2_context->output_mutex_initialized) {
@@ -148,22 +153,24 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
 
     if (encoded_size > iterm2_context->encoded_capacity) {
 
-        char* encoded_buffer = realloc(iterm2_context->encoded_data, encoded_size);
+        char* encoded_buffer = realloc(iterm2_context->encoded_buffer, encoded_size);
 
         if (!encoded_buffer) {
             free(png_data);
             return TPXL_OUT_OF_MEMORY;
         }
 
-        iterm2_context->encoded_data = encoded_buffer;
+        iterm2_context->encoded_buffer = encoded_buffer;
         iterm2_context->encoded_capacity = encoded_size;
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(png_data, png_size, iterm2_context->encoded_data, &output_length) != TPXL_OK) {
+    if (tpxl_base64_encode(png_data, png_size, iterm2_context->encoded_buffer, &output_length) != TPXL_OK) {
         free(png_data);
         return TPXL_ENCODING_FAILED;
     }
+        
+    free(png_data);
 
     tpxl_mutex_lock(&iterm2_context->output_mutex);
 
@@ -176,7 +183,10 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
         iterm2_context->output_rows
     );
 
-    fwrite(iterm2_context->encoded_data, output_length, 1, stdout);
+    if(fwrite(iterm2_context->encoded_buffer, 1, output_length, stdout) != output_length) {
+        return TPXL_RENDER_FAILED;
+    }
+
     fputc('\a', stdout);
 
     if (iterm2_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
@@ -187,8 +197,114 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
 
     tpxl_mutex_unlock(&iterm2_context->output_mutex);
 
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t frame_id) {
+
+    assert(iterm2_context && frame && frame->pixels);
+
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
+        return TPXL_INVALID_FORMAT;
+    }
+
+    uint8_t* png_data = NULL;
+    size_t png_size = 0;
+
+    if (tpxl_encode_png(iterm2_context, frame, &png_data, &png_size) != TPXL_OK) {
+        return TPXL_RENDER_FAILED;
+    }
+
+    size_t encoded_size = tpxl_base64_encoded_size(png_size);
+
+    if (encoded_size > iterm2_context->encoded_capacity) {
+
+        char* encoded_buffer = realloc(iterm2_context->encoded_buffer, encoded_size);
+
+        if (!encoded_buffer) {
+            free(png_data);
+            return TPXL_OUT_OF_MEMORY;
+        }
+
+        iterm2_context->encoded_buffer = encoded_buffer;
+        iterm2_context->encoded_capacity = encoded_size;
+    }
+
+    size_t output_length = 0;
+    if (tpxl_base64_encode(png_data, png_size, iterm2_context->encoded_buffer, &output_length) != TPXL_OK) {
+        free(png_data);
+        return TPXL_ENCODING_FAILED;
+    }
+
     free(png_data);
 
+    char* entry_data = malloc(output_length);
+
+    if (!entry_data) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    memcpy(entry_data, iterm2_context->encoded_buffer, output_length);
+
+    TpxlImageMapEntry entry = {
+        .data = entry_data,
+        .size = output_length,
+        .id = frame_id,
+        .row = 0,
+        .column = 0,
+        .columns = iterm2_context->output_columns,
+        .rows = iterm2_context->output_rows,
+    };
+
+    TpxlResult result = tpxl_image_map_insert(&iterm2_context->image_map, &entry, frame_id);
+
+    if (result != TPXL_OK) {
+        free(entry_data);
+        return result;
+    }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame_id, uint32_t row, uint32_t column) {
+
+    assert(iterm2_context);
+
+    TpxlImageMapEntry* entry = NULL;
+    TpxlResult result = tpxl_image_map_get(&iterm2_context->image_map, frame_id,  &entry);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    tpxl_mutex_lock(&iterm2_context->output_mutex);
+
+    fprintf(stdout, "\033[%u;%uH", row, column);
+
+    fprintf(
+        stdout, 
+        "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
+        iterm2_context->output_columns,
+        iterm2_context->output_rows
+    );
+
+    if (fwrite(entry->data, 1, entry->size, stdout) != entry->size) {
+        return TPXL_RENDER_FAILED;
+    }
+
+    fputc('\a', stdout);
+
+    if (iterm2_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
+        fprintf(stdout, "\033[%u;%uH", row, column);
+    }
+
+    fflush(stdout);
+
+    tpxl_mutex_unlock(&iterm2_context->output_mutex);
+
+    entry->row = row;
+    entry->column = column;
+    
     return TPXL_OK;
 }
 
@@ -203,6 +319,8 @@ void tpxl_iterm2_context_destroy(TpxlIterm2Context* iterm2_context) {
         iterm2_context->output_mutex_initialized = false;
     }
 
-    free(iterm2_context->encoded_data);
-    iterm2_context->encoded_data = NULL;
+    tpxl_image_map_destroy(&iterm2_context->image_map);
+
+    free(iterm2_context->encoded_buffer);
+    iterm2_context->encoded_buffer = NULL;
 }
