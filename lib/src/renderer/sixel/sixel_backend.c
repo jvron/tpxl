@@ -79,7 +79,7 @@ TpxlResult tpxl_sixel_context_init(TpxlSixelContext* sixel_context) {
     sixel_context->clear_buffer = NULL;
     sixel_context->clear_buffer_capacity = 0;
 
-    if (tpxl_sixel_image_map_init(&sixel_context->image_map) != TPXL_OK) {
+    if (tpxl_image_map_init(&sixel_context->image_map) != TPXL_OK) {
         free(encoded_buffer);
         return TPXL_BACKEND_CREATION_FAILED;
     }
@@ -298,7 +298,7 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         goto cleanup;
     }
 
-    TpxlSixelImage image = {
+    TpxlImageMapEntry entry = {
         .data = sixel_context->encoded_buffer,
         .size = sixel_context->encoded_buffer_size,
         .id = frame_id,
@@ -308,7 +308,7 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         .columns = sixel_context->columns,
     };
     
-    result = tpxl_sixel_image_map_insert(&sixel_context->image_map, &image, frame_id);
+    result = tpxl_image_map_insert(&sixel_context->image_map, &entry, frame_id);
 
     if (result != TPXL_OK) {
         free(sixel_context->encoded_buffer);
@@ -329,8 +329,8 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
 
     assert(sixel_context);
 
-    TpxlSixelImage* sixel_image = NULL;
-    TpxlResult result = tpxl_sixel_image_map_get(&sixel_context->image_map, frame_id,  &sixel_image);
+    TpxlImageMapEntry* entry = NULL;
+    TpxlResult result = tpxl_image_map_get(&sixel_context->image_map, frame_id,  &entry);
 
     if (result != TPXL_OK) {
         return result;
@@ -338,12 +338,12 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
 
     fprintf(stdout, "\033[%u;%uH", row, column);
 
-    if (fwrite(sixel_image->data, 1, sixel_image->size, stdout) != sixel_image->size) {
+    if (fwrite(entry->data, 1, entry->size, stdout) != entry->size) {
         return TPXL_RENDER_FAILED;
     }
 
-    sixel_image->row = row;
-    sixel_image->column = column;
+    entry->row = row;
+    entry->column = column;
 
     if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
         fprintf(stdout, "\033[%u;%uH", row, column);
@@ -358,12 +358,12 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
 
     assert(sixel_context);
 
-    TpxlSixelImage* sixel_image = NULL;
-    if (tpxl_sixel_image_map_get(&sixel_context->image_map, frame_id, &sixel_image) != TPXL_OK) {
+    TpxlImageMapEntry* entry = NULL;
+    if (tpxl_image_map_get(&sixel_context->image_map, frame_id, &entry) != TPXL_OK) {
         return;
     }
 
-    if (sixel_image->columns > sixel_context->clear_buffer_capacity) {
+    if (entry->columns > sixel_context->clear_buffer_capacity) {
 
         size_t capacity = sixel_context->clear_buffer_capacity;
 
@@ -371,7 +371,7 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
             capacity = 64;
         }
 
-        while (capacity < sixel_image->columns) {
+        while (capacity < entry->columns) {
             capacity *= 2;
         }
 
@@ -385,18 +385,18 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
         sixel_context->clear_buffer_capacity = capacity;
     }
 
-    memset(sixel_context->clear_buffer, ' ', sixel_image->columns);
+    memset(sixel_context->clear_buffer, ' ', entry->columns);
 
-    fprintf(stdout, "\033[%u;%uH", sixel_image->row, sixel_image->column);
+    fprintf(stdout, "\033[%u;%uH", entry->row, entry->column);
 
-    for (uint32_t i = 0; i < sixel_image->rows; i++) {
+    for (uint32_t i = 0; i < entry->rows; i++) {
 
-        fwrite(sixel_context->clear_buffer, 1, sixel_image->columns, stdout);
+        fwrite(sixel_context->clear_buffer, 1, entry->columns, stdout);
 
-        fprintf(stdout, "\033[%u;%uH", sixel_image->row + i + 1, sixel_image->column);
+        fprintf(stdout, "\033[%u;%uH", entry->row + i + 1, entry->column);
     }
 
-    fprintf(stdout, "\033[%u;%uH", sixel_image->row, sixel_image->column);
+    fprintf(stdout, "\033[%u;%uH", entry->row, entry->column);
 
     fflush(stdout);
 }
@@ -405,7 +405,7 @@ void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) 
 
     assert(sixel_context);
 
-    tpxl_sixel_image_map_remove(&sixel_context->image_map, frame_id);
+    tpxl_image_map_remove(&sixel_context->image_map, frame_id);
 }
 
 void tpxl_sixel_context_destroy(TpxlSixelContext* sixel_context) {
@@ -414,7 +414,7 @@ void tpxl_sixel_context_destroy(TpxlSixelContext* sixel_context) {
         return;
     }
 
-    tpxl_sixel_image_map_destroy(&sixel_context->image_map);
+    tpxl_image_map_destroy(&sixel_context->image_map);
 
     free(sixel_context->encoded_buffer);
     sixel_context->encoded_buffer = NULL;

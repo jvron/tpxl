@@ -10,7 +10,7 @@
 #include "tpxl/terminal.h"
 #include "tpxl/type.h"
 
-#include "sixel_image_map.h"
+#include "renderer/image_map.h"
 
 typedef struct {
     size_t frame_size;
@@ -26,7 +26,7 @@ typedef struct {
     uint32_t columns;
     uint32_t rows;
 
-    TpxlSixelImageMap image_map;
+    TpxlImageMap image_map;
     
     char* encoded_buffer;
     size_t encoded_buffer_size;
