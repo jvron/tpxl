@@ -114,6 +114,27 @@ TpxlResult tpxl_image_resize(TpxlImage* image, uint32_t output_width, uint32_t o
     return TPXL_OK;
 }
 
+TpxlResult tpxl_image_print_info(const TpxlImage* image) {
+   
+    if (!image) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    fprintf(
+        stdout,
+        "Width: %d\n"
+        "Height: %d\n"
+        "Format: %s\n"
+        "Channels: %d\n",
+        image->width,
+        image->height,
+        tpxl_format_to_string(image->format),
+        tpxl_format_to_channels(image->format)
+    );
+    
+    return TPXL_OK;
+}
+
 void tpxl_image_free(TpxlImage* image) {
 
     if (!image) {
@@ -136,16 +157,3 @@ void tpxl_frame_free(TpxlImage* frame) {
     *frame = (TpxlImage){0};
 }
 
-TpxlResult tpxl_image_print_info(const TpxlImage* image) {
-   
-    if (!image) {
-        return TPXL_INVALID_ARGUMENT;
-    }
-
-    printf("Width: %d\n", image->width);
-    printf("Height: %d\n", image->height);
-    printf("Format: %s\n", tpxl_format_to_string(image->format));
-    printf("Channels: %d\n", tpxl_format_to_channels(image->format));
-
-    return TPXL_OK;
-}

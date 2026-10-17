@@ -42,6 +42,19 @@ TpxlResult tpxl_image_load(const char* file, TpxlImage* image);
 TpxlResult tpxl_image_resize(TpxlImage* image, uint32_t output_width, uint32_t output_height);
 
 /**
+ * Prints information about an image to standard output.
+ *
+ * The information includes the image's width, height, pixel format,
+ * and number of color channels.
+ *
+ * @param image Image whose information is to be printed.
+ *
+ * @return TPXL_OK on success.
+ * @return TPXL_INVALID_ARGUMENT if image is NULL.
+ */
+TpxlResult tpxl_image_print_info(const TpxlImage* image);
+
+/**
  * Frees the pixel data owned by an image.
  *
  * After freeing the pixel data, the image structure is reset to zero.
@@ -65,18 +78,5 @@ void tpxl_image_free(TpxlImage* image);
  * @param frame Frame whose pixel data is to be freed.
  */
 void tpxl_frame_free(TpxlImage* frame);
-
-/**
- * Prints information about an image to standard output.
- *
- * The information includes the image's width, height, pixel format,
- * and number of color channels.
- *
- * @param image Image whose information is to be printed.
- *
- * @return TPXL_OK on success.
- * @return TPXL_INVALID_ARGUMENT if image is NULL.
- */
-TpxlResult tpxl_image_print_info(const TpxlImage* image);
 
 #endif
