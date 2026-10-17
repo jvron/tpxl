@@ -11,7 +11,18 @@
 
 #include "cli.h"
 
-int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
+static const char* get_filename(const char* path) {
+
+    const char* filename = strrchr(path, '/');
+
+    if (filename) {
+        return filename + 1;
+    }
+
+    return path;
+}
+
+int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend, bool print_info) {
 
     TpxlResult result = TPXL_OK;
 
@@ -23,6 +34,17 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
 
     if (result != TPXL_OK) {
         goto error;
+    }
+
+    if (print_info) {
+        fprintf(stdout, "File: %s\n", get_filename(path));
+
+        result = tpxl_video_print_info(video);
+        if (result != TPXL_OK) {
+            goto error;
+        }
+
+        goto cleanup;
     }
 
     uint32_t width, height;

@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
             exit_code = display_gif(file, &terminal, backend, print_info);
             break;
         case TPXL_FILE_VIDEO:
-            exit_code = play_video(file, &terminal, backend);
+            exit_code = play_video(file, &terminal, backend, print_info);
             break;
         case TPXL_FILE_AUDIO:
             exit_code = play_audio(file, &terminal, backend);
