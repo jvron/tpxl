@@ -26,6 +26,7 @@ TpxlResult tpxl_video_view_attached_thumbnail(TpxlVideo* video, const TpxlImage*
 uint32_t tpxl_video_get_frame_count(TpxlVideo* video);
 double tpxl_video_get_frame_rate(TpxlVideo* video);
 double tpxl_video_get_duration(TpxlVideo* video);
+TpxlResult tpxl_video_print_info(const TpxlVideo* video);
 void tpxl_video_frame_free(TpxlVideoFrame* video_frame);
 void tpxl_video_close(TpxlVideo** video);
 

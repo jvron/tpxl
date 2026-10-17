@@ -568,6 +568,43 @@ TpxlResult tpxl_video_view_attached_thumbnail(TpxlVideo* video, const TpxlImage*
     return TPXL_OK;
 }
 
+TpxlResult tpxl_video_print_info(const TpxlVideo* video) {
+
+    if (!video) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    AVRational frame_rate = video->format_context->streams[video->video_stream_index]->avg_frame_rate;
+
+    double fps = frame_rate.den != 0
+        ? av_q2d(frame_rate)
+        : 0.0;
+
+    double duration = video->format_context->duration != AV_NOPTS_VALUE
+        ? (double)video->format_context->duration / AV_TIME_BASE
+        : 0.0;
+
+    fprintf(
+        stdout,
+        "Width: %d\n"
+        "Height: %d\n"
+        "Format: %s\n"
+        "Duration: %.2f seconds\n"
+        "FPS: %.2f\n"
+        "Frame count: %d\n"
+        "Has audio: %s\n",
+        video->width,
+        video->height,
+        tpxl_format_to_string(video->format),
+        duration,
+        fps,
+        video->frame_count,
+        video->audio ? "Yes" : "No"
+    );
+
+    return TPXL_OK;
+}
+
 void tpxl_video_frame_free(TpxlVideoFrame* video_frame) {
 
     if (!video_frame) {
