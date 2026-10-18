@@ -24,6 +24,9 @@ typedef struct {
     char* encoded_buffer;
     size_t encoded_capacity;
 
+    char* clear_buffer;
+    size_t clear_buffer_capacity;
+
     uint32_t png_format;
     TpxlMediaType media_type;
     TpxlCursorPolicy cursor_policy;
@@ -39,6 +42,8 @@ TpxlResult tpxl_iterm2_set_media_policy(TpxlIterm2Context* iterm2_context, TpxlM
 TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t row, uint32_t column);
 TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame_id, uint32_t row, uint32_t column);
+void tpxl_iterm2_delete_placement(TpxlIterm2Context* iterm2_context, uint32_t frame_id);
+void tpxl_iterm2_delete_data(TpxlIterm2Context* iterm2_context, uint32_t frame_id);
 void tpxl_iterm2_context_destroy(TpxlIterm2Context* iterm2_context);
 
 #endif
