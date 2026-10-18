@@ -36,6 +36,8 @@ int main(int argc, char* argv[]) {
                     backend = TPXL_BACKEND_KITTY;
                 } else if (strcmp(optarg, "sixel") == 0) {
                     backend = TPXL_BACKEND_SIXEL;
+               } else if (strcmp(optarg, "iterm2") == 0) {
+                    backend = TPXL_BACKEND_ITERM2;
                 } else if (strcmp(optarg, "auto") == 0) {
                     backend = TPXL_BACKEND_AUTO;
                 } else {
@@ -51,7 +53,7 @@ int main(int argc, char* argv[]) {
                     "\n"
                     "Options:\n"
                     "    -i, --info           Print media information\n"
-                    "    -b, --backend <name> Select rendering backend (auto, kitty, sixel)\n"
+                    "    -b, --backend <name> Select rendering backend (auto, kitty, sixel, iterm2)\n"
                     "    -h, --help           Show this help message\n"
                     "    -V, --version        Show version information\n"
                     "\n"

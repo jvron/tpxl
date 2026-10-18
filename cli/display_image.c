@@ -44,6 +44,11 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
     result = tpxl_image_resize(&image, output_width, output_height);
     if (result != TPXL_OK) goto error;
 
+    uint32_t image_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
+
+    result = tpxl_terminal_ensure_rows(terminal, image_rows);
+    if (result != TPXL_OK) goto error;
+
     TpxlRendererConfig config;
     config.backend = backend;
     config.media_type = TPXL_MEDIA_IMAGE;
@@ -65,6 +70,7 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
         exit_code = EXIT_FAILURE;
 
     cleanup:
+        fputc('\n', stdout);
         tpxl_image_free(&image);
         tpxl_renderer_destroy(&renderer);
 
