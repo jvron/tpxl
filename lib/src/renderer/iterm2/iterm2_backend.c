@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <png.h>
+#include <zlib.h>
 
 #include "tpxl/type.h"
 
@@ -10,47 +11,153 @@
 #include "renderer/image_map.h"
 #include "util/base64.h"
 
+typedef struct {
+    uint8_t* data;
+    size_t size;
+    size_t capacity;
+} TpxlPngBuffer;
+
+static void tpxl_png_write(png_structp png_ptr, png_bytep data, png_size_t size) {
+
+    TpxlPngBuffer* buffer = png_get_io_ptr(png_ptr);
+
+    if ((size_t) size > SIZE_MAX - buffer->size) {
+        png_error(png_ptr, "PNG buffer size overflow");
+    }
+
+    size_t required = buffer->size + (size_t)size;
+
+    if (required > buffer->capacity) {
+        size_t capacity = buffer->capacity > 0 ? buffer->capacity : 4096;
+
+        while (capacity < required) {
+            if (capacity > SIZE_MAX / 2) {
+                capacity = required;
+                break;
+            }
+
+            capacity *= 2;
+        }
+
+        uint8_t* data = realloc(buffer->data, capacity);
+
+        if (!data) {
+            png_error(png_ptr, "Failed to grow PNG buffer");
+        }
+
+        buffer->data = data;
+        buffer->capacity = capacity;
+    }
+
+    memcpy(buffer->data + buffer->size, data, size);
+    buffer->size = required;
+}
+
+static void tpxl_png_flush(png_structp png_ptr) {
+    (void)png_ptr;
+}
+
 static TpxlResult tpxl_encode_png(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint8_t** png_data, size_t* png_size) {
 
-    assert(iterm2_context && frame && png_data);
+    assert(iterm2_context && frame && png_data && png_size);
 
     *png_data = NULL;
     *png_size = 0;
 
-    png_image image;
-    png_alloc_size_t buffer_size = 0;
+    int color_type = 0;
+    int channels = 0;
 
-    memset(&image, 0, sizeof(image));
+    switch (iterm2_context->png_format) {
+        case PNG_FORMAT_RGB:
+            color_type = PNG_COLOR_TYPE_RGB;
+            channels = 3;
+            break;
 
-    image.version = PNG_IMAGE_VERSION;
-    image.width = frame->width;
-    image.height = frame->height;
-    image.format = iterm2_context->png_format;
+        case PNG_FORMAT_RGBA:
+            color_type = PNG_COLOR_TYPE_RGBA;
+            channels = 4;
+            break;
 
-    // Get buffer size
-    if (!png_image_write_to_memory(&image, NULL, &buffer_size, 0, frame->pixels, 0, NULL)) {
-        png_image_free(&image);
-        return TPXL_ERROR;
+        default:
+            return TPXL_UNSUPPORTED_FORMAT;
     }
 
-    uint8_t* buffer = malloc(buffer_size);
+    if (frame->width == 0 || frame->height == 0 ||
+        frame->width > SIZE_MAX / channels) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    size_t row_size = (size_t)frame->width * channels;
+
+    if (frame->height > SIZE_MAX / row_size) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlPngBuffer* buffer = calloc(1, sizeof(TpxlPngBuffer));
 
     if (!buffer) {
-        png_image_free(&image);
         return TPXL_OUT_OF_MEMORY;
     }
 
-    // Encode the PNG into memory.
-    if (!png_image_write_to_memory(&image, buffer, &buffer_size, 0, frame->pixels, 0, NULL)) {
+    png_structp png_ptr = png_create_write_struct(
+        PNG_LIBPNG_VER_STRING,
+        NULL,
+        NULL,
+        NULL
+    );
+
+    if (!png_ptr) {
         free(buffer);
-        png_image_free(&image);
-        return TPXL_ERROR;
+        return TPXL_OUT_OF_MEMORY;
     }
 
-    *png_data = buffer;
-    *png_size = buffer_size;
+    png_infop info_ptr = png_create_info_struct(png_ptr);
 
-    png_image_free(&image);
+    if (!info_ptr) {
+        png_destroy_write_struct(&png_ptr, NULL);
+        free(buffer);
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        free(buffer->data);
+        free(buffer);
+        return TPXL_ENCODING_FAILED;
+    }
+
+    png_set_write_fn(png_ptr, buffer, tpxl_png_write, tpxl_png_flush);
+
+    png_set_IHDR(
+        png_ptr,
+        info_ptr,
+        frame->width,
+        frame->height,
+        8,
+        color_type,
+        PNG_INTERLACE_NONE,
+        PNG_COMPRESSION_TYPE_DEFAULT,
+        PNG_FILTER_TYPE_DEFAULT
+    );
+
+    // Prioritize encoding speed over compression ratio.
+    png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
+    png_set_compression_level(png_ptr, Z_BEST_SPEED);
+
+    png_write_info(png_ptr, info_ptr);
+
+    for (uint32_t y = 0; y < frame->height; y++) {
+        png_bytep row = frame->pixels + (size_t) y * row_size;
+        png_write_row(png_ptr, row);
+    }
+
+    png_write_end(png_ptr, info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+
+    *png_data = buffer->data;
+    *png_size = buffer->size;
+
+    free(buffer);
 
     return TPXL_OK;
 }
@@ -145,8 +252,10 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
     uint8_t* png_data = NULL;
     size_t png_size = 0;
 
-    if (tpxl_encode_png(iterm2_context, frame, &png_data, &png_size) != TPXL_OK) {
-        return TPXL_RENDER_FAILED;
+    TpxlResult result = tpxl_encode_png(iterm2_context, frame, &png_data, &png_size);
+
+    if (result != TPXL_OK) {
+        return result;
     }
 
     size_t encoded_size = tpxl_base64_encoded_size(png_size);
@@ -211,8 +320,10 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     uint8_t* png_data = NULL;
     size_t png_size = 0;
 
-    if (tpxl_encode_png(iterm2_context, frame, &png_data, &png_size) != TPXL_OK) {
-        return TPXL_RENDER_FAILED;
+    TpxlResult result = tpxl_encode_png(iterm2_context, frame, &png_data, &png_size);
+    
+    if (result != TPXL_OK) {
+        return result;
     }
 
     size_t encoded_size = tpxl_base64_encoded_size(png_size);
@@ -256,7 +367,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
         .rows = iterm2_context->output_rows,
     };
 
-    TpxlResult result = tpxl_image_map_insert(&iterm2_context->image_map, &entry, frame_id);
+    result = tpxl_image_map_insert(&iterm2_context->image_map, &entry, frame_id);
 
     if (result != TPXL_OK) {
         free(entry_data);
