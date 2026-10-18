@@ -6,6 +6,39 @@ option(TPXL_BUILD_SHARED
 include(FetchContent)
 
 FetchContent_Declare(
+    zlib
+    GIT_REPOSITORY https://github.com/madler/zlib.git
+    GIT_TAG v1.3
+    GIT_SHALLOW TRUE
+)
+
+set(ZLIB_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(ZLIB_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(ZLIB_BUILD_STATIC ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(zlib)
+
+if(TPXL_BUILD_SHARED)
+    set_target_properties(zlibstatic PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif()
+
+FetchContent_Declare(
+    libpng
+    GIT_REPOSITORY https://github.com/pnggroup/libpng.git
+    GIT_TAG v1.6.59
+    GIT_SHALLOW TRUE
+)
+
+set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+set(PNG_STATIC ON CACHE BOOL "" FORCE)
+set(PNG_TESTS OFF CACHE BOOL "" FORCE)
+set(PNG_TOOLS OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(libpng)
+
+FetchContent_Declare(
     base64
     GIT_REPOSITORY https://github.com/aklomp/base64.git
     GIT_TAG v0.5.2
@@ -14,9 +47,11 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(base64)
 
-set_target_properties(base64 PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-)
+if(TPXL_BUILD_SHARED)
+    set_target_properties(base64 PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+    )
+endif()
 
 FetchContent_Declare(
     libsixel
@@ -116,7 +151,6 @@ add_library(libtpxl ${TPXL_LIBRARY_TYPE}
 
 target_compile_features(libtpxl PUBLIC c_std_11)
 
-
 set_target_properties(libtpxl PROPERTIES
     OUTPUT_NAME tpxl
 )
@@ -137,6 +171,8 @@ target_compile_definitions(libtpxl
 
 target_link_libraries(libtpxl
     PRIVATE
+        png_static
+        zlibstatic
         base64
         libsixel
         m
@@ -148,5 +184,4 @@ target_link_libraries(libtpxl
         swscale
         swresample
         gif
-        z
 )
