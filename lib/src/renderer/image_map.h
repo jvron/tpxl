@@ -31,7 +31,7 @@ typedef struct {
 } TpxlImageMap;
 
 TpxlResult tpxl_image_map_init(TpxlImageMap* image_map);
-TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageMapEntry* sixel_image, uint32_t frame_id);
+TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageMapEntry* entry, uint32_t frame_id);
 TpxlResult tpxl_image_map_remove(TpxlImageMap* image_map, uint32_t frame_id);
 TpxlResult tpxl_image_map_get(TpxlImageMap* image_map, uint32_t frame_id, TpxlImageMapEntry** out_entry);
 void tpxl_image_map_destroy(TpxlImageMap* image_map);

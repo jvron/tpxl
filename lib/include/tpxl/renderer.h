@@ -14,6 +14,7 @@ typedef enum {
     TPXL_BACKEND_AUTO = 0,
     TPXL_BACKEND_KITTY,
     TPXL_BACKEND_SIXEL,
+    TPXL_BACKEND_ITERM2,
     TPXL_BACKEND_COUNT,
 } TpxlBackend;
 
