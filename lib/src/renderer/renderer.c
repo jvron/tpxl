@@ -146,6 +146,7 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
 
         default:
             free(*renderer);
+            *renderer = NULL;
             return TPXL_INVALID_BACKEND;
     }
 
@@ -213,7 +214,7 @@ TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame,
 
 TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id) {
 
-    if (!renderer || !frame || !frame->pixels) {
+    if (!renderer || !frame || !frame->pixels || !frame_id) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -232,7 +233,7 @@ TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32
 
 TpxlResult tpxl_renderer_display(TpxlRenderer* renderer, uint32_t frame_id, uint32_t row, uint32_t column) {
 
-    if (!renderer) {
+    if (!renderer || !frame_id) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -258,7 +259,7 @@ TpxlBackend tpxl_renderer_get_backend(TpxlRenderer* renderer) {
 
 void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id) {
 
-    if (!renderer) {
+    if (!renderer || !frame_id) {
         return;
     }
 
@@ -273,7 +274,7 @@ void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id) {
 
 void tpxl_renderer_delete_data(TpxlRenderer* renderer, uint32_t frame_id) {
 
-    if (!renderer) {
+    if (!renderer || !frame_id) {
         return;
     }
 
