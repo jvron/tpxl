@@ -25,14 +25,15 @@ typedef struct {
 /**
  * Initializes terminal handling.
  *
- * This saves the terminal's current settings and configures it for
- * libtpxl. The original settings are restored by
- * tpxl_shutdown_terminal().
+ * Saves the terminal's current settings and configures it for libtpxl.
+ * The original settings can be restored by calling
+ * tpxl_terminal_shutdown().
  *
  * @param terminal Terminal to initialize.
  *
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the terminal cannot be configured.
+ * @return TPXL_INVALID_ARGUMENT if terminal is NULL.
  */
 TpxlResult tpxl_terminal_init(TpxlTerminal* terminal);
 
@@ -46,6 +47,7 @@ TpxlResult tpxl_terminal_init(TpxlTerminal* terminal);
  *
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the cursor position cannot be queried.
+ * @return TPXL_INVALID_ARGUMENT if row or column is NULL.
  */
 TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column);
 
@@ -61,6 +63,7 @@ TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column);
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the terminal dimensions or cursor position
  *         cannot be queried.
+ * @return TPXL_INVALID_ARGUMENT if terminal is NULL.
  */
 TpxlResult tpxl_terminal_query(TpxlTerminal* terminal);
 
@@ -93,11 +96,12 @@ TpxlResult tpxl_terminal_move_cursor(uint32_t row, uint32_t column);
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the terminal cannot be scrolled or the cursor
  *         position cannot be queried.
+ * @return TPXL_INVALID_ARGUMENT if terminal is NULL.
  */
 TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_rows);
 
 /**
- * Restores the terminal settings saved by tpxl_init_terminal().
+ * Restores the terminal settings saved by tpxl_terminal_init().
  *
  * Calling this function on an uninitialized terminal has
  * no effect.
@@ -106,6 +110,7 @@ TpxlResult tpxl_terminal_ensure_rows(TpxlTerminal* terminal, uint32_t required_r
  *
  * @return TPXL_OK on success.
  * @return TPXL_IO_ERROR if the original terminal settings cannot be restored.
+ * @return TPXL_INVALID_ARGUMENT if terminal is NULL.
  */
 TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal);
 
