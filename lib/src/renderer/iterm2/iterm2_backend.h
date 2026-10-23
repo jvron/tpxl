@@ -11,6 +11,12 @@
 #include "renderer/image_map.h"
 
 typedef struct {
+    uint8_t* data;
+    size_t size;
+    size_t capacity;
+} TpxlPngBuffer;
+
+typedef struct {
     size_t frame_size;
     
     uint32_t output_width;
@@ -20,6 +26,8 @@ typedef struct {
     uint32_t output_rows;
 
     TpxlImageMap image_map;
+
+    TpxlPngBuffer png_buffer;
 
     char* encoded_buffer;
     size_t encoded_capacity;
