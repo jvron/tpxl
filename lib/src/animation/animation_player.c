@@ -23,7 +23,7 @@ struct TpxlAnimationPlayerImp {
     atomic_bool active;
     atomic_bool playing;
 
-    pthread_t play_thread;
+    TpxlThread play_thread;
     bool play_thread_created;
     int play_status;
 };
@@ -31,7 +31,7 @@ struct TpxlAnimationPlayerImp {
 static void* tpxl_animation_play_worker(void* arg) {
 
     TpxlAnimationPlayer* player = arg;
-    
+
     player->play_status = TPXL_THREAD_STATUS_RUNNING;
 
     TpxlAnimation* animation = player->animation;
@@ -47,7 +47,7 @@ static void* tpxl_animation_play_worker(void* arg) {
             if (!atomic_load(&player->active)) {
                 break;
             }
-            
+
             if (player->has_previous_frame && player->backend == TPXL_BACKEND_KITTY) {
                 tpxl_renderer_delete_placement(player->renderer, player->previous_frame_id);
             }
@@ -55,9 +55,9 @@ static void* tpxl_animation_play_worker(void* arg) {
             TpxlAnimationFrame* animation_frame = &animation->frames[i];
 
             TpxlResult result = tpxl_renderer_display(
-                player->renderer, 
-                animation_frame->frame_id, 
-                player->row, 
+                player->renderer,
+                animation_frame->frame_id,
+                player->row,
                 player->column
             );
 
@@ -70,7 +70,7 @@ static void* tpxl_animation_play_worker(void* arg) {
             }
 
             tpxl_sleep_ms(animation_frame->delay);
-        } 
+        }
     }
 
     if (player->play_status != TPXL_THREAD_ERROR) {
@@ -81,7 +81,7 @@ static void* tpxl_animation_play_worker(void* arg) {
 }
 
 TpxlResult tpxl_animation_player_create(TpxlAnimationPlayer** player, TpxlRenderer* renderer, TpxlAnimation* animation) {
-    
+
     if (!player || !renderer || !animation) {
         return TPXL_INVALID_ARGUMENT;
     }
@@ -109,9 +109,9 @@ TpxlResult tpxl_animation_player_create(TpxlAnimationPlayer** player, TpxlRender
 
     atomic_init(&new_player->playing, false);
     atomic_init(&new_player->active, false);
-   
+
     for (size_t i = 0; i < animation->frame_count; i++) {
-        
+
         uint32_t id = i + 1;
 
         TpxlResult result = tpxl_renderer_upload(renderer, &animation->frames[i].frame, id);
@@ -175,5 +175,3 @@ void tpxl_animation_player_destroy(TpxlAnimationPlayer** player) {
     free(*player);
     *player = NULL;
 }
-
-
