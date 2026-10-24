@@ -7,7 +7,6 @@
 #ifdef _WIN32
 
 #include <windows.h>
-#include <stdlib.h>
 
 typedef struct {
     TpxlThreadWorker worker;
@@ -66,9 +65,12 @@ void tpxl_thread_join(TpxlThread* thread, void** thread_return) {
     DWORD wait_result = WaitForSingleObject(thread->handle, INFINITE);
 
     if (wait_result == WAIT_OBJECT_0) {
+        TpxlThreadContext* context = thread->context;
+
         if (thread_return) {
-            *thread_return = thread->context->result;
+            *thread_return = context->result;
         }
+
 
         free(thread->context);
         thread->context = NULL;
@@ -184,7 +186,7 @@ TpxlResult tpxl_cond_wait(TpxlCond* cond, TpxlMutex* mutex) {
 }
 
 void tpxl_cond_destroy(TpxlCond* cond) {
-    
+
     if (!cond) {
         return;
     }

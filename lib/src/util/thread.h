@@ -18,12 +18,13 @@ typedef enum {
 typedef struct {
     HANDLE handle;
     void* result;
+    void* context;
 } TpxlThread;
 
 typedef CRITICAL_SECTION TpxlMutex;
 typedef CONDITION_VARIABLE TpxlCond;
 
-#else 
+#else
 #include <bits/pthreadtypes.h>
 
 typedef pthread_t TpxlThread;
