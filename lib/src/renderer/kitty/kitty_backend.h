@@ -19,7 +19,7 @@ typedef struct {
     int kitty_format;
     TpxlCursorPolicy cursor_policy;
 
-    pthread_mutex_t output_mutex;
+    TpxlMutex output_mutex;
     bool output_mutex_initialized;
 
     uint32_t columns;

@@ -53,7 +53,7 @@ TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTermi
 
     size_t frame_size = width * height * tpxl_format_to_channels(format);
 
-    if (kitty_context->compressed_data != NULL && 
+    if (kitty_context->compressed_data != NULL &&
         kitty_context->encoded_data != NULL &&
         kitty_context->frame_size == frame_size) {
         return TPXL_OK;
@@ -61,7 +61,7 @@ TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTermi
 
     size_t compressed_capacity = compressBound(frame_size);
     uint8_t* compressed_data = malloc(compressed_capacity);
-    
+
     if (!compressed_data) {
         return TPXL_OUT_OF_MEMORY;
     }
@@ -180,7 +180,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
         return TPXL_INVALID_FORMAT;
     }
 
-    size_t compressed_length = kitty_context->compressed_capacity;
+    uLongf compressed_length = kitty_context->compressed_capacity;
 
     int ret = compress2(
         kitty_context->compressed_data,
@@ -256,7 +256,7 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
 TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id, uint32_t row, uint32_t column) {
 
     assert(kitty_context);
-    
+
     tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(stdout,"\033[%u;%uH", row, column);

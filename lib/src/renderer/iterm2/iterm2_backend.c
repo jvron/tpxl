@@ -168,7 +168,7 @@ TpxlResult tpxl_iterm2_context_init(TpxlIterm2Context* iterm2_context) {
         if (tpxl_mutex_init(&iterm2_context->output_mutex) != 0) {
             return TPXL_BACKEND_CREATION_FAILED;
         }
-    
+
         iterm2_context->output_mutex_initialized = true;
     }
 
@@ -177,11 +177,11 @@ TpxlResult tpxl_iterm2_context_init(TpxlIterm2Context* iterm2_context) {
 
 TpxlResult tpxl_iterm2_set_frame(
     TpxlIterm2Context* iterm2_context,
-    const TpxlTerminal* terminal, 
-    uint32_t width, 
-    uint32_t height, 
+    const TpxlTerminal* terminal,
+    uint32_t width,
+    uint32_t height,
     TpxlFormat format
-) 
+)
 {
     assert(iterm2_context && terminal);
 
@@ -199,7 +199,7 @@ TpxlResult tpxl_iterm2_set_frame(
     // convert pixel dimensions to terminal cells
     iterm2_context->output_columns = (width + terminal->cell_width - 1) / terminal->cell_width;
     iterm2_context->output_rows = (height + terminal->cell_height - 1) / terminal->cell_height;
-    
+
     iterm2_context->output_width = width;
     iterm2_context->output_height = height;
 
@@ -288,7 +288,7 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
     fprintf(stdout,"\033[%u;%uH", row, column);
 
     fprintf(
-        stdout, 
+        stdout,
         "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
         iterm2_context->output_columns,
         iterm2_context->output_rows
@@ -324,7 +324,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     size_t png_size = 0;
 
     TpxlResult result = tpxl_encode_png(iterm2_context, frame, &png_data, &png_size);
-    
+
     if (result != TPXL_OK) {
         return result;
     }
@@ -378,7 +378,7 @@ TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame
     fprintf(stdout, "\033[%u;%uH", row, column);
 
     fprintf(
-        stdout, 
+        stdout,
         "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
         iterm2_context->output_columns,
         iterm2_context->output_rows
@@ -401,7 +401,7 @@ TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame
 
     entry->row = row;
     entry->column = column;
-    
+
     return TPXL_OK;
 }
 
@@ -470,7 +470,7 @@ void tpxl_iterm2_delete_data(TpxlIterm2Context* iterm2_context, uint32_t frame_i
 }
 
 void tpxl_iterm2_context_destroy(TpxlIterm2Context* iterm2_context) {
-    
+
     if (!iterm2_context) {
         return;
     }

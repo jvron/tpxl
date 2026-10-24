@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
     size_t frame_size;
-    
+
     uint32_t output_width;
     uint32_t output_height;
 
@@ -39,7 +39,7 @@ typedef struct {
     TpxlMediaType media_type;
     TpxlCursorPolicy cursor_policy;
 
-    pthread_mutex_t output_mutex;
+    TpxlMutex output_mutex;
     bool output_mutex_initialized;
 } TpxlIterm2Context;
 
