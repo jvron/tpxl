@@ -29,13 +29,18 @@ TpxlResult tpxl_terminal_init(TpxlTerminal* terminal) {
 
     DWORD tpxl_mode = original_console_mode;
 
-    tpxl_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    tpxl_mode &= ~(ENABLE_LINE_INPUT |
+                   ENABLE_ECHO_INPUT |
+                   ENABLE_PROCESSED_INPUT);
+
+    tpxl_mode |= ENABLE_VIRTUAL_TERMINAL_INPUT;
 
     if (!SetConsoleMode(input, tpxl_mode)) {
         return TPXL_IO_ERROR;
     }
 
     DWORD output_mode;
+    HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
 
     if (!GetConsoleMode(output, &output_mode)) {
         return TPXL_IO_ERROR;
@@ -60,7 +65,7 @@ TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column) {
 
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    if (output == INVALID_HANDLE_VALUE) {
+    if (output == INVALID_HANDLE_VALUE || output == NULL) {
         return TPXL_IO_ERROR;
     }
 
@@ -83,8 +88,10 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
     }
 
     HANDLE output = GetStdHandle(STD_OUTPUT_HANDLE);
+    HANDLE input = GetStdHandle(STD_INPUT_HANDLE);
 
-    if (output == INVALID_HANDLE_VALUE) {
+    if (output == INVALID_HANDLE_VALUE || output == NULL ||
+        input == INVALID_HANDLE_VALUE || input == NULL) {
         return TPXL_IO_ERROR;
     }
 
@@ -101,27 +108,85 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
         return TPXL_IO_ERROR;
     }
 
-    HWND window = GetConsoleWindow();
+    static const char query[] = "\033[14t";
+    DWORD written = 0;
 
-    if (!window) {
+    if (!WriteFile(output, query, sizeof(query) - 1, &written, NULL) ||
+        written != sizeof(query) - 1) {
         return TPXL_IO_ERROR;
     }
 
-    RECT rect;
+    char buffer[64];
+    size_t length = 0;
+    bool has_response = false;
+    DWORD start = GetTickCount();
 
-    if (!GetClientRect(window, &rect)) {
+    while (length < sizeof(buffer) - 1 && GetTickCount() - start < 500) {
+        DWORD available = 0;
+
+        if (!GetNumberOfConsoleInputEvents(input, &available)) {
+            return TPXL_IO_ERROR;
+        }
+
+        if (available == 0) {
+            Sleep(1);
+            continue;
+        }
+
+        INPUT_RECORD records[16];
+        DWORD count = 0;
+
+        if (!ReadConsoleInputA(input, records, 16, &count)) {
+            return TPXL_IO_ERROR;
+        }
+
+        for (DWORD i = 0; i < count; ++i) {
+            if (records[i].EventType != KEY_EVENT ||
+                !records[i].Event.KeyEvent.bKeyDown) {
+                continue;
+            }
+
+            char c = records[i].Event.KeyEvent.uChar.AsciiChar;
+
+            if (!c) {
+                continue;
+            }
+
+            buffer[length++] = c;
+
+            if (c == 't') {
+                has_response = true;
+                break;
+            }
+        }
+
+        if (has_response) {
+            break;
+        }
+    }
+
+    buffer[length] = '\0';
+
+    uint32_t height = 0;
+    uint32_t width = 0;
+
+    if (sscanf(buffer, "\033[4;%u;%ut", &height, &width) != 2) {
         return TPXL_IO_ERROR;
     }
 
-    terminal->pixel_width = (uint32_t)(rect.right - rect.left);
-    terminal->pixel_height = (uint32_t)(rect.bottom - rect.top);
-
-    if (!terminal->pixel_width || !terminal->pixel_height) {
+    if (height <= 0 || width <= 0) {
         return TPXL_IO_ERROR;
     }
 
-    terminal->cell_width = terminal->pixel_width / terminal->columns;
-    terminal->cell_height = terminal->pixel_height / terminal->rows;
+    terminal->pixel_width = width;
+    terminal->pixel_height = height;
+
+    terminal->cell_width = width / terminal->columns;
+    terminal->cell_height = height / terminal->rows;
+
+    if (!terminal->cell_width || !terminal->cell_height) {
+        return TPXL_IO_ERROR;
+    }
 
     return tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
 }
@@ -151,7 +216,7 @@ TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal) {
     return TPXL_OK;
 }
 
-#else 
+#else
 
 #include <sys/ioctl.h>
 #include <termios.h>
@@ -246,7 +311,7 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
 
     if (!window_size.ws_row || !window_size.ws_col) {
         return TPXL_IO_ERROR;
-    }   
+    }
 
     terminal->rows = window_size.ws_row;
     terminal->columns = window_size.ws_col;
@@ -277,10 +342,10 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
 
         buffer[i] = '\0';
 
-        int height;
-        int width;
+        uint32_t height = 0;
+        uint32_t width = 0;
 
-        if (sscanf(buffer, "\033[4;%d;%dt", &height, &width) != 2) {
+        if (sscanf(buffer, "\033[4;%u;%ut", &height, &width) != 2) {
             return TPXL_IO_ERROR;
         }
 
@@ -288,18 +353,16 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
             return TPXL_IO_ERROR;
         }
 
-        terminal->pixel_height = (uint32_t)height;
-        terminal->pixel_width = (uint32_t)width;
+        terminal->pixel_height = height;
+        terminal->pixel_width = width;
     }
 
     terminal->cell_width = terminal->pixel_width / terminal->columns;
     terminal->cell_height = terminal->pixel_height / terminal->rows;
-    
-   TpxlResult result = tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
-   
-    if (result != TPXL_OK) {
-        return result;
-    }
+
+    return tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
+
+
 
     return TPXL_OK;
 }
