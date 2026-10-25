@@ -10,22 +10,41 @@ TPXL uses terminal graphics protocols such as Kitty Graphics, SIXEL and iTerm2 I
 
 | Terminal       | Kitty Graphics                  | SIXEL            | iTerm2 Images    |
 | -------------- | ------------------------------- | ---------------- | ---------------- |
-| Kitty          | 0.39.0+                         | —                | —                |
+| Kitty          | 0.39.0+                         | -                | -                |
 | WezTerm        | 20220101-133340+                | 20220408-101518+ | 20220101-133340+ |
-| Ghostty        | 1.3.1+                          | —                | —                |
-| Rio            | 0.5.27+                         | —                | —                |
-| foot           | —                               | Testing Required | —                |
-| iTerm2         | —                               | —                | Testing Required |
-| Contour        | 0.6.2.8008+                     | 0.6.2.8008+      | —                |
-| Konsole        | 23.08.5+                        | 23.08.5+         | —                |
-| mlterm         | —                               | 3.9.3+           | 3.9.3+           |
-| Warp           | 0.2026.10.14.08.27.stable_01+   | —                | —                |
-| Alacritty      | —                               | —                | —                |
-| GNOME Terminal | —                               | —                | —                |
+| Ghostty        | 1.3.1+                          | -                | -                |
+| Rio            | 0.5.27+                         | -                | -                |
+| foot           | -                               | Testing Required | -                |
+| iTerm2         | -                               | -                | Testing Required |
+| Tabby          | -                               | 1.0.194+         | -                |
+| Contour        | 0.6.2.8008+                     | 0.6.2.8008+      | -                |
+| Konsole        | 23.08.5+                        | 23.08.5+         | -                |
+| mlterm         | -                               | 3.9.3+           | 3.9.3+           |
+| Warp           | 0.2026.10.14.08.27.stable_01+   | -                | -                |
+| Alacritty      | -                               | -                | -                |
+| GNOME Terminal | -                               | -                | -                |
 
-Terminal support depends on the graphics protocols provided by the terminal. TPXL does not require a terminal to support both backends.
+Terminal support depends on the graphics protocols provided by the terminal. TPXL does not require a terminal to support all three backends.
 
 > Later versions of Kitty may provide improved performance with the Kitty backend.
+
+## Dependencies
+
+### System Dependencies
+- FFmpeg - `libavformat`, `libavcodec`, `libavutil`, `libswscale`, and `libswresample`.
+- libsixel
+
+### Bundled Dependencies
+TPXL includes the following vendored libraries:
+- stb_image
+- miniaudio
+- giflib
+
+### Fetched Dependencies
+The following libraries are fetched automatically by CMake during configuration:
+- libpng
+- zlib
+- base64
 
 ## Building
 
