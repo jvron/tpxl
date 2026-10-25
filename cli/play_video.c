@@ -2,12 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "tpxl/type.h"
 #include "tpxl/util.h"
 #include "tpxl/video.h"
 #include "tpxl/event.h"
-#include "tpxl/renderer.h"
-#include "tpxl/terminal.h"
 
 #include "cli.h"
 
@@ -159,36 +156,24 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend, bo
         if (display_status_bar) {
             double current = tpxl_video_player_get_time(player);
 
-            fprintf(stdout, "\033[%uB", video_rows + 1);
-            fprintf(stdout, "\r\033[K");
+            fprintf(stdout, "\033[%uB\r\033[K", video_rows + 1);
             
             int current_sec = (int)current;
             int duration_sec = (int)duration;
 
             fprintf(
                 stdout,
-                "\r%02d:%02d/",
+                "\r%02d:%02d/%02d:%02d frame=%u fps=%.1f  [p] %s [m] %s [h] hide [q] quit",
                 current_sec / 60,
-                current_sec % 60
-            );
-
-            fprintf(
-                stdout,
-                "%02d:%02d ",
+                current_sec % 60,
                 duration_sec / 60,
-                duration_sec % 60
-            );
-
-            fprintf(
-                stdout,
-                "frame=%u fps=%.1f  [p] %s [m] %s [h] hide [q] quit", 
-                tpxl_video_player_get_frames_played(player), 
-                fps, 
+                duration_sec % 60,
+                tpxl_video_player_get_frames_played(player),
+                fps,
                 playing ? "pause" : "play",
                 muted ? "unmute" : "mute"
             );
             
-            fprintf(stdout, "\033[%uA\033[%uG", video_rows + 1, video_cols);
             fflush(stdout);
         }
 
