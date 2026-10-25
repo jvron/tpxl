@@ -183,6 +183,12 @@ target_include_directories(giflib PUBLIC
     "${GIFLIB_DIR}"
 )
 
+if(UNIX AND NOT APPLE)
+    target_compile_definitions(giflib PRIVATE
+        _POSIX_C_SOURCE=200809L
+    )
+endif()
+
 if(TPXL_BUILD_SHARED)
     set_target_properties(giflib PROPERTIES
         POSITION_INDEPENDENT_CODE ON
