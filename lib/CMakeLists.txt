@@ -73,7 +73,7 @@ FetchContent_MakeAvailable(base64)
 
 # Position-independent code for shared TPXL builds
 if(TPXL_BUILD_SHARED)
-    foreach(target ZLIB::ZLIB PNG::PNG base64)
+    foreach(target zlibstatic png_static base64)
         if(TARGET ${target})
             set_target_properties(${target} PROPERTIES
                 POSITION_INDEPENDENT_CODE ON
