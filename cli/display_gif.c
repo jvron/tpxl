@@ -42,8 +42,10 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     );
     if (result != TPXL_OK) goto error;
 
-    result = tpxl_animation_resize(&animation, output_width, output_height);
-    if (result != TPXL_OK) goto error;
+    if (output_width != animation.width || output_height != animation.height) {
+        result = tpxl_animation_resize(&animation, output_width, output_height);
+        if (result != TPXL_OK) goto error;
+    }
 
     uint32_t animation_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
 

@@ -27,22 +27,33 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
         goto cleanup;
     }
 
-    uint32_t area_width = terminal->pixel_width;
-    uint32_t area_height = terminal->pixel_height * terminal->cell_width / terminal->cell_height;
+    const uint32_t margin = 64;
+
+    uint32_t area_width = terminal->pixel_width > margin ? terminal->pixel_width - margin : terminal->pixel_width;
+    uint32_t area_height = terminal->pixel_height > margin ? terminal->pixel_height - margin : terminal->pixel_height;
 
     uint32_t output_width, output_height;
-    result = tpxl_scale_fit(
-        area_width,
-        area_height,
-        image.width, 
-        image.height, 
-        &output_width,
-        &output_height
-    );
-    if (result != TPXL_OK) goto error;
 
-    result = tpxl_image_resize(&image, output_width, output_height);
-    if (result != TPXL_OK) goto error;
+    // Downscale only when needed.
+    if (image.width > area_width || image.height > area_height) {
+        result = tpxl_scale_fit(
+            area_width,
+            area_height,
+            image.width, 
+            image.height, 
+            &output_width,
+            &output_height
+        );
+        if (result != TPXL_OK) goto error;
+    
+        if (output_width != image.width || output_height != image.height) {
+            result = tpxl_image_resize(&image, output_width, output_height);
+            if (result != TPXL_OK) goto error;
+        }
+    } else {
+        output_width = image.width;
+        output_height = image.height;
+    }
 
     uint32_t image_rows = (output_height + terminal->cell_height - 1) / terminal->cell_height;
 
