@@ -1,7 +1,7 @@
 #ifndef TPXL_ITERM2_BACKEND_H
 #define TPXL_ITERM2_BACKEND_H
 
-#include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "tpxl/type.h"
@@ -44,7 +44,14 @@ typedef struct {
 } TpxlIterm2Context;
 
 TpxlResult tpxl_iterm2_context_init(TpxlIterm2Context* iterm2_context);
-TpxlResult tpxl_iterm2_set_frame(TpxlIterm2Context* iterm2_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_iterm2_set_frame(
+    TpxlIterm2Context* iterm2_context,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t render_width,
+    uint32_t render_height,
+    TpxlFormat format
+);
 TpxlResult tpxl_iterm2_set_media_policy(TpxlIterm2Context* iterm2_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t row, uint32_t column);

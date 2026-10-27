@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -29,9 +30,15 @@ TpxlResult tpxl_kitty_context_init(TpxlKittyContext* kitty_context) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
-
-    assert(kitty_context && terminal);
+TpxlResult tpxl_kitty_set_frame(
+    TpxlKittyContext* kitty_context,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t width,
+    uint32_t height,
+    TpxlFormat format
+) {
+    assert(kitty_context);
 
     switch (format) {
         case TPXL_FORMAT_RGB:
@@ -45,8 +52,8 @@ TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTermi
     }
 
     // convert pixel dimensions to terminal cells
-    kitty_context->columns = (width + terminal->cell_width - 1) / terminal->cell_width;
-    kitty_context->rows = (height + terminal->cell_height - 1) / terminal->cell_height;
+    kitty_context->output_columns = (width + cell_width - 1) / cell_width;
+    kitty_context->output_rows = (height + cell_height - 1) / cell_height;
 
     kitty_context->output_width = width;
     kitty_context->output_height = height;
@@ -148,8 +155,8 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
                 kitty_context->kitty_format,
                 frame->width,
                 frame->height,
-                kitty_context->columns,
-                kitty_context->rows,
+                kitty_context->output_columns,
+                kitty_context->output_rows,
                 kitty_context->cursor_policy,
                 more_chunks
             );
@@ -229,8 +236,8 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
                 kitty_context->kitty_format,
                 frame->width,
                 frame->height,
-                kitty_context->columns,
-                kitty_context->rows,
+                kitty_context->output_columns,
+                kitty_context->output_rows,
                 kitty_context->cursor_policy,
                 more_chunks
             );
@@ -270,8 +277,8 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
         "C=%d,"
         "q=2;\x1b\\",
         frame_id,
-        kitty_context->columns,
-        kitty_context->rows,
+        kitty_context->output_columns,
+        kitty_context->output_rows,
         kitty_context->cursor_policy
     );
 

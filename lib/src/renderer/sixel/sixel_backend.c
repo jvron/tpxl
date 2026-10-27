@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -100,9 +101,15 @@ TpxlResult tpxl_sixel_context_init(TpxlSixelContext* sixel_context) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_sixel_set_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format) {
-
-    assert(sixel_context && terminal);
+TpxlResult tpxl_sixel_set_frame(
+    TpxlSixelContext* sixel_context,
+    uint32_t cell_width, 
+    uint32_t cell_height, 
+    uint32_t width, 
+    uint32_t height,
+    TpxlFormat format
+) {
+    assert(sixel_context);
 
     switch (format) {
         case TPXL_FORMAT_RGB:
@@ -120,8 +127,8 @@ TpxlResult tpxl_sixel_set_frame(TpxlSixelContext* sixel_context, const TpxlTermi
     }
 
     // convert pixel dimensions to terminal cells
-    sixel_context->columns = (width + terminal->cell_width - 1) / terminal->cell_width;
-    sixel_context->rows = (height + terminal->cell_height - 1) / terminal->cell_height;
+    sixel_context->output_columns = (width + cell_width - 1) / cell_width;
+    sixel_context->output_rows = (height + cell_height - 1) / cell_height;
     
     sixel_context->output_width = width;
     sixel_context->output_height = height;
@@ -304,8 +311,8 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         .id = frame_id,
         .row = 0,
         .column = 0,
-        .rows = sixel_context->rows,
-        .columns = sixel_context->columns,
+        .rows = sixel_context->output_rows,
+        .columns = sixel_context->output_columns,
     };
     
     result = tpxl_image_map_insert(&sixel_context->image_map, &entry, frame_id);
@@ -372,6 +379,10 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
         }
 
         while (capacity < entry->columns) {
+            if (capacity > SIZE_MAX / 2) {
+                capacity = entry->columns;
+                break;
+            }
             capacity *= 2;
         }
 
@@ -396,7 +407,9 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
         fprintf(stdout, "\033[%u;%uH", entry->row + i + 1, entry->column);
     }
 
-    fprintf(stdout, "\033[%u;%uH", entry->row, entry->column);
+    if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
+        fprintf(stdout, "\033[%u;%uH", entry->row, entry->column);
+    }
 
     fflush(stdout);
 }

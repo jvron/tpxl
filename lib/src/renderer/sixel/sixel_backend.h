@@ -7,7 +7,6 @@
 #include <sixel.h>
 
 #include "tpxl/renderer.h"
-#include "tpxl/terminal.h"
 #include "tpxl/type.h"
 
 #include "renderer/image_map.h"
@@ -23,8 +22,8 @@ typedef struct {
     uint32_t output_height;
 
     // Output dimensions in cells
-    uint32_t columns;
-    uint32_t rows;
+    uint32_t output_columns;
+    uint32_t output_rows;
 
     TpxlImageMap image_map;
     
@@ -44,7 +43,14 @@ typedef struct {
 } TpxlSixelContext;
 
 TpxlResult tpxl_sixel_context_init(TpxlSixelContext* sixel_context);
-TpxlResult tpxl_sixel_set_frame(TpxlSixelContext* sixel_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_sixel_set_frame(
+    TpxlSixelContext* sixel_context,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t render_width,
+    uint32_t render_height,
+    TpxlFormat format
+);
 TpxlResult tpxl_sixel_set_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t row, uint32_t column);

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -177,13 +178,14 @@ TpxlResult tpxl_iterm2_context_init(TpxlIterm2Context* iterm2_context) {
 
 TpxlResult tpxl_iterm2_set_frame(
     TpxlIterm2Context* iterm2_context,
-    const TpxlTerminal* terminal,
+    uint32_t cell_width,
+    uint32_t cell_height,
     uint32_t width,
     uint32_t height,
     TpxlFormat format
 )
 {
-    assert(iterm2_context && terminal);
+    assert(iterm2_context);
 
     switch (format) {
         case TPXL_FORMAT_RGB:
@@ -197,8 +199,8 @@ TpxlResult tpxl_iterm2_set_frame(
     }
 
     // convert pixel dimensions to terminal cells
-    iterm2_context->output_columns = (width + terminal->cell_width - 1) / terminal->cell_width;
-    iterm2_context->output_rows = (height + terminal->cell_height - 1) / terminal->cell_height;
+    iterm2_context->output_columns = (width + cell_width - 1) / cell_width;
+    iterm2_context->output_rows = (height + cell_height - 1) / cell_height;
 
     iterm2_context->output_width = width;
     iterm2_context->output_height = height;

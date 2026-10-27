@@ -1,7 +1,9 @@
 #ifndef TPXL_RENDERER_H
 #define TPXL_RENDERER_H
 
-#include "tpxl/terminal.h"
+#include <stdint.h>
+
+#include "tpxl/type.h"
 
 /**
  * Represents a renderer instance.
@@ -31,10 +33,11 @@ typedef enum {
  * Configuration used to create a renderer.
  */
 typedef struct {
-    TpxlTerminal* terminal;
-
     TpxlBackend backend;
     TpxlMediaType media_type;
+
+    uint32_t cell_width;
+    uint32_t cell_height;
     
     TpxlFormat format;
     uint32_t render_width;
@@ -65,9 +68,12 @@ typedef struct {
 TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* config);
 
 /**
- * Updates the renderer's output dimensions and pixel format.
+ * Updates the renderer's terminal cell dimensions, rendering dimensions,
+ * and pixel format.
  *
  * @param renderer Renderer to update.
+ * @param cell_width Width of a terminal cell in pixels.
+ * @param cell_height Height of a terminal cell in pixels.
  * @param render_width Desired rendering width in pixels.
  * @param render_height Desired rendering height in pixels.
  * @param format Pixel format to use for rendering.
@@ -77,7 +83,14 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
  * @return TPXL_INVALID_BACKEND if the renderer's backend is invalid.
  * @return The error returned by the selected backend if the update fails.
  */
-TpxlResult tpxl_renderer_update_frame(TpxlRenderer* renderer, uint32_t render_width, uint32_t render_height, TpxlFormat format);
+TpxlResult tpxl_renderer_update_frame(
+    TpxlRenderer* renderer,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t render_width,
+    uint32_t render_height,
+    TpxlFormat format
+);
 
 /**
  * Updates the renderer's media handling policy.

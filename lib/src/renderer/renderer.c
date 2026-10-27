@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "tpxl/renderer.h"
 
@@ -8,8 +9,6 @@
 #include "iterm2/iterm2_backend.h"
 
 struct TpxlRendererImp {
-    TpxlTerminal* terminal;
-
     TpxlBackend backend;
     union {
         TpxlKittyContext kitty_context;
@@ -20,7 +19,7 @@ struct TpxlRendererImp {
 
 TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* config) {
 
-    if (!renderer || !config || !config->terminal) {
+    if (!renderer || !config) {
         return TPXL_INVALID_ARGUMENT;
     }
 
@@ -57,7 +56,8 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
 
             result = tpxl_kitty_set_frame(
                 &(*renderer)->kitty_context, 
-                config->terminal, 
+                config->cell_width,
+                config->cell_height, 
                 config->render_width, 
                 config->render_height, 
                 config->format
@@ -93,8 +93,10 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
                 return result;
             }
 
-            result = tpxl_sixel_set_frame(&(*renderer)->sixel_context, 
-                config->terminal, 
+            result = tpxl_sixel_set_frame(
+                &(*renderer)->sixel_context,
+                config->cell_width,
+                config->cell_height, 
                 config->render_width, 
                 config->render_height, 
                 config->format
@@ -129,8 +131,10 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
                 return result;
             }
 
-            result = tpxl_iterm2_set_frame(&(*renderer)->iterm2_context, 
-                config->terminal, 
+            result = tpxl_iterm2_set_frame(
+                &(*renderer)->iterm2_context, 
+                config->cell_width,
+                config->cell_height, 
                 config->render_width, 
                 config->render_height, 
                 config->format
@@ -150,28 +154,52 @@ TpxlResult tpxl_renderer_create(TpxlRenderer** renderer, TpxlRendererConfig* con
             return TPXL_INVALID_BACKEND;
     }
 
-    (*renderer)->terminal = config->terminal;
-
     return TPXL_OK;
 }
 
-TpxlResult tpxl_renderer_update_frame(TpxlRenderer* renderer, uint32_t width, uint32_t height, TpxlFormat format) {
-
+TpxlResult tpxl_renderer_update_frame(
+    TpxlRenderer* renderer,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t render_width,
+    uint32_t render_height,
+    TpxlFormat format
+) {
     if (!renderer) {
         return TPXL_INVALID_ARGUMENT;
     }
 
     switch (renderer->backend) {
         case TPXL_BACKEND_KITTY:
-            return tpxl_kitty_set_frame(&renderer->kitty_context, renderer->terminal, width, height, format);
+            return tpxl_kitty_set_frame(
+                &renderer->kitty_context,
+                cell_width,
+                cell_height,
+                render_width,
+                render_height,
+                format
+            );
         case TPXL_BACKEND_SIXEL:
-            return tpxl_sixel_set_frame(&renderer->sixel_context, renderer->terminal, width, height, format);
+            return tpxl_sixel_set_frame(
+                &renderer->sixel_context,
+                cell_width,
+                cell_height,
+                render_width,
+                render_height,
+                format
+            );
         case TPXL_BACKEND_ITERM2:
-            return tpxl_iterm2_set_frame(&renderer->iterm2_context, renderer->terminal, width, height, format);
-
+            return tpxl_iterm2_set_frame(
+                &renderer->iterm2_context,
+                cell_width,
+                cell_height,
+                render_width,
+                render_height,
+                format
+            );
         default:
             return TPXL_INVALID_BACKEND;
-    } 
+    }
 }
 
 TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type) {

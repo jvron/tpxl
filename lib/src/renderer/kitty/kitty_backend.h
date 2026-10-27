@@ -2,6 +2,7 @@
 #define TPXL_KITTY_BACKEND_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "tpxl/renderer.h"
 
@@ -22,15 +23,22 @@ typedef struct {
     TpxlMutex output_mutex;
     bool output_mutex_initialized;
 
-    uint32_t columns;
-    uint32_t rows;
+    uint32_t output_columns;
+    uint32_t output_rows;
 
     uint32_t output_width;
     uint32_t output_height;
 } TpxlKittyContext;
 
 TpxlResult tpxl_kitty_context_init(TpxlKittyContext* kitty_context);
-TpxlResult tpxl_kitty_set_frame(TpxlKittyContext* kitty_context, const TpxlTerminal* terminal, uint32_t width, uint32_t height, TpxlFormat format);
+TpxlResult tpxl_kitty_set_frame(
+    TpxlKittyContext* kitty_context,
+    uint32_t cell_width,
+    uint32_t cell_height,
+    uint32_t render_width,
+    uint32_t render_height,
+    TpxlFormat format
+);
 TpxlResult tpxl_kitty_set_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type);
 
 TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t row, uint32_t column);
