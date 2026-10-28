@@ -361,10 +361,6 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
     terminal->cell_height = terminal->pixel_height / terminal->rows;
 
     return tpxl_terminal_get_cursor_position(&terminal->cursor_row, &terminal->cursor_column);
-
-
-
-    return TPXL_OK;
 }
 
 TpxlResult tpxl_terminal_shutdown(TpxlTerminal* terminal) {

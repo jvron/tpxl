@@ -82,8 +82,9 @@ int play_video(const char* path, TpxlTerminal* terminal, TpxlBackend backend, bo
 
     TpxlRendererConfig config;
     config.backend = backend;
-    config.terminal = terminal;
     config.media_type = TPXL_MEDIA_VIDEO;
+    config.cell_width = terminal->cell_width;
+    config.cell_height = terminal->cell_height;
     config.render_width = output_width;
     config.render_height = output_height;
     config.format = tpxl_video_get_format(video);

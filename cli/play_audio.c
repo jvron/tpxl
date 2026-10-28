@@ -73,9 +73,10 @@ int play_audio(const char* path, TpxlTerminal* terminal, TpxlBackend backend) {
         }
 
         TpxlRendererConfig config;
-        config.terminal = terminal;
         config.backend = backend;
         config.media_type = TPXL_MEDIA_IMAGE;
+        config.cell_width = terminal->cell_width;
+        config.cell_height = terminal->cell_height;
         config.render_width = output_width;
         config.render_height = output_height;
         config.format = thumbnail.format;

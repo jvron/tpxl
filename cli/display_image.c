@@ -63,7 +63,8 @@ int display_image(const char* file, TpxlTerminal* terminal, TpxlBackend backend,
     TpxlRendererConfig config;
     config.backend = backend;
     config.media_type = TPXL_MEDIA_IMAGE;
-    config.terminal = terminal;
+    config.cell_width = terminal->cell_width;
+    config.cell_height = terminal->cell_height;
     config.render_width = output_width;
     config.render_height = output_height;
     config.format = image.format;

@@ -55,7 +55,8 @@ int display_gif(const char* path, TpxlTerminal* terminal, TpxlBackend backend, b
     TpxlRendererConfig config;
     config.media_type = TPXL_MEDIA_ANIMATION;
     config.backend = backend;
-    config.terminal = terminal;
+    config.cell_width = terminal->cell_width;
+    config.cell_height = terminal->cell_height;
     config.render_width = output_width;
     config.render_height = output_height;
     config.format = animation.format;
