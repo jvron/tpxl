@@ -130,7 +130,7 @@ static TpxlResult tpxl_encode_png(TpxlIterm2Context* iterm2_context, const TpxlI
 
     // Prioritize encoding speed over compression ratio.
     png_set_filter(png_ptr, PNG_FILTER_TYPE_BASE, PNG_FILTER_NONE);
-    png_set_compression_level(png_ptr, Z_BEST_SPEED);
+    png_set_compression_level(png_ptr, Z_NO_COMPRESSION);
 
     png_write_info(png_ptr, info_ptr);
 
@@ -332,21 +332,39 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     }
 
     size_t encoded_size = tpxl_base64_encoded_size(png_size);
-    char* encoded_data = malloc(encoded_size);
+    const size_t header_capacity = 128;
 
-    if (!encoded_data) {
+    char* payload = malloc(header_capacity + encoded_size + 1);
+
+    if (!payload) {
         return TPXL_OUT_OF_MEMORY;
     }
 
-    size_t output_length = 0;
-    if (tpxl_base64_encode(png_data, png_size, encoded_data, &output_length) != TPXL_OK) {
-        free(encoded_data);
+    size_t header_len = snprintf(
+        payload, header_capacity, 
+        "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
+        iterm2_context->output_columns,
+        iterm2_context->output_rows
+    );
+
+    if (header_len < 0 || header_len >= header_capacity) {
+        free(payload);
         return TPXL_ENCODING_FAILED;
     }
 
+    size_t output_length = 0;
+    if (tpxl_base64_encode(png_data, png_size, payload + header_len, &output_length) != TPXL_OK) {
+        free(payload);
+        return TPXL_ENCODING_FAILED;
+    }
+
+    payload[header_len + output_length] = '\a';
+
+    const size_t payload_size = header_len + output_length + 1;
+
     TpxlImageMapEntry entry = {
-        .data = encoded_data,
-        .size = output_length,
+        .data = payload,
+        .size = payload_size,
         .id = frame_id,
         .row = 0,
         .column = 0,
@@ -357,7 +375,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     result = tpxl_image_map_insert(&iterm2_context->image_map, &entry, frame_id);
 
     if (result != TPXL_OK) {
-        free(encoded_data);
+        free(payload);
         return result;
     }
 
@@ -379,19 +397,10 @@ TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame
 
     fprintf(stdout, "\033[%u;%uH", row, column);
 
-    fprintf(
-        stdout,
-        "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
-        iterm2_context->output_columns,
-        iterm2_context->output_rows
-    );
-
     if (fwrite(entry->data, 1, entry->size, stdout) != entry->size) {
         tpxl_mutex_unlock(&iterm2_context->output_mutex);
         return TPXL_RENDER_FAILED;
     }
-
-    fputc('\a', stdout);
 
     if (iterm2_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
         fprintf(stdout, "\033[%u;%uH", row, column);
