@@ -281,9 +281,13 @@ TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const Tp
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(png_data, png_size, iterm2_context->encoded_buffer, &output_length) != TPXL_OK) {
-        return TPXL_ENCODING_FAILED;
-    }
+    tpxl_base64_encode(
+        png_data, 
+        png_size, 
+        iterm2_context->encoded_buffer, 
+        iterm2_context->encoded_capacity, 
+        &output_length
+    );
 
     tpxl_mutex_lock(&iterm2_context->output_mutex);
 
@@ -334,7 +338,8 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     size_t encoded_size = tpxl_base64_encoded_size(png_size);
     const size_t header_capacity = 128;
 
-    char* payload = malloc(header_capacity + encoded_size + 1);
+    size_t payload_capacity = header_capacity + encoded_size + 1;
+    char* payload = malloc(payload_capacity);
 
     if (!payload) {
         return TPXL_OUT_OF_MEMORY;
@@ -353,10 +358,13 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(png_data, png_size, payload + header_len, &output_length) != TPXL_OK) {
-        free(payload);
-        return TPXL_ENCODING_FAILED;
-    }
+    tpxl_base64_encode(
+        png_data, 
+        png_size, 
+        payload + header_len,
+        payload_capacity,
+        &output_length
+    );
 
     payload[header_len + output_length] = '\a';
 

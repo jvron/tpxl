@@ -122,9 +122,13 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(frame->pixels, kitty_context->frame_size, kitty_context->encoded_data, &output_length) != TPXL_OK) {
-        return TPXL_ENCODING_FAILED;
-    }
+    tpxl_base64_encode(
+        frame->pixels, 
+        kitty_context->frame_size, 
+        kitty_context->encoded_data, 
+        kitty_context->encoded_capacity, 
+        &output_length
+    );
 
     tpxl_mutex_lock(&kitty_context->output_mutex);
 
@@ -202,9 +206,13 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
     }
 
     size_t output_length = 0;
-    if (tpxl_base64_encode(kitty_context->compressed_data, compressed_length, kitty_context->encoded_data, &output_length) != TPXL_OK) {
-        return TPXL_ENCODING_FAILED;
-    }
+    tpxl_base64_encode(
+        kitty_context->compressed_data, 
+        compressed_length, 
+        kitty_context->encoded_data, 
+        kitty_context->encoded_capacity, 
+        &output_length
+    );
 
     tpxl_mutex_lock(&kitty_context->output_mutex);
 
