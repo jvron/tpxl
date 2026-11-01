@@ -52,6 +52,27 @@ TpxlResult tpxl_terminal_init(TpxlTerminal* terminal);
 TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column);
 
 /**
+ * Queries the current terminal dimensions.
+ *
+ * Retrieves the terminal's pixel dimensions and character-cell dimensions.
+ *
+ * @param width Output pointer receiving the terminal width in pixels.
+ * @param height Output pointer receiving the terminal height in pixels.
+ * @param rows Output pointer receiving the number of character rows.
+ * @param columns Output pointer receiving the number of character columns.
+ *
+ * @return TPXL_OK on success.
+ * @return TPXL_IO_ERROR if the terminal dimensions cannot be queried.
+ * @return TPXL_INVALID_ARGUMENT if any output pointer is NULL.
+ */
+TpxlResult tpxl_terminal_query_dimensions(
+    uint32_t* width,
+    uint32_t* height,
+    uint32_t* rows,
+    uint32_t* columns
+);
+
+/**
  * Queries the current terminal dimensions and cursor position.
  *
  * On success, the TpxlTerminal structure is populated with the terminal's

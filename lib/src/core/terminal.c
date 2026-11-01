@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 
 #include "tpxl/type.h"
@@ -297,11 +298,16 @@ TpxlResult tpxl_terminal_get_cursor_position(uint32_t* row, uint32_t* column) {
     return TPXL_OK;
 }
 
-TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
+TpxlResult tpxl_terminal_query_dimensions(uint32_t* width, uint32_t* height, uint32_t* rows, uint32_t* columns) {
 
-    if (!terminal) {
+    if (!width || !height || !rows || !columns) {
         return TPXL_INVALID_ARGUMENT;
     }
+
+    *width = 0;
+    *height = 0;
+    *rows = 0;
+    *columns = 0;
 
     struct winsize window_size;
 
@@ -313,12 +319,12 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
         return TPXL_IO_ERROR;
     }
 
-    terminal->rows = window_size.ws_row;
-    terminal->columns = window_size.ws_col;
+    *rows = window_size.ws_row;
+    *columns = window_size.ws_col;
 
     if (window_size.ws_xpixel && window_size.ws_ypixel) {
-        terminal->pixel_width = window_size.ws_xpixel;
-        terminal->pixel_height = window_size.ws_ypixel;
+        *width = window_size.ws_xpixel;
+        *height = window_size.ws_ypixel;
     } else {
         fprintf(stdout, "\033[14t");
         fflush(stdout);
@@ -342,19 +348,38 @@ TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
 
         buffer[i] = '\0';
 
-        uint32_t height = 0;
-        uint32_t width = 0;
+        int parsed_height = 0;
+        int parsed_width = 0;
 
-        if (sscanf(buffer, "\033[4;%u;%ut", &height, &width) != 2) {
+        if (sscanf(buffer, "\033[4;%d;%dt", &parsed_height, &parsed_width) != 2) {
             return TPXL_IO_ERROR;
         }
 
-        if (height <= 0 || width <= 0) {
+        if (parsed_height <= 0 || parsed_width <= 0) {
             return TPXL_IO_ERROR;
         }
 
-        terminal->pixel_height = height;
-        terminal->pixel_width = width;
+        *height = (uint32_t)parsed_height;
+        *width = (uint32_t)parsed_width;
+    }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_terminal_query(TpxlTerminal* terminal) {
+
+    if (!terminal) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    TpxlResult result = tpxl_terminal_query_dimensions(
+        &terminal->pixel_width, 
+        &terminal->pixel_height, 
+        &terminal->rows, &terminal->columns
+    );
+
+    if (result != TPXL_OK) {
+        return result;
     }
 
     terminal->cell_width = terminal->pixel_width / terminal->columns;
