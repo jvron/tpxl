@@ -8,21 +8,21 @@ TPXL uses terminal graphics protocols such as Kitty Graphics, SIXEL and iTerm2 I
 
 ## Terminal Support
 
-| Terminal       | Kitty Graphics                  | SIXEL            | iTerm2 Images    |
-| -------------- | ------------------------------- | ---------------- | ---------------- |
-| Kitty          | 0.39.0+                         | -                | -                |
-| WezTerm        | 20220101-133340+                | 20220408-101518+ | 20220101-133340+ |
-| Ghostty        | 1.3.1+                          | -                | -                |
-| Rio            | 0.5.27+                         | -                | -                |
-| foot           | -                               | Testing Required | -                |
-| iTerm2         | -                               | -                | Testing Required |
-| Tabby          | -                               | 1.0.194+         | -                |
-| Contour        | 0.6.2.8008+                     | 0.6.2.8008+      | -                |
-| Konsole        | 23.08.5+                        | 23.08.5+         | -                |
-| mlterm         | -                               | 3.9.3+           | 3.9.3+           |
-| Warp           | 0.2026.10.14.08.27.stable_01+   | -                | -                |
-| Alacritty      | -                               | -                | -                |
-| GNOME Terminal | -                               | -                | -                |
+| Terminal       | Kitty Graphics                | SIXEL            | iTerm2 Images    |
+| -------------- | ----------------------------- | ---------------- | ---------------- |
+| Kitty          | 0.39.0+                       | _                | _                |
+| WezTerm        | 20220101-133340+              | 20220408-101518+ | 20220101-133340+ |
+| Ghostty        | 1.3.1+                        | _                | _                |
+| Rio            | 0.5.27+                       | _                | _                |
+| foot           | _                             | 1.16.2+          | _                |
+| iTerm2         | _                             | _                | Testing Required |
+| Tabby          | _                             | 1.0.194+         | _                |
+| Contour        | 0.6.2.8008+                   | 0.6.2.8008+      | _                |
+| Konsole        | 23.08.5+                      | 23.08.5+         | _                |
+| mlterm         | _                             | 3.9.3+           | 3.9.3+           |
+| Warp           | 0.2026.10.14.08.27.stable_01+ | _                | _                |
+| Alacritty      | _                             | _                | _                |
+| GNOME Terminal | _                             | _                | _                |
 
 Terminal support depends on the graphics protocols provided by the terminal. TPXL does not require a terminal to support all three backends.
 
