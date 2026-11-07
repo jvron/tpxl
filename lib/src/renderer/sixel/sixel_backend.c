@@ -5,6 +5,7 @@
 
 #include <sixel.h>
 
+#include "renderer/image_map.h"
 #include "tpxl/renderer.h"
 #include "tpxl/type.h"
 
@@ -305,7 +306,7 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         goto cleanup;
     }
 
-    TpxlImageMapEntry entry = {
+    TpxlImageEntry entry = {
         .data = sixel_context->encoded_buffer,
         .size = sixel_context->encoded_buffer_size,
         .id = frame_id,
@@ -336,7 +337,7 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
 
     assert(sixel_context);
 
-    TpxlImageMapEntry* entry = NULL;
+    TpxlImageEntry* entry = NULL;
     TpxlResult result = tpxl_image_map_get(&sixel_context->image_map, frame_id,  &entry);
 
     if (result != TPXL_OK) {
@@ -365,7 +366,7 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
 
     assert(sixel_context);
 
-    TpxlImageMapEntry* entry = NULL;
+    TpxlImageEntry* entry = NULL;
     if (tpxl_image_map_get(&sixel_context->image_map, frame_id, &entry) != TPXL_OK) {
         return;
     }

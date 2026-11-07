@@ -370,7 +370,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
 
     const size_t payload_size = header_len + output_length + 1;
 
-    TpxlImageMapEntry entry = {
+    TpxlImageEntry entry = {
         .data = payload,
         .size = payload_size,
         .id = frame_id,
@@ -394,7 +394,7 @@ TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame
 
     assert(iterm2_context);
 
-    TpxlImageMapEntry* entry = NULL;
+    TpxlImageEntry* entry = NULL;
     TpxlResult result = tpxl_image_map_get(&iterm2_context->image_map, frame_id,  &entry);
 
     if (result != TPXL_OK) {
@@ -428,7 +428,7 @@ void tpxl_iterm2_delete_placement(TpxlIterm2Context* iterm2_context, uint32_t fr
 
     assert(iterm2_context);
 
-    TpxlImageMapEntry* entry = NULL;
+    TpxlImageEntry* entry = NULL;
     if (tpxl_image_map_get(&iterm2_context->image_map, frame_id, &entry) != TPXL_OK) {
         return;
     }

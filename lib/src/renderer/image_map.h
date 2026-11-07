@@ -6,7 +6,6 @@
 
 #include "tpxl/type.h"
 
-#define TPXL_IMAGE_MAP_CAPACITY 256
 
 typedef enum {
     TPXL_ENTRY_EMPTY = 0,
@@ -22,18 +21,19 @@ typedef struct {
     uint32_t column;
     uint32_t rows;
     uint32_t columns;
-} TpxlImageMapEntry;
+} TpxlImageEntry;
 
 typedef struct {
-    TpxlImageMapEntry entries[TPXL_IMAGE_MAP_CAPACITY];
-    TpxlEntryState states[TPXL_IMAGE_MAP_CAPACITY];
+    TpxlImageEntry* entries;
+    TpxlEntryState* states;
     size_t count;
+    size_t capacity;
 } TpxlImageMap;
 
 TpxlResult tpxl_image_map_init(TpxlImageMap* image_map);
-TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageMapEntry* entry, uint32_t frame_id);
+TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageEntry* entry, uint32_t frame_id);
 TpxlResult tpxl_image_map_remove(TpxlImageMap* image_map, uint32_t frame_id);
-TpxlResult tpxl_image_map_get(TpxlImageMap* image_map, uint32_t frame_id, TpxlImageMapEntry** out_entry);
+TpxlResult tpxl_image_map_get(TpxlImageMap* image_map, uint32_t frame_id, TpxlImageEntry** out_entry);
 void tpxl_image_map_destroy(TpxlImageMap* image_map);
 
 #endif
