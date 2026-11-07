@@ -4,13 +4,16 @@
 
 #include <zlib.h>
 
-#include "tpxl/terminal.h"
 
 #include "util/base64.h"
 #include "util/thread.h"
 #include "kitty_backend.h"
 
 #define TPXL_KITTY_CHUNK_SIZE 4096
+
+static inline uint32_t tpxl_kitty_frame_id(uint32_t frame_id) {
+    return frame_id + 1;
+}
 
 TpxlResult tpxl_kitty_context_init(TpxlKittyContext* kitty_context) {
 
@@ -191,6 +194,8 @@ TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame
         return TPXL_INVALID_FORMAT;
     }
 
+    frame_id = tpxl_kitty_frame_id(frame_id);
+
     uLongf compressed_length = kitty_context->compressed_capacity;
 
     int ret = compress2(
@@ -272,6 +277,8 @@ TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id
 
     assert(kitty_context);
 
+    frame_id = tpxl_kitty_frame_id(frame_id);
+
     tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(stdout,"\033[%u;%uH", row, column);
@@ -301,6 +308,8 @@ void tpxl_kitty_delete_placement(TpxlKittyContext* kitty_context, uint32_t frame
 
     assert(kitty_context);
 
+    frame_id = tpxl_kitty_frame_id(frame_id);
+
     tpxl_mutex_lock(&kitty_context->output_mutex);
 
     fprintf(
@@ -318,6 +327,8 @@ void tpxl_kitty_delete_placement(TpxlKittyContext* kitty_context, uint32_t frame
 void tpxl_kitty_delete_data(TpxlKittyContext* kitty_context, uint32_t frame_id) {
 
     assert(kitty_context);
+
+    frame_id = tpxl_kitty_frame_id(frame_id);
 
     tpxl_mutex_lock(&kitty_context->output_mutex);
 

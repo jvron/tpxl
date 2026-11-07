@@ -2,6 +2,7 @@
 #define TPXL_RENDERER_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "tpxl/type.h"
 
@@ -131,7 +132,7 @@ TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame,
  *
  * @param renderer Renderer to use.
  * @param frame Image to upload.
- * @param frame_id Identifier assigned to the uploaded image. Must not be zero.
+ * @param frame_id Identifier assigned to the uploaded image.
  *
  * @return TPXL_OK on success.
   * @return TPXL_INVALID_ARGUMENT if renderer or frame is NULL, frame->pixels
@@ -148,7 +149,7 @@ TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32
  * Row and column positions are one-based.
  *
  * @param renderer Renderer to use.
- * @param frame_id Identifier of the uploaded image. Must not be zero.
+ * @param frame_id Identifier of the uploaded image.
  * @param row Destination row.
  * @param column Destination column.
  *
@@ -178,9 +179,9 @@ TpxlBackend tpxl_renderer_get_backend(TpxlRenderer* renderer);
  * uploaded image data.
  *
  * @param renderer Renderer to use.
- * @param frame_id Identifier of the image whose placement is to be deleted. Must not be zero.
+ * @param frame_id Identifier of the image whose placement is to be deleted.
  *
- * @note If renderer is NULL or frame_id is zero, the function has no effect.
+ * @note If renderer is NULL, the function has no effect.
  */
 void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id);
 
@@ -188,9 +189,10 @@ void tpxl_renderer_delete_placement(TpxlRenderer* renderer, uint32_t frame_id);
  * Deletes the data associated with an uploaded image.
  *
  * @param renderer Renderer to use.
- * @param frame_id Identifier of the image whose data is to be deleted. Must not be zero.
+ * @param frame_id Identifier of the image whose data is to be deleted.
  *
- * @note If renderer is NULL or frame_id is zero, the function has no effect.
+ * @note If renderer is NULL, or if the specified frame_id or image has
+ *       already been deleted, the function has no effect.
  */
 void tpxl_renderer_delete_data(TpxlRenderer* renderer, uint32_t frame_id);
 
