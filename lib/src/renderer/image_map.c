@@ -31,8 +31,7 @@ TpxlResult tpxl_image_map_init(TpxlImageMap* image_map) {
     return TPXL_OK;
 }
 
-
-TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageEntry* entry, uint32_t frame_id) {
+TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageEntry* entry) {
 
     assert(image_map && entry);
 
@@ -74,7 +73,7 @@ TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageEntry* entry,
         image_map->states = states;
     }
 
-    size_t index = tpxl_hash_u32(frame_id) % image_map->capacity;
+    size_t index = tpxl_hash_u32(entry->id) % image_map->capacity;
 
     int deleted_index = -1;
 
@@ -94,8 +93,13 @@ TpxlResult tpxl_image_map_insert(TpxlImageMap* image_map, TpxlImageEntry* entry,
         else if (image_map->states[index] == TPXL_ENTRY_DELETED) {
             deleted_index = index;
         }
-        else if (image_map->states[index] == TPXL_ENTRY_OCCUPIED && image_map->entries[index].id == frame_id) {
+        else if (image_map->states[index] == TPXL_ENTRY_OCCUPIED && image_map->entries[index].id == entry->id) {
             // Update the entry
+
+            if (image_map->entries[index].data != NULL) {
+                free(image_map->entries[index].data);
+            }
+            
             image_map->entries[index] = *entry;
             image_map->states[index] = TPXL_ENTRY_OCCUPIED;
             return TPXL_OK;

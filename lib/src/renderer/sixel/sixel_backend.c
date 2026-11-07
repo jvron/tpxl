@@ -316,7 +316,7 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         .columns = sixel_context->output_columns,
     };
     
-    result = tpxl_image_map_insert(&sixel_context->image_map, &entry, frame_id);
+    result = tpxl_image_map_insert(&sixel_context->image_map, &entry);
 
     if (result != TPXL_OK) {
         free(sixel_context->encoded_buffer);

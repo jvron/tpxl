@@ -380,7 +380,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
         .rows = iterm2_context->output_rows,
     };
 
-    result = tpxl_image_map_insert(&iterm2_context->image_map, &entry, frame_id);
+    result = tpxl_image_map_insert(&iterm2_context->image_map, &entry);
 
     if (result != TPXL_OK) {
         free(payload);
