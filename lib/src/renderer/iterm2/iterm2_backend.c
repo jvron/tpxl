@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -378,6 +379,7 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
         .column = 0,
         .columns = iterm2_context->output_columns,
         .rows = iterm2_context->output_rows,
+        .displayed = false,
     };
 
     result = tpxl_image_map_insert(&iterm2_context->image_map, &entry);
@@ -420,6 +422,7 @@ TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame
 
     entry->row = row;
     entry->column = column;
+    entry->displayed = true;
 
     return TPXL_OK;
 }
@@ -433,6 +436,10 @@ void tpxl_iterm2_delete_placement(TpxlIterm2Context* iterm2_context, uint32_t fr
         return;
     }
 
+    if (!entry->displayed) {
+        return;
+    }
+    
     if (entry->columns > iterm2_context->clear_buffer_capacity) {
 
         size_t capacity = iterm2_context->clear_buffer_capacity;
@@ -479,6 +486,8 @@ void tpxl_iterm2_delete_placement(TpxlIterm2Context* iterm2_context, uint32_t fr
     fflush(stdout);
 
     tpxl_mutex_unlock(&iterm2_context->output_mutex);
+
+    entry->displayed = false;
 }
 
 void tpxl_iterm2_delete_data(TpxlIterm2Context* iterm2_context, uint32_t frame_id) {

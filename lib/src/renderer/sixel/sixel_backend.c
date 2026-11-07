@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -314,6 +315,7 @@ TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, 
         .column = 0,
         .rows = sixel_context->output_rows,
         .columns = sixel_context->output_columns,
+        .displayed = false,
     };
     
     result = tpxl_image_map_insert(&sixel_context->image_map, &entry);
@@ -350,14 +352,15 @@ TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id
         return TPXL_RENDER_FAILED;
     }
 
-    entry->row = row;
-    entry->column = column;
-
     if (sixel_context->cursor_policy == TPXL_CURSOR_PRESERVE) {
         fprintf(stdout, "\033[%u;%uH", row, column);
     }
 
     fflush(stdout);
+
+    entry->row = row;
+    entry->column = column;
+    entry->displayed = true;
     
     return TPXL_OK;
 }
@@ -368,6 +371,10 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
 
     TpxlImageEntry* entry = NULL;
     if (tpxl_image_map_get(&sixel_context->image_map, frame_id, &entry) != TPXL_OK) {
+        return;
+    }
+
+    if (!entry->displayed) {
         return;
     }
 
@@ -413,6 +420,8 @@ void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame
     }
 
     fflush(stdout);
+
+    entry->displayed = false;
 }
 
 void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id) {

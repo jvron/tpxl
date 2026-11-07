@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "tpxl/type.h"
-
 
 typedef enum {
     TPXL_ENTRY_EMPTY = 0,
@@ -21,6 +21,7 @@ typedef struct {
     uint32_t column;
     uint32_t rows;
     uint32_t columns;
+    bool displayed;
 } TpxlImageEntry;
 
 typedef struct {
