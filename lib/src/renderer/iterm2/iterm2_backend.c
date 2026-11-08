@@ -261,21 +261,21 @@ TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, const Tpxl
     const size_t header_capacity = 128;
 
     size_t payload_capacity = header_capacity + encoded_size + 1;
-    *payload = malloc(payload_capacity);
+    char* payload_buffer = malloc(payload_capacity);
 
-    if (!payload) {
+    if (!payload_buffer) {
         return TPXL_OUT_OF_MEMORY;
     }
 
     size_t header_length = snprintf(
-        *payload, header_capacity, 
+        payload_buffer, header_capacity, 
         "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
         iterm2_context->output_columns,
         iterm2_context->output_rows
     );
 
     if (header_length < 0 || header_length >= header_capacity) {
-        free(payload);
+        free(payload_buffer);
         return TPXL_ENCODING_FAILED;
     }
 
@@ -283,13 +283,14 @@ TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, const Tpxl
     tpxl_base64_encode(
         png_data, 
         png_size, 
-        *payload + header_length,
-        payload_capacity,
+        payload_buffer + header_length,
+        payload_capacity - header_length,
         &output_length
     );
 
-    *payload[header_length + output_length] = '\a';
+    payload_buffer[header_length + output_length] = '\a';
 
+    *payload = payload_buffer;
     *payload_size = header_length + output_length + 1;
 
     return TPXL_OK;
@@ -404,14 +405,14 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
         return TPXL_OUT_OF_MEMORY;
     }
 
-    size_t header_len = snprintf(
+    size_t header_length = snprintf(
         payload, header_capacity, 
         "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
         iterm2_context->output_columns,
         iterm2_context->output_rows
     );
 
-    if (header_len < 0 || header_len >= header_capacity) {
+    if (header_length < 0 || header_length >= header_capacity) {
         free(payload);
         return TPXL_ENCODING_FAILED;
     }
@@ -420,14 +421,14 @@ TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage
     tpxl_base64_encode(
         png_data, 
         png_size, 
-        payload + header_len,
-        payload_capacity,
+        payload + header_length,
+        payload_capacity - header_capacity,
         &output_length
     );
 
-    payload[header_len + output_length] = '\a';
+    payload[header_length + output_length] = '\a';
 
-    const size_t payload_size = header_len + output_length + 1;
+    const size_t payload_size = header_length + output_length + 1;
 
     TpxlImageEntry entry = {
         .data = payload,
