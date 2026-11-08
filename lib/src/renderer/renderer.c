@@ -221,7 +221,7 @@ TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaTy
     } 
 }
 
-TpxlResult tpxl_renderer_get_payload(TpxlRenderer* renderer, TpxlImage* frame, char** payload, size_t* payload_size) {
+TpxlResult tpxl_renderer_get_payload(TpxlRenderer* renderer, const TpxlImage* frame, char** payload, size_t* payload_size) {
 
     if (!renderer || !frame || !frame->pixels || !payload || !payload_size) {
         return TPXL_INVALID_ARGUMENT;
@@ -240,7 +240,7 @@ TpxlResult tpxl_renderer_get_payload(TpxlRenderer* renderer, TpxlImage* frame, c
     } 
 }
 
-TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame, uint32_t row, uint32_t column) {
+TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, const TpxlImage* frame, uint32_t row, uint32_t column) {
 
     if (!renderer || !frame || !frame->pixels) {
         return TPXL_INVALID_ARGUMENT;
@@ -259,7 +259,7 @@ TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame,
     } 
 }
 
-TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id) {
+TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, const TpxlImage* frame, uint32_t frame_id) {
 
     if (!renderer || !frame || !frame->pixels || frame_id == UINT32_MAX) {
         return TPXL_INVALID_ARGUMENT;

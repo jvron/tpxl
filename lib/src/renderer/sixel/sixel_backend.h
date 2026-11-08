@@ -53,9 +53,9 @@ TpxlResult tpxl_sixel_set_frame(
 );
 TpxlResult tpxl_sixel_set_media_policy(TpxlSixelContext* sixel_context, TpxlMediaType media_type);
 
-TpxlResult tpxl_sixel_get_payload(TpxlSixelContext* sixel_context, TpxlImage* frame, char** payload, size_t* payload_size);
-TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t row, uint32_t column);
-TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t frame_id);
+TpxlResult tpxl_sixel_get_payload(TpxlSixelContext* sixel_context, const TpxlImage* frame, char** payload, size_t* payload_size);
+TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, const TpxlImage* frame, uint32_t row, uint32_t column);
+TpxlResult tpxl_sixel_upload(TpxlSixelContext* sixel_context, const TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_sixel_display(TpxlSixelContext* sixel_context, uint32_t frame_id, uint32_t row, uint32_t column);
 void tpxl_sixel_delete_placement(TpxlSixelContext* sixel_context, uint32_t frame_id);
 void tpxl_sixel_delete_data(TpxlSixelContext* sixel_context, uint32_t frame_id);

@@ -134,7 +134,7 @@ TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaTy
  */
 TpxlResult tpxl_renderer_get_payload(
     TpxlRenderer* renderer, 
-    TpxlImage* frame, 
+    const TpxlImage* frame, 
     char** payload, 
     size_t* payload_size
 );
@@ -155,7 +155,7 @@ TpxlResult tpxl_renderer_get_payload(
  * @return TPXL_INVALID_BACKEND if the renderer's backend is invalid.
  * @return The error returned by the selected backend if rendering fails.
  */
-TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame, uint32_t row, uint32_t column);
+TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, const TpxlImage* frame, uint32_t row, uint32_t column);
 
 /**
  * Processes an image for rendering and stores it internally.
@@ -173,7 +173,7 @@ TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame,
  * @return TPXL_INVALID_BACKEND if the renderer's backend is invalid.
  * @return The error returned by the selected backend if the upload fails.
  */
-TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, TpxlImage* frame, uint32_t frame_id);
+TpxlResult tpxl_renderer_upload(TpxlRenderer* renderer, const TpxlImage* frame, uint32_t frame_id);
 
 /**
  * Displays a previously uploaded image at the specified terminal position.

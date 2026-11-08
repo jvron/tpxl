@@ -118,7 +118,7 @@ TpxlResult tpxl_kitty_set_media_policy(TpxlKittyContext* kitty_context, TpxlMedi
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, TpxlImage* frame, char** payload, size_t* payload_size) {
+TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, const TpxlImage* frame, char** payload, size_t* payload_size) {
 
     assert(kitty_context && frame && frame->pixels && payload && payload_size);
 
@@ -223,7 +223,7 @@ TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, TpxlImage* fr
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t row, uint32_t column) {
+TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, const TpxlImage* frame, uint32_t row, uint32_t column) {
 
     assert(kitty_context && frame && frame->pixels);
 
@@ -293,7 +293,7 @@ TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* 
     return TPXL_OK;
 }
 
-TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id) {
+TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, const TpxlImage* frame, uint32_t frame_id) {
 
     assert(kitty_context && frame && frame->pixels);
 

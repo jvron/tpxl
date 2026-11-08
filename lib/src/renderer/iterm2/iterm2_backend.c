@@ -237,7 +237,7 @@ TpxlResult tpxl_iterm2_set_media_policy(TpxlIterm2Context* iterm2_context, TpxlM
     return TPXL_OK;
 }
 
-TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, TpxlImage* frame, char** payload, size_t* payload_size) {
+TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, char** payload, size_t* payload_size) {
 
     assert(iterm2_context && frame && frame->pixels && payload && payload_size);
 

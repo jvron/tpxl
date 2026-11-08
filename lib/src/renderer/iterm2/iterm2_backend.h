@@ -54,7 +54,7 @@ TpxlResult tpxl_iterm2_set_frame(
 );
 TpxlResult tpxl_iterm2_set_media_policy(TpxlIterm2Context* iterm2_context, TpxlMediaType media_type);
 
-TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, TpxlImage* frame, char** payload, size_t* payload_size);
+TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, char** payload, size_t* payload_size);
 TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t row, uint32_t column);
 TpxlResult tpxl_iterm2_upload(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_iterm2_display(TpxlIterm2Context* iterm2_context, uint32_t frame_id, uint32_t row, uint32_t column);
