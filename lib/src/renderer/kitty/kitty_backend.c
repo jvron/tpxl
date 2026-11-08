@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -153,12 +154,16 @@ TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, const TpxlIma
     );
 
     const size_t header_capacity = 128;
-    char header[header_capacity];
 
     const char* tail = "\x1b\\";
-    const size_t tail_length = sizeof("\x1b\\") - 1; 
+    const size_t tail_length = 2; 
 
-    size_t nr_chunks = (encoded_length + TPXL_KITTY_CHUNK_SIZE - 1) / TPXL_KITTY_CHUNK_SIZE;
+    size_t nr_chunks = encoded_length / TPXL_KITTY_CHUNK_SIZE;
+
+    if (encoded_length % TPXL_KITTY_CHUNK_SIZE) {
+        nr_chunks++;
+    }
+
     size_t payload_capacity =  encoded_length + (nr_chunks * (header_capacity + tail_length));
 
     char* payload_buffer = malloc(payload_capacity);
@@ -192,7 +197,8 @@ TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, const TpxlIma
                 "c=%u,"
                 "r=%u,"
                 "C=%d,"
-                "m=%d;",
+                "m=%d,"
+                "o=z;",
                 kitty_context->kitty_format,
                 frame->width,
                 frame->height,
