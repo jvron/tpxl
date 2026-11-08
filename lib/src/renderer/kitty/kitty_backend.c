@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <string.h>
 #include <zlib.h>
 
 
+#include "tpxl/type.h"
 #include "util/base64.h"
 #include "util/thread.h"
 #include "kitty_backend.h"
@@ -112,6 +114,111 @@ TpxlResult tpxl_kitty_set_media_policy(TpxlKittyContext* kitty_context, TpxlMedi
         default:
             return TPXL_INVALID_ARGUMENT;
     }
+
+    return TPXL_OK;
+}
+
+TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, TpxlImage* frame, char** payload, size_t* payload_size) {
+
+    assert(kitty_context && frame && frame->pixels && payload && payload_size);
+
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
+        return TPXL_INVALID_FORMAT;
+    }
+
+    *payload = NULL;
+    *payload_size = 0;
+
+    uLongf compressed_length = kitty_context->compressed_capacity;
+
+    int ret = compress2(
+        kitty_context->compressed_data,
+        &compressed_length,
+        frame->pixels,
+        kitty_context->frame_size,
+        Z_BEST_SPEED
+    );
+
+    if (ret != Z_OK) {
+        return TPXL_COMPRESSION_FAILED;
+    }
+
+    size_t encoded_length = 0;
+    tpxl_base64_encode(
+        kitty_context->compressed_data, 
+        compressed_length, 
+        kitty_context->encoded_data, 
+        kitty_context->encoded_capacity, 
+        &encoded_length
+    );
+
+    const size_t header_capacity = 128;
+    char header[header_capacity];
+
+    const char* tail = "\x1b\\";
+    const size_t tail_length = sizeof("\x1b\\") - 1; 
+
+    size_t nr_chunks = (encoded_length + TPXL_KITTY_CHUNK_SIZE - 1) / TPXL_KITTY_CHUNK_SIZE;
+    size_t payload_capacity =  encoded_length + (nr_chunks * (header_capacity + tail_length));
+
+    char* payload_buffer = malloc(payload_capacity);
+
+    if (!payload_buffer) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    size_t offset = 0;
+
+    for (size_t i = 0; i < encoded_length; i += TPXL_KITTY_CHUNK_SIZE) {
+
+        char* chunk = kitty_context->encoded_data + i;
+
+        size_t remaining = encoded_length - i;
+
+        size_t chunk_length = remaining < TPXL_KITTY_CHUNK_SIZE ? remaining : TPXL_KITTY_CHUNK_SIZE;
+
+        int more_chunks = remaining > TPXL_KITTY_CHUNK_SIZE ? 1 : 0;
+
+        int header_length = 0;
+
+        if (i == 0) {
+            header_length = snprintf(
+                payload_buffer + offset,
+                payload_capacity - offset,
+                "\x1b_Ga=T,"
+                "f=%d,"
+                "s=%u,"
+                "v=%u," 
+                "c=%u,"
+                "r=%u,"
+                "C=%d,"
+                "m=%d;",
+                kitty_context->kitty_format,
+                frame->width,
+                frame->height,
+                kitty_context->output_columns,
+                kitty_context->output_rows,
+                kitty_context->cursor_policy,
+                more_chunks
+            );
+        }
+        else {
+            header_length = snprintf(
+                payload_buffer + offset,
+                payload_capacity - offset,
+                "\x1b_Gm=%d;",
+                more_chunks
+            );
+        }
+
+        memcpy(payload_buffer + offset + header_length, chunk, chunk_length);
+        memcpy(payload_buffer + offset + header_length + chunk_length, tail, tail_length);
+
+        offset += header_length + chunk_length + tail_length;
+    }
+
+    *payload = payload_buffer;
+    *payload_size = offset;
 
     return TPXL_OK;
 }

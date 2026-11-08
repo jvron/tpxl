@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "tpxl/type.h"
 
@@ -105,6 +106,38 @@ TpxlResult tpxl_renderer_update_frame(
  * @return The error returned by the selected backend if the update fails.
  */
 TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaType media_type);
+
+/**
+ * Generates a backend specific payload for an image.
+ *
+ * The payload can be written directly to a terminal or used by the
+ * caller.
+ *
+ * On success, ownership of the allocated payload is transferred to
+ * the caller. The caller is responsible for releasing it using free().
+ *
+ * @param renderer Renderer to use.
+ * @param frame Image to encode.
+ * @param payload Output pointer receiving the generated payload.
+ * @param payload_size Output pointer receiving the payload size in bytes.
+ *
+ * @return TPXL_OK on success.
+ * @return TPXL_INVALID_ARGUMENT if renderer, frame, frame->pixels, payload,
+ *         or payload_size is NULL.
+ * @return TPXL_INVALID_FORMAT if the image format is unknown.
+ * @return TPXL_INVALID_BACKEND if the renderer's backend is invalid.
+ * @return TPXL_OUT_OF_MEMORY if memory allocation fails.
+ * @return The error returned by the selected backend if payload generation
+ *         fails.
+ *
+ * @note On failure, *payload is set to NULL and *payload_size is set to zero.
+ */
+TpxlResult tpxl_renderer_get_payload(
+    TpxlRenderer* renderer, 
+    TpxlImage* frame, 
+    char** payload, 
+    size_t* payload_size
+);
 
 /**
  * Processes and renders an image directly at the specified terminal position.

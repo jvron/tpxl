@@ -173,6 +173,80 @@ TpxlResult tpxl_sixel_set_media_policy(TpxlSixelContext* sixel_context, TpxlMedi
     return TPXL_OK;
 }
 
+TpxlResult tpxl_sixel_get_payload(TpxlSixelContext* sixel_context, TpxlImage* frame, char** payload, size_t* payload_size) {
+
+    assert(sixel_context && frame && frame->pixels && payload && payload_size);
+
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
+        return TPXL_INVALID_FORMAT;
+    }
+
+    *payload = NULL;
+    *payload_size = 0;
+
+    int ret = 0;
+    TpxlResult result = TPXL_OK;
+
+    sixel_dither_t* dither = NULL;
+
+    if (sixel_context->media_type != TPXL_MEDIA_VIDEO) {
+        ret = sixel_dither_new(&dither, 256, NULL);
+
+        if (ret != SIXEL_OK) {
+            result = TPXL_RENDER_FAILED;
+            goto cleanup;
+        }
+
+        sixel_dither_set_pixelformat(dither, sixel_context->sixel_format);
+        sixel_dither_set_diffusion_type(dither, sixel_context->sixel_diffuse);
+
+        ret = sixel_dither_initialize(
+            dither,
+            frame->pixels,
+            frame->width,
+            frame->height,
+            sixel_context->sixel_format,
+            SIXEL_LARGE_LUM,
+            SIXEL_REP_AVERAGE_PIXELS,
+            sixel_context->sixel_quality
+        );
+
+        if (ret != SIXEL_OK) {
+            result = TPXL_RENDER_FAILED;
+            goto cleanup;
+        }
+    } else {
+        dither = sixel_context->video_dither;
+    }
+
+    ret = sixel_encode(
+        frame->pixels,
+        frame->width, 
+        frame->height,
+        0, 
+        dither, 
+        sixel_context->output_image_map
+    );
+
+    if (ret != SIXEL_OK) {
+        result = TPXL_ENCODING_FAILED;
+        goto cleanup;
+    }
+
+    *payload = sixel_context->encoded_buffer;
+    *payload_size = sixel_context->encoded_buffer_size;
+
+    sixel_context->encoded_buffer = NULL;
+    sixel_context->encoded_buffer_size = 0;
+
+cleanup:
+    if (sixel_context->media_type != TPXL_MEDIA_VIDEO) {
+        sixel_dither_destroy(dither);
+    }
+
+    return result;
+}
+
 TpxlResult tpxl_sixel_direct_render(TpxlSixelContext* sixel_context, TpxlImage* frame, uint32_t row, uint32_t column) {
 
     assert(sixel_context && frame && frame->pixels);

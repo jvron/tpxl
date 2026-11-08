@@ -6,6 +6,7 @@
 
 #include "tpxl/renderer.h"
 
+#include "tpxl/type.h"
 #include "util/thread.h"
 
 typedef struct {
@@ -41,6 +42,7 @@ TpxlResult tpxl_kitty_set_frame(
 );
 TpxlResult tpxl_kitty_set_media_policy(TpxlKittyContext* kitty_context, TpxlMediaType media_type);
 
+TpxlResult tpxl_kitty_get_payload(TpxlKittyContext* kitty_context, TpxlImage* frame, char** payload, size_t* payload_size);
 TpxlResult tpxl_kitty_direct_render(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t row, uint32_t column);
 TpxlResult tpxl_kitty_transmit(TpxlKittyContext* kitty_context, TpxlImage* frame, uint32_t frame_id);
 TpxlResult tpxl_kitty_display(TpxlKittyContext* kitty_context, uint32_t frame_id, uint32_t row, uint32_t column);

@@ -237,6 +237,64 @@ TpxlResult tpxl_iterm2_set_media_policy(TpxlIterm2Context* iterm2_context, TpxlM
     return TPXL_OK;
 }
 
+TpxlResult tpxl_iterm2_get_payload(TpxlIterm2Context* iterm2_context, TpxlImage* frame, char** payload, size_t* payload_size) {
+
+    assert(iterm2_context && frame && frame->pixels && payload && payload_size);
+
+    if (frame->format == TPXL_FORMAT_UNKNOWN) {
+        return TPXL_INVALID_FORMAT;
+    }
+
+    *payload = NULL;
+    *payload_size = 0;
+
+    const uint8_t* png_data = NULL;
+    size_t png_size = 0;
+
+    TpxlResult result = tpxl_encode_png(iterm2_context, frame, &png_data, &png_size);
+
+    if (result != TPXL_OK) {
+        return result;
+    }
+
+    size_t encoded_size = tpxl_base64_encoded_size(png_size);
+    const size_t header_capacity = 128;
+
+    size_t payload_capacity = header_capacity + encoded_size + 1;
+    *payload = malloc(payload_capacity);
+
+    if (!payload) {
+        return TPXL_OUT_OF_MEMORY;
+    }
+
+    size_t header_length = snprintf(
+        *payload, header_capacity, 
+        "\x1b]1337;File=inline=1;width=%d;height=%d;preserveAspectRatio=1:",
+        iterm2_context->output_columns,
+        iterm2_context->output_rows
+    );
+
+    if (header_length < 0 || header_length >= header_capacity) {
+        free(payload);
+        return TPXL_ENCODING_FAILED;
+    }
+
+    size_t output_length = 0;
+    tpxl_base64_encode(
+        png_data, 
+        png_size, 
+        *payload + header_length,
+        payload_capacity,
+        &output_length
+    );
+
+    *payload[header_length + output_length] = '\a';
+
+    *payload_size = header_length + output_length + 1;
+
+    return TPXL_OK;
+}
+
 TpxlResult tpxl_iterm2_direct_render(TpxlIterm2Context* iterm2_context, const TpxlImage* frame, uint32_t row, uint32_t column) {
 
     assert(iterm2_context && frame && frame->pixels);
@@ -439,7 +497,7 @@ void tpxl_iterm2_delete_placement(TpxlIterm2Context* iterm2_context, uint32_t fr
     if (!entry->displayed) {
         return;
     }
-    
+
     if (entry->columns > iterm2_context->clear_buffer_capacity) {
 
         size_t capacity = iterm2_context->clear_buffer_capacity;

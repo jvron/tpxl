@@ -221,6 +221,25 @@ TpxlResult tpxl_renderer_update_media_policy(TpxlRenderer* renderer, TpxlMediaTy
     } 
 }
 
+TpxlResult tpxl_renderer_get_payload(TpxlRenderer* renderer, TpxlImage* frame, char** payload, size_t* payload_size) {
+
+    if (!renderer || !frame || !frame->pixels || !payload || !payload_size) {
+        return TPXL_INVALID_ARGUMENT;
+    }
+
+    switch (renderer->backend) {
+        case TPXL_BACKEND_KITTY:
+            return tpxl_kitty_get_payload(&renderer->kitty_context, frame, payload, payload_size);
+        case TPXL_BACKEND_SIXEL:
+            return tpxl_sixel_get_payload(&renderer->sixel_context, frame, payload, payload_size);
+        case TPXL_BACKEND_ITERM2:
+            return tpxl_iterm2_get_payload(&renderer->iterm2_context, frame, payload, payload_size);
+
+        default:
+            return TPXL_INVALID_BACKEND;
+    } 
+}
+
 TpxlResult tpxl_renderer_direct_render(TpxlRenderer* renderer, TpxlImage* frame, uint32_t row, uint32_t column) {
 
     if (!renderer || !frame || !frame->pixels) {
