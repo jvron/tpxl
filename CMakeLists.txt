@@ -13,6 +13,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(TPXL_ASAN "Enable AddressSanitizer" OFF)
 option(TPXL_TSAN "Enable ThreadSanitizer" OFF)
 
+option(TPXL_BUILD_CLI "Build the TPXL command-line interface" ON)
+
 if(TPXL_ASAN AND TPXL_TSAN)
     message(FATAL_ERROR "TPXL_ASAN and TPXL_TSAN cannot both be enabled")
 endif()
@@ -27,6 +29,6 @@ endif()
 
 add_subdirectory(lib)
 
-if(NOT TPXL_BUILD_SHARED)
+if(TPXL_BUILD_CLI AND NOT TPXL_BUILD_SHARED)
     add_subdirectory(cli)
 endif()

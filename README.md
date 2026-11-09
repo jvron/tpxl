@@ -61,9 +61,10 @@ cmake --build build/release
 ```
 
 **CMake options:**
-- `TPXL_ASAN=ON` — Enable AddressSanitizer.
-- `TPXL_TSAN=ON` — Enable ThreadSanitizer.
-- `TPXL_BUILD_SHARED=ON` —  Build `libtpxl` as a shared library; disables the CLI build. (`OFF` by default)
+- `TPXL_ASAN=ON`: Enable AddressSanitizer.
+- `TPXL_TSAN=ON`: Enable ThreadSanitizer.
+- `TPXL_BUILD_CLI=OFF`: Disable building the TPXL command-line interface (enabled by default).
+- `TPXL_BUILD_SHARED=ON`: Build `libtpxl` as a shared library (disabled by default). This disables the CLI build.
 
 AddressSanitizer and ThreadSanitizer cannot be enabled simultaneously.
 
