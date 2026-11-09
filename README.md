@@ -2,7 +2,7 @@
 
 TPXL is a C11 terminal media project for displaying images and playing animations, video, and audio directly in the terminal. It consists of `libtpxl`, the terminal media library, and `tpxl`, its command-line interface.
 
-TPXL uses terminal graphics protocols such as Kitty Graphics, SIXEL and iTerm2 Images, with the goal of making media practical to work with directly in the terminal.
+It supports multiple terminal graphics protocols, including Kitty Graphics, SIXEL, and iTerm2 Images, allowing media to be displayed directly within compatible terminals.
 
 **Platform support:** TPXL currently supports Linux only. Windows builds are not yet supported, and macOS support has not been tested. Cross-platform support for Windows and macOS is planned for future releases.
 
@@ -30,21 +30,11 @@ Terminal support depends on the graphics protocols provided by the terminal. TPX
 
 ## Dependencies
 
-### System Dependencies
-- FFmpeg - `libavformat`, `libavcodec`, `libavutil`, `libswscale`, and `libswresample`.
-- libsixel
+**System:** libsixel, FFmpeg (`libavformat`, `libavcodec`, `libavutil`, `libswscale`, `libswresample`).
 
-### Bundled Dependencies
-TPXL includes the following vendored libraries:
-- stb_image
-- miniaudio
-- giflib
+**Vendored:** stb_image, miniaudio, giflib.
 
-### Fetched Dependencies
-The following libraries are fetched automatically by CMake during configuration:
-- libpng
-- zlib
-- base64
+**Fetched:** libpng, zlib, base64.
 
 ## Building
 
