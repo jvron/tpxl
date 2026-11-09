@@ -108,13 +108,22 @@ int main(int argc, char* argv[]) {
         case TPXL_FILE_PNG:
             exit_code = display_image(file, &terminal,backend, print_info);
             break;
+            
         case TPXL_FILE_GIF:
             exit_code = display_gif(file, &terminal, backend, print_info);
             break;
-        case TPXL_FILE_VIDEO:
+
+        case TPXL_FILE_MP4:
+        case TPXL_FILE_MKV:
+        case TPXL_FILE_AVI:
+        case TPXL_FILE_MOV:
             exit_code = play_video(file, &terminal, backend, print_info);
             break;
-        case TPXL_FILE_AUDIO:
+
+        case TPXL_FILE_MP3:
+        case TPXL_FILE_WAV:
+        case TPXL_FILE_OGG:
+        case TPXL_FILE_FLAC:
             exit_code = play_audio(file, &terminal, backend);
             break;
         

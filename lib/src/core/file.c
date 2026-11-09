@@ -37,45 +37,47 @@ TpxlFileType tpxl_detect_file_type(const char* path) {
 
     // MP4 / MOV
     if (read >= 12 && memcmp(header + 4, "ftyp", 4) == 0) {
-        return TPXL_FILE_VIDEO;
-    }
+        if (memcmp(header + 8, "qt  ", 4) == 0) {
+            return TPXL_FILE_MOV;
+        }
 
+        return TPXL_FILE_MP4;
+    }
     // MKV / WebM
     if (read >= 4 && memcmp(header, "\x1A\x45\xDF\xA3", 4) == 0) {
-        return TPXL_FILE_VIDEO;
+        return TPXL_FILE_MKV;
     }
     
     // AVI 
     if (read >= 12 && memcmp(header, "RIFF", 4) == 0 && memcmp(header + 8, "AVI ", 4) == 0) {
-        return TPXL_FILE_VIDEO;
+        return TPXL_FILE_AVI;
     }
 
     // MP3
     if (read >= 3) {
         if (memcmp(header, "ID3", 3) == 0) {
-            return TPXL_FILE_AUDIO;
+            return TPXL_FILE_MP3;
         }
 
         if (header[0] == 0xFF && (header[1] & 0xE0) == 0xE0) {
-            return TPXL_FILE_AUDIO;        
+            return TPXL_FILE_MP3;        
         }
     }
 
     // FLAC
     if (read >= 4 && memcmp(header, "fLaC", 4) == 0) {
-        return TPXL_FILE_AUDIO; 
+        return TPXL_FILE_FLAC; 
     }
 
     // WAV
     if (read >= 12 && memcmp(header, "RIFF", 4) == 0 && memcmp(header + 8, "WAVE", 4) == 0) {
-        return TPXL_FILE_AUDIO; 
+        return TPXL_FILE_WAV; 
     }
 
     // OGG
     if (read >= 4 && memcmp(header, "OggS", 4) == 0) {
-        return TPXL_FILE_AUDIO;
+        return TPXL_FILE_OGG;
     }
 
     return TPXL_FILE_UNKNOWN;
 }
-
